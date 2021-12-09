@@ -1,2 +1,4 @@
 locust
 sphinx
+flask_restful
+flask
