@@ -1,5 +1,4 @@
 load_testing_je_dev
-locust
 sphinx
 flask_restful
 flask

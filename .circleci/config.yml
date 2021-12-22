@@ -4,7 +4,23 @@ orbs:
   python: circleci/python@1.4.0
 
 jobs:
-  build-and-test:
+  build-and-test-stable:
+    executor: python/default
+    steps:
+      - checkout
+      # pip require package
+      - run:
+          command: pip install --user -r requirements.txt
+          name: pip requirements.txt
+      # unit test start
+      - run:
+          command: python ./circle_ci_test_stable/locust_as_library_test/locust_as_library_test.py
+          name: locust_as_library_test
+      - run:
+          command: python ./circle_ci_test_stable/start_locust_test/start_locust_test.py
+          name: start_locust_test
+
+  build-and-test-dev:
     executor: python/default
     steps:
       - checkout
@@ -14,12 +30,16 @@ jobs:
           name: pip requirements.txt
       # unit test start
       - run:
-          command: python ./circle_ci_test/locust_as_library_test/locust_as_library_test.py
+          command: python ./circle_ci_test_stable/locust_as_library_test/locust_as_library_test.py
           name: locust_as_library_test
       - run:
-          command: python ./circle_ci_test/start_locust_test/start_locust_test.py
+          command: python ./circle_ci_test_stable/start_locust_test/start_locust_test.py
           name: start_locust_test
+
 workflows:
   main:
     jobs:
-      - build-and-test
+      - build-and-test-stable
+      - build-and-test-dev:
+          requires:
+            - build-and-test-stable
