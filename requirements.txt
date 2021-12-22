@@ -1,2 +1,1 @@
 load_testing_je
-locust
