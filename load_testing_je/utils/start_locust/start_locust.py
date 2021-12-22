@@ -6,9 +6,9 @@ def change_to_locust_file_dir(path):
     os.chdir(path)
 
 
-def start_locust():
+def start_locust(**kwargs):
     global process
-    process = subprocess.Popen(["locust"], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
+    process = subprocess.Popen(["locust"], **kwargs, shell=False)
     return process
 
 
