@@ -1,5 +1,4 @@
 import webbrowser
 
-
-def open_web_ui(**kwargs):
-    webbrowser.open("http://localhost:8089", **kwargs)
+def open_web_ui(port: str = "8089", **kwargs):
+    webbrowser.open("http://localhost:" + port, **kwargs)

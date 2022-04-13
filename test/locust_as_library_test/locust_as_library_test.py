@@ -1,10 +1,8 @@
-from locust import HttpUser, task, between
-from load_testing_je import create_env
+from locust import HttpUser, task
 from load_testing_je import start_test
 
 
 class User(HttpUser):
-    wait_time = between(1, 3)
     host = "https://docs.locust.io"
 
     @task
@@ -16,5 +14,5 @@ class User(HttpUser):
         self.client.get("/non-existing-path")
 
 
-start_test(create_env(User))
+start_test(User, test_time=10)
 
