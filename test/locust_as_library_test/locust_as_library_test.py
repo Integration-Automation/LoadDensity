@@ -14,5 +14,5 @@ class User(HttpUser):
         self.client.get("/non-existing-path")
 
 
-start_test(User, user_count=100)
+start_test(User, user_count=100, test_time=10)
 
