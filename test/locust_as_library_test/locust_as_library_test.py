@@ -7,12 +7,12 @@ class User(HttpUser):
 
     @task
     def my_task(self):
-        self.client.get("/")
+        self.client.get("")
 
     @task
     def task_404(self):
         self.client.get("/non-existing-path")
 
 
-start_test(User, test_time=10)
+start_test(User, user_count=100)
 

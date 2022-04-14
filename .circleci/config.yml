@@ -18,8 +18,8 @@ jobs:
           command: python ./test/locust_as_library_test/locust_as_library_test.py
           name: locust_as_library_test
       - run:
-          command: python ./test/start_locust_test/start_locust_test.py
-          name: start_locust_test
+          command: python ./test/api_testka_user/api_testka_user_test.py
+          name: api_testka_user_test
 
   build-and-test-stable:
     executor: python/default
@@ -34,8 +34,8 @@ jobs:
           command: python ./test/locust_as_library_test/locust_as_library_test.py
           name: locust_as_library_test
       - run:
-          command: python ./test/start_locust_test/start_locust_test.py
-          name: start_locust_test
+          command: python ./test/api_testka_user/api_testka_user_test.py
+          name: api_testka_user_test
 
 workflows:
   main:
