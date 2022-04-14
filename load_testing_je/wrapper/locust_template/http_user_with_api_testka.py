@@ -4,7 +4,7 @@ from locust import task
 loading_test_detail_dict = dict()
 
 
-def create_loading_test_user(detail_dict: dict):
+def create_loading_test_user(detail_dict: dict, **kwargs):
     """
     :param detail_dict: detail_dict should be included host http_method test_path
     another_test_setting_dict are optional

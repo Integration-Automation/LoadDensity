@@ -16,7 +16,8 @@ def create_env(user_class: [locust.User]):
 
 
 def start_test(user_class: [locust.User], user_count: int = 1, spawn_rate: int = 10, test_time: int = None,
-               web_ui_dict: dict = None):
+               web_ui_dict: dict = None,
+               **kwargs):
     env = create_env(user_class)
     env.runner.start(user_count, spawn_rate=spawn_rate)
     if web_ui_dict is not None:
