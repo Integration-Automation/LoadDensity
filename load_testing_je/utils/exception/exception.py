@@ -1,2 +1,0 @@
-class LocustNotFoundException(Exception):
-    pass

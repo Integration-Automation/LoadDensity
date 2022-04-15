@@ -15,7 +15,7 @@ def create_env(user_class: [locust.User]):
     return env
 
 
-def start_test(user_class: [locust.User], user_count: int = 1, spawn_rate: int = 10, test_time: int = None,
+def start_test(user_class: [locust.User], user_count: int = 50, spawn_rate: int = 10, test_time: int = 60,
                web_ui_dict: dict = None,
                **kwargs):
     env = create_env(user_class)
