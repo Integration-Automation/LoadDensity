@@ -4,14 +4,14 @@ from locust import task
 loading_test_detail_dict = dict()
 
 
-def create_loading_test_user(detail_dict: dict, **kwargs):
+def create_loading_test_user(user_detail_dict: dict, **kwargs):
     """
-    :param detail_dict: detail_dict should be included host http_method test_path
+    :param user_detail_dict: detail_dict should be included host http_method test_path
     another_test_setting_dict are optional
     """
-    http_method = detail_dict.get("request_method")
-    request_url = detail_dict.get("request_url")
-    another_test_setting_dict = detail_dict.get("another_test_setting_dict", None)
+    http_method = user_detail_dict.get("request_method")
+    request_url = user_detail_dict.get("request_url")
+    another_test_setting_dict = user_detail_dict.get("another_test_setting_dict", None)
     loading_test_detail_dict.update(
         {
             "http_method": http_method,
@@ -19,7 +19,6 @@ def create_loading_test_user(detail_dict: dict, **kwargs):
             "another_test_setting_dict": another_test_setting_dict
         }
     )
-    print(loading_test_detail_dict)
     return HttpUserWrapper
 
 

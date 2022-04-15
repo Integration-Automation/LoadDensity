@@ -7,3 +7,10 @@
 #### Features
 
 ---
+## install 
+
+```
+pip install je_api_testka
+```
+
+---

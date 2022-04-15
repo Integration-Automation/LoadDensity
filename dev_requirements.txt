@@ -1,4 +1,4 @@
-load_testing_je_dev
+je_load_testing_dev
 sphinx
 flask_restful
 flask

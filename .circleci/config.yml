@@ -20,6 +20,12 @@ jobs:
       - run:
           command: python ./test/api_testka_user/api_testka_user_test.py
           name: api_testka_user_test
+      - run:
+          command: python ./test/loading_test_with_user/loading_test_with_user.py
+          name: loading_test_with_user
+      - run:
+          command: python ./test/executor_files/executor_files.py
+          name: executor_files
 
   build-and-test-stable:
     executor: python/default
@@ -36,6 +42,12 @@ jobs:
       - run:
           command: python ./test/api_testka_user/api_testka_user_test.py
           name: api_testka_user_test
+      - run:
+          command: python ./test/loading_test_with_user/loading_test_with_user.py
+          name: loading_test_with_user
+      - run:
+          command: python ./test/executor_files/executor_files.py
+          name: executor_files
 
 workflows:
   main:
