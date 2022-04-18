@@ -6,9 +6,13 @@ class JELoadingTestException(Exception):
     pass
 
 
-class JELoadingTestJsonException(Exception):
+class JELoadingTestJsonException(JELoadingTestException):
     pass
 
 
-class JELoadingTestExecuteException(Exception):
+class JELoadingTestExecuteException(JELoadingTestException):
+    pass
+
+
+class JELoadingAssertException(JELoadingTestException):
     pass
