@@ -1,4 +1,4 @@
-from je_load_testing import loading_test_with_user
+from je_locust_wrapper import loading_test_with_user
 
 loading_test_with_user(
     {

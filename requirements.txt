@@ -1,1 +1,1 @@
-je_load_testing
+je_locust_wrapper

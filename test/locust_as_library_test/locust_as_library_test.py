@@ -1,5 +1,5 @@
 from locust import HttpUser, task
-from je_load_testing import start_test
+from je_locust_wrapper import start_test
 
 
 class User(HttpUser):

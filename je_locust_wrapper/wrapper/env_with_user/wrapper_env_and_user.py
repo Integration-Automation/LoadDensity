@@ -1,5 +1,5 @@
-from je_load_testing.wrapper.locust_template.http_user_with_api_testka import create_loading_test_user
-from je_load_testing.wrapper.locust_as_library.locust_as_library import start_test
+from je_locust_wrapper.wrapper.locust_template.http_user_with_api_testka import create_loading_test_user
+from je_locust_wrapper.wrapper.locust_as_library.locust_as_library import start_test
 
 
 def loading_test_with_user(

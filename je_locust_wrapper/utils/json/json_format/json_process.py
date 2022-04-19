@@ -3,9 +3,9 @@ import sys
 from json import dumps
 from json import loads
 
-from je_load_testing.utils.exception.exception_tag import cant_reformat_json_error
-from je_load_testing.utils.exception.exception_tag import wrong_json_data_error
-from je_load_testing.utils.exception.exception import JELoadingTestJsonException
+from je_locust_wrapper.utils.exception.exception_tag import cant_reformat_json_error
+from je_locust_wrapper.utils.exception.exception_tag import wrong_json_data_error
+from je_locust_wrapper.utils.exception.exception import JELoadingTestJsonException
 
 
 def __process_json(json_string: str, **kwargs):

@@ -4,8 +4,8 @@ with open("README.md", "r") as README:
     long_description = README.read()
 
 setuptools.setup(
-    name="je_load_testing_dev",
-    version="0.0.05",
+    name="je_locust_wrapper_dev",
+    version="0.0.01",
     author="JE-Chen",
     author_email="zenmailman@gmail.com",
     description="",

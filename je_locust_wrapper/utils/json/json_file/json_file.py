@@ -3,9 +3,9 @@ import os.path
 from pathlib import Path
 from threading import Lock
 
-from je_load_testing.utils.exception.exception import JELoadingTestJsonException
-from je_load_testing.utils.exception.exception_tag import cant_find_json_error
-from je_load_testing.utils.exception.exception_tag import cant_save_json_error
+from je_locust_wrapper.utils.exception.exception import JELoadingTestJsonException
+from je_locust_wrapper.utils.exception.exception_tag import cant_find_json_error
+from je_locust_wrapper.utils.exception.exception_tag import cant_save_json_error
 
 
 lock = Lock()
