@@ -1,8 +1,8 @@
 # argparse
 import argparse
 
-from je_load_testing.utils.json.json_file.json_file import read_action_json
-from je_load_testing.utils.executor.action_executor import execute_action
+from je_locust_wrapper.utils.json.json_file.json_file import read_action_json
+from je_locust_wrapper.utils.executor.action_executor import execute_action
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

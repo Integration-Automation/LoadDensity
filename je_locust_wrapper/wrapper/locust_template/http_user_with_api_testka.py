@@ -5,8 +5,8 @@ from locust import HttpUser
 from locust import task
 from locust.clients import HttpSession
 
-from je_load_testing.utils.get_data_strcture.get_api_data import get_api_response_data
-from je_load_testing.utils.exception.exception import JELoadingAssertException
+from je_locust_wrapper.utils.get_data_strcture.get_api_data import get_api_response_data
+from je_locust_wrapper.utils.exception.exception import JELoadingAssertException
 
 loading_test_detail_dict = dict()
 

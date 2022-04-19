@@ -1,5 +1,3 @@
-je_load_testing_dev
+je_locust_wrapper_dev
 sphinx
-flask_restful
-flask
 twine
