@@ -21,7 +21,7 @@ def start_test(user_class: [locust.User], user_count: int = 50, spawn_rate: int 
     env = create_env(user_class)
     env.runner.start(user_count, spawn_rate=spawn_rate)
     if web_ui_dict is not None:
-        env.create_web_ui(web_ui_dict.get("host"), web_ui_dict.get("port"))
+        env.create_web_ui(web_ui_dict.get("host", "127.0.0.1"), web_ui_dict.get("port", "8089"))
     if test_time is not None:
         gevent.spawn_later(test_time, lambda: env.runner.quit())
     env.runner.greenlet.join()
