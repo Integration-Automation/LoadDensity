@@ -8,7 +8,7 @@ from je_locust_wrapper.utils.json.json_file.json_file import read_action_json
 
 
 event_dict = {
-    "loading_test_with_user": loading_test_with_user
+    "loading_test_with_user": loading_test_with_user,
 }
 
 
