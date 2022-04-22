@@ -1,5 +1,5 @@
 ==================
-LocustWrapper Executor Doc
+LoadDensity Executor Doc
 ==================
 
 .. code-block:: python
@@ -9,7 +9,7 @@ LocustWrapper Executor Doc
     action_list: action's list
     """
 
-    from je_locust_wrapper import execute_action
+    from je_load_density import execute_action
     """
     format [
         [function, {
@@ -26,7 +26,7 @@ LocustWrapper Executor Doc
     param: headers, result_check_dict, params ... etc
     result_check_dict: dict to check data is verify if not raise Exception
     """
-    from je_locust_wrapper import execute_action
+    from je_load_density import execute_action
 
     test_list = [
         ["loading_test_with_user", {"user_detail_dict": {

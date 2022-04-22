@@ -1,10 +1,10 @@
 import sys
 
-from je_locust_wrapper.utils.exception.exception import JELoadingTestExecuteException
-from je_locust_wrapper.wrapper.env_with_user.wrapper_env_and_user import loading_test_with_user
-from je_locust_wrapper.utils.exception.exception_tag import executor_data_error
-from je_locust_wrapper.utils.exception.exception_tag import executor_list_error
-from je_locust_wrapper.utils.json.json_file.json_file import read_action_json
+from je_load_density.utils.exception.exception import JELoadingTestExecuteException
+from je_load_density.wrapper.env_with_user.wrapper_env_and_user import loading_test_with_user
+from je_load_density.utils.exception.exception_tag import executor_data_error
+from je_load_density.utils.exception.exception_tag import executor_list_error
+from je_load_density.utils.json.json_file.json_file import read_action_json
 
 
 event_dict = {

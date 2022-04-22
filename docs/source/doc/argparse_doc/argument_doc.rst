@@ -1,5 +1,5 @@
 ==================
-LocustWrapper Argument Doc
+LoadDensity Argument Doc
 ==================
 
 .. code-block:: python

@@ -1,10 +1,10 @@
 # argparse
 import argparse
 
-from je_locust_wrapper.utils.json.json_file.json_file import read_action_json
-from je_locust_wrapper.utils.file_process.get_dir_file_list import get_dir_files_as_list
-from je_locust_wrapper.utils.executor.action_executor import execute_action
-from je_locust_wrapper.utils.executor.action_executor import execute_files
+from je_load_density.utils.json.json_file.json_file import read_action_json
+from je_load_density.utils.file_process.get_dir_file_list import get_dir_files_as_list
+from je_load_density.utils.executor.action_executor import execute_action
+from je_load_density.utils.executor.action_executor import execute_files
 
 
 def preprocess_execute_action(file_path: str):

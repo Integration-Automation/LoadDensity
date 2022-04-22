@@ -1,12 +1,12 @@
 ==================
-LocustWrapper Argument Example
+LoadDensity Argument Example
 ==================
 
 .. code-block:: python
 
     """
     cd to workdir
-    python je_api_testka + action file path
+    python je_load_density + action file path
     """
     import os
 

@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'je_locust_wrapper'
+project = 'je_load_density'
 copyright = '2022, JE-Chen'
 author = 'JE-Chen'
 

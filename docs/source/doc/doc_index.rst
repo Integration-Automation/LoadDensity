@@ -1,5 +1,5 @@
 ==================
-LocustWrapper Doc
+LoadDensity Doc
 ==================
 
 .. toctree::

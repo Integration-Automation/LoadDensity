@@ -21,5 +21,3 @@
 ```
 pip install je_locust_wrapper
 ```
-
----

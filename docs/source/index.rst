@@ -1,4 +1,4 @@
-Welcome to je_locust_wrapper's documentation!
+Welcome to LoadDensity's documentation!
 =============================================
 * Features
    * HTTP HTTPS stress testing and load testing

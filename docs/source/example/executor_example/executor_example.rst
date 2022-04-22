@@ -1,10 +1,10 @@
 ==================
-LocustWrapper Executor Example
+LoadDensity Executor Example
 ==================
 
 .. code-block:: python
 
-    from je_locust_wrapper import execute_action
+    from je_load_density import execute_action
 
     test_list = [
         ["loading_test_with_user", {"user_detail_dict": {

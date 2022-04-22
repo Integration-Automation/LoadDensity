@@ -1,5 +1,5 @@
 ==================
-LocustWrapper Example
+LoadDensity Example
 ==================
 
 .. toctree::
