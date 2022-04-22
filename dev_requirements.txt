@@ -1,3 +1,3 @@
-je_locust_wrapper_dev
+je_load_density_dev
 sphinx
 twine
