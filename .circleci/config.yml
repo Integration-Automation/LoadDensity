@@ -18,7 +18,7 @@ jobs:
           command: python ./test/locust_as_library_test/locust_as_library_test.py
           name: locust_as_library_test
       - run:
-          command: python ./test/api_testka_user/api_testka_user_test.py
+          command: python ./test/api_testka_user/generate_html_test.py
           name: api_testka_user_test
       - run:
           command: python ./test/loading_test_with_user/loading_test_with_user.py
@@ -29,6 +29,9 @@ jobs:
       - run:
           command: python ./test/argparse/argparse_test.py
           name: argparse_test
+      - run:
+          command: python ./test/generate_html_test/generate_html_test.py
+          name: generate_html_test
 
   build-and-test-stable:
     executor: python/default
@@ -43,7 +46,7 @@ jobs:
           command: python ./test/locust_as_library_test/locust_as_library_test.py
           name: locust_as_library_test
       - run:
-          command: python ./test/api_testka_user/api_testka_user_test.py
+          command: python ./test/api_testka_user/generate_html_test.py
           name: api_testka_user_test
       - run:
           command: python ./test/loading_test_with_user/loading_test_with_user.py
@@ -54,6 +57,9 @@ jobs:
       - run:
           command: python ./test/argparse/argparse_test.py
           name: argparse_test
+      - run:
+          command: python ./test/generate_html_test/generate_html_test.py
+          name: generate_html_test
 
 workflows:
   main:

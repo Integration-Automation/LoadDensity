@@ -16,3 +16,7 @@ class JELoadingTestExecuteException(JELoadingTestException):
 
 class JELoadingAssertException(JELoadingTestException):
     pass
+
+
+class HTMLException(JELoadingTestException):
+    pass

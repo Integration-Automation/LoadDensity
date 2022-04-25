@@ -1,6 +1,7 @@
 import datetime
 import sys
 
+from locust import events
 from locust import HttpUser
 from locust import task
 from locust.clients import HttpSession
@@ -9,6 +10,7 @@ from je_load_density.utils.get_data_strcture.get_api_data import get_api_respons
 from je_load_density.utils.exception.exception import JELoadingAssertException
 
 loading_test_detail_dict = dict()
+record_list = list()
 
 
 def create_loading_test_user(user_detail_dict: dict, **kwargs):
@@ -32,7 +34,7 @@ def create_loading_test_user(user_detail_dict: dict, **kwargs):
 
 
 def http_method_and_assert(with_httpsession: [
-    HttpSession.get, HttpSession.head,HttpSession.put, HttpSession.post,
+    HttpSession.get, HttpSession.head, HttpSession.put, HttpSession.post,
     HttpSession.patch, HttpSession.options, HttpSession.delete
 ], assert_result_dict: dict):
     start_time = datetime.datetime.now()
