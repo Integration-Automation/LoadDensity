@@ -15,8 +15,8 @@ record_list = list()
 
 def create_loading_test_user(user_detail_dict: dict, **kwargs):
     """
-    :param user_detail_dict: detail_dict should be included host http_method test_path
     another_test_setting_dict are optional
+    :param user_detail_dict: detail_dict should be included host http_method test_path
     """
     http_method = user_detail_dict.get("request_method", "get")
     request_url = user_detail_dict.get("request_url", "http://localhost")
@@ -37,14 +37,17 @@ def http_method_and_assert(with_httpsession: [
     HttpSession.get, HttpSession.head, HttpSession.put, HttpSession.post,
     HttpSession.patch, HttpSession.options, HttpSession.delete
 ], assert_result_dict: dict):
-    start_time = datetime.datetime.now()
+    """
+    :param with_httpsession: use to get locust httpsession data
+    :param assert_result_dict: use to assert data
+    :return:
+    """
     with with_httpsession(
             loading_test_detail_dict.get("request_url"),
             catch_response=True,
             **loading_test_detail_dict.get("another_test_setting_dict"),
     ) as response:
-        end_time = datetime.datetime.now()
-        response_data = get_api_response_data(response, start_time, end_time)
+        response_data = get_api_response_data(response, None, None)
         for key, value in assert_result_dict.items():
             if response_data.get(key) != value:
                 raise JELoadingAssertException(
@@ -55,6 +58,9 @@ def http_method_and_assert(with_httpsession: [
 
 
 class HttpUserWrapper(HttpUser):
+    """
+    locust httpuser use to test
+    """
     host = ""
     min_wait = 5
     max_wait = 20

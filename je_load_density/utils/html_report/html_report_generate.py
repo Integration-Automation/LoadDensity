@@ -161,6 +161,7 @@ failure_table = \
 
 def generate_html(html_name: str = "default_name"):
     """
+    format html_string and output html file
     :param html_name: save html file name
     :return: html_string
     """
