@@ -2,6 +2,8 @@ import sys
 
 from locust import HttpUser, task
 
+# test use this user
+
 
 class HelloWorldUser(HttpUser):
     @task
