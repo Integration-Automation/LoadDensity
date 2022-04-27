@@ -27,7 +27,7 @@ jobs:
           command: python ./test/integrated_test/executor_files/executor_files.py
           name: executor_files
       - run:
-          command: python ./test/unit_test/unit_test/argparse/argparse_test.py
+          command: python ./test/unit_test/argparse/argparse_test.py
           name: argparse_test
       - run:
           command: python ./test/unit_test/generate_html_test/generate_html_test.py
@@ -55,7 +55,7 @@ jobs:
           command: python ./test/integrated_test/executor_files/executor_files.py
           name: executor_files
       - run:
-          command: python ./test/unit_tes/unit_test/argparse/argparse_test.py
+          command: python ./test/unit_test/argparse/argparse_test.py
           name: argparse_test
       - run:
           command: python ./test/unit_test/generate_html_test/generate_html_test.py
