@@ -7,7 +7,7 @@ from threading import Lock
 
 lock = Lock()
 
-html_string = \
+_html_string = \
     r"""
 <!DOCTYPE html>
 <html lang="en">
@@ -82,7 +82,7 @@ html_string = \
 </html>
 """.strip()
 
-success_table = \
+_success_table = \
     r"""
    <table class="main_table">
     <thead>
@@ -124,7 +124,7 @@ success_table = \
     <br>
     """.strip()
 
-failure_table = \
+_failure_table = \
     r"""
 <table class="main_table">
     <thead>
@@ -173,7 +173,7 @@ def generate_html(html_name: str = "default_name"):
             success = "".join(
                 [
                     success,
-                    success_table.format(
+                    _success_table.format(
                         Method=record_data.get("http_method"),
                         test_url=record_data.get("test_url"),
                         name=record_data.get("name"),
@@ -192,7 +192,7 @@ def generate_html(html_name: str = "default_name"):
                 failure = "".join(
                     [
                         failure,
-                        failure_table.format(
+                        _failure_table.format(
                             http_method=record_data[0].get("http_method"),
                             test_url=record_data[0].get("test_url"),
                             name=record_data[0].get("name"),
@@ -201,7 +201,7 @@ def generate_html(html_name: str = "default_name"):
                         ),
                     ]
                 )
-        new_html_string = html_string.format(success_table=success, failure_table=failure)
+        new_html_string = _html_string.format(success_table=success, failure_table=failure)
         try:
             lock.acquire()
             with open(html_name + ".html", "w+") as file_to_write:
