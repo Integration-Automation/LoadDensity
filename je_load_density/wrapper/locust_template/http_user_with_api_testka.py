@@ -1,7 +1,5 @@
-import datetime
 import sys
 
-from locust import events
 from locust import HttpUser
 from locust import task
 from locust.clients import HttpSession
@@ -67,7 +65,7 @@ class HttpUserWrapper(HttpUser):
 
 
     def on_start(self):
-        self.http_method_dict = {
+        self.__http_method_dict = {
             "get": self.client.get,
             "put": self.client.put,
             "delete": self.client.delete,
@@ -76,27 +74,27 @@ class HttpUserWrapper(HttpUser):
             "options": self.client.options,
             "patch": self.client.patch,
         }
-        self.loading_test_detail_dict = loading_test_detail_dict
-        self.test_client = self.http_method_dict.get(self.loading_test_detail_dict.get("http_method"))
+        self.__loading_test_detail_dict = loading_test_detail_dict
+        self.__test_client = self.__http_method_dict.get(self.__loading_test_detail_dict.get("http_method"))
 
     @task
     def task_with_api_testka(self):
         try:
-            another_test_setting_dict: dict = self.loading_test_detail_dict.get("another_test_setting_dict")
-            assert_result_dict: dict = self.loading_test_detail_dict.get("assert_result_dict")
+            another_test_setting_dict: dict = self.__loading_test_detail_dict.get("another_test_setting_dict")
+            assert_result_dict: dict = self.__loading_test_detail_dict.get("assert_result_dict")
             if another_test_setting_dict is not None:
                 if assert_result_dict is None:
-                    self.test_client(
-                        self.loading_test_detail_dict.get("request_url"),
-                        **self.loading_test_detail_dict.get("another_test_setting_dict")
+                    self.__test_client(
+                        self.__loading_test_detail_dict.get("request_url"),
+                        **self.__loading_test_detail_dict.get("another_test_setting_dict")
                     )
                 else:
-                    http_method_and_assert(self.test_client, assert_result_dict)
+                    http_method_and_assert(self.__test_client, assert_result_dict)
 
             else:
                 if assert_result_dict is None:
-                    self.test_client(self.loading_test_detail_dict.get("request_url"))
+                    self.__test_client(self.__loading_test_detail_dict.get("request_url"))
                 else:
-                    http_method_and_assert(self.test_client, assert_result_dict)
+                    http_method_and_assert(self.__test_client, assert_result_dict)
         except Exception as error:
             print(repr(error), file=sys.stderr)
