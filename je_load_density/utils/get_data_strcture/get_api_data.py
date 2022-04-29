@@ -2,7 +2,9 @@ import requests.exceptions
 from requests.utils import dict_from_cookiejar
 
 
-def get_api_response_data(response: requests.Response, start_time: [str, float, int], end_time: [str, float, int]) -> dict:
+def get_api_response_data(response: requests.Response,
+                          start_time: [str, float, int],
+                          end_time: [str, float, int]) -> dict:
     """
     use requests response to create data dict
     :param response: requests response

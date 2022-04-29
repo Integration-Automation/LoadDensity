@@ -8,7 +8,7 @@ from je_load_density.utils.exception.exception_tag import wrong_json_data_error
 from je_load_density.utils.exception.exception import JELoadingTestJsonException
 
 
-def __process_json(json_string: str, **kwargs):
+def _process_json(json_string: str, **kwargs):
     """
     :param json_string: full json str (not json type)
     :param kwargs: any another kwargs for dumps
@@ -28,6 +28,6 @@ def __process_json(json_string: str, **kwargs):
 
 def reformat_json(json_string: str, **kwargs):
     try:
-        return __process_json(json_string, **kwargs)
+        return _process_json(json_string, **kwargs)
     except JELoadingTestJsonException:
         raise JELoadingTestJsonException(cant_reformat_json_error)

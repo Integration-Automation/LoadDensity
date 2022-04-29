@@ -5,7 +5,7 @@ from je_load_density.utils.exception.exception import HTMLException
 from je_load_density.utils.exception.exception_tag import html_generate_no_data_tag
 from threading import Lock
 
-lock = Lock()
+_lock = Lock()
 
 _html_string = \
     r"""
@@ -203,7 +203,7 @@ def generate_html(html_name: str = "default_name"):
                 )
         new_html_string = _html_string.format(success_table=success, failure_table=failure)
         try:
-            lock.acquire()
+            _lock.acquire()
             with open(html_name + ".html", "w+") as file_to_write:
                 file_to_write.write(
                     new_html_string
@@ -211,5 +211,5 @@ def generate_html(html_name: str = "default_name"):
         except Exception as error:
             print(repr(error), file=sys.stderr)
         finally:
-            lock.release()
+            _lock.release()
     return new_html_string

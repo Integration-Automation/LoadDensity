@@ -65,6 +65,7 @@ class HttpUserWrapper(HttpUser):
     min_wait = 5
     max_wait = 20
 
+
     def on_start(self):
         self.http_method_dict = {
             "get": self.client.get,
