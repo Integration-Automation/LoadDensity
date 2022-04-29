@@ -12,7 +12,7 @@ test_dict = {
 }
 start_test(
     create_loading_test_user(test_dict),
-    user_count=50, test_time=3, spawn_rate=10,
+    user_count=50, test_time=10, spawn_rate=10,
     web_ui_dict={"host": "127.0.0.1", "port": 8089},
 )
 generate_html()
