@@ -13,4 +13,4 @@ def create_dir(dir_name: str):
 
 
 def create_template_dir():
-    create_dir("je_loading_test/template")
+    create_dir("je_load_density/template")

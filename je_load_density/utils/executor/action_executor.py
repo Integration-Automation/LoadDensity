@@ -12,7 +12,7 @@ event_dict = {
 }
 
 
-def execute_event(action: list):
+def _execute_event(action: list):
     """
     :param action: execute action
     :return: what event return
@@ -39,7 +39,7 @@ def execute_action(action_list: list):
     try:
         if len(action_list) > 0 or type(action_list) is not list:
             for action in action_list:
-                event_response = execute_event(action)
+                event_response = _execute_event(action)
                 print("execute: ", str(action))
                 execute_record_string = "".join(execute_record_string)
                 event_response_list.append(event_response)
