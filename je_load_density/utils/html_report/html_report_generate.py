@@ -1,6 +1,6 @@
 import sys
 
-from je_load_density.utils.test_record.record_test_result_class import test_record
+from je_load_density.utils.test_record.test_record_class import test_record_instance
 from je_load_density.utils.exception.exception import HTMLException
 from je_load_density.utils.exception.exception_tag import html_generate_no_data_tag
 from threading import Lock
@@ -167,11 +167,11 @@ def generate_html(html_name: str = "default_name"):
     :param html_name: save html file name
     :return: html_string
     """
-    if len(test_record.record_list) == 0 and len(test_record.error_record_list) == 0:
+    if len(test_record_instance.test_record_list) == 0 and len(test_record_instance.error_record_list) == 0:
         raise HTMLException(html_generate_no_data_tag)
     else:
         success_list = list()
-        for record_data in test_record.record_list:
+        for record_data in test_record_instance.test_record_list:
             success_list.append(
                 _success_table.format(
                     Method=record_data.get("http_method"),
@@ -184,10 +184,10 @@ def generate_html(html_name: str = "default_name"):
                 )
             )
         failure_list = list()
-        if len(test_record.error_record_list) == 0:
+        if len(test_record_instance.error_record_list) == 0:
             pass
         else:
-            for record_data in test_record.error_record_list:
+            for record_data in test_record_instance.error_record_list:
                 failure_list.append(
                     _failure_table.format(
                         http_method=record_data[0].get("http_method"),
