@@ -1,3 +1,4 @@
 je_load_density_dev
 sphinx
 twine
+sphinx-rtd-theme

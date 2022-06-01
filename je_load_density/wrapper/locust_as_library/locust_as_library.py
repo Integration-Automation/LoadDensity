@@ -5,7 +5,7 @@ from locust.log import setup_logging
 from locust import User
 from locust import events
 
-from je_load_density.utils.test_record.record_test_result_class import test_record
+from je_load_density.utils.test_record.test_record_class import test_record_instance
 
 setup_logging("INFO", None)
 
@@ -28,7 +28,7 @@ def handle_request(request_type, name, response_time, response_length, response,
     :return: None
     """
     if exception:
-        test_record.error_record_list.append(
+        test_record_instance.error_record_list.append(
                 {
                     "http_method": request_type,
                     "test_url": url,
@@ -38,7 +38,7 @@ def handle_request(request_type, name, response_time, response_length, response,
                  }
         )
     else:
-        test_record.record_list.append(
+        test_record_instance.test_record_list.append(
                 {
                     "http_method": request_type,
                     "test_url": url,
