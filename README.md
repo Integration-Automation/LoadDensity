@@ -10,7 +10,9 @@
 * response compare
 * CLI with action file
 ---
+
 [![CircleCI](https://circleci.com/gh/JE-Chen/JE_LocustWrapper/tree/main.svg?style=svg)](https://circleci.com/gh/JE-Chen/JE_LocustWrapper/tree/main)
+
 ### Documentation
 [![Documentation Status](https://readthedocs.org/projects/loaddensity/badge/?version=latest)](https://loaddensity.readthedocs.io/en/latest/?badge=latest)
 
