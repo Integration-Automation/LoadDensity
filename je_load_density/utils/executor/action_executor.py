@@ -6,6 +6,7 @@ from je_load_density.utils.exception.exception_tag import executor_data_error
 from je_load_density.utils.exception.exception_tag import executor_list_error
 from je_load_density.utils.json.json_file.json_file import read_action_json
 from je_load_density.wrapper.env_with_user.wrapper_env_and_user import loading_test_with_user
+from je_load_density.utils.html_report.html_report_generate import generate_html
 
 
 class Executor(object):
@@ -13,6 +14,7 @@ class Executor(object):
     def __init__(self):
         self.event_dict = {
             "loading_test_with_user": loading_test_with_user,
+            "generate_html": generate_html,
         }
 
     def _execute_event(self, action: list):
