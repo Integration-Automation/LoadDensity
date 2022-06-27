@@ -24,7 +24,8 @@ test_list = [
         "request_url": "http://httpbin.org/get"
     },
         "user_count": 50, "spawn_rate": 10, "test_time": 10}
-     ]
+     ],
+    ["generate_html"]
 ]
 
 execute_action(test_list)
