@@ -2,21 +2,25 @@ class LocustNotFoundException(Exception):
     pass
 
 
-class JELoadingTestException(Exception):
+class LoadDensityTestException(Exception):
     pass
 
 
-class JELoadingTestJsonException(JELoadingTestException):
+class LoadDensityTestJsonException(LoadDensityTestException):
     pass
 
 
-class JELoadingTestExecuteException(JELoadingTestException):
+class LoadDensityTestExecuteException(LoadDensityTestException):
     pass
 
 
-class JELoadingAssertException(JELoadingTestException):
+class LoadDensityAssertException(LoadDensityTestException):
     pass
 
 
-class HTMLException(JELoadingTestException):
+class LoadDensityHTMLException(LoadDensityTestException):
+    pass
+
+
+class LoadDensityAddCommandException(LoadDensityTestException):
     pass

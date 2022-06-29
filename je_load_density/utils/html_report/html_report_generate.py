@@ -1,7 +1,7 @@
 import sys
 
 from je_load_density.utils.test_record.test_record_class import test_record_instance
-from je_load_density.utils.exception.exception import HTMLException
+from je_load_density.utils.exception.exception import LoadDensityHTMLException
 from je_load_density.utils.exception.exception_tag import html_generate_no_data_tag
 from threading import Lock
 
@@ -168,7 +168,7 @@ def generate_html(html_name: str = "default_name"):
     :return: html_string
     """
     if len(test_record_instance.test_record_list) == 0 and len(test_record_instance.error_record_list) == 0:
-        raise HTMLException(html_generate_no_data_tag)
+        raise LoadDensityHTMLException(html_generate_no_data_tag)
     else:
         success_list = list()
         for record_data in test_record_instance.test_record_list:

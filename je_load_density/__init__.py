@@ -13,6 +13,7 @@ from je_load_density.wrapper.env_with_user.wrapper_env_and_user import loading_t
 from je_load_density.utils.executor.action_executor import execute_action
 from je_load_density.utils.executor.action_executor import execute_files
 from je_load_density.utils.executor.action_executor import executor
+from je_load_density.utils.executor.action_executor import add_command_to_executor
 # file
 from je_load_density.utils.file_process.get_dir_file_list import get_dir_files_as_list
 # report

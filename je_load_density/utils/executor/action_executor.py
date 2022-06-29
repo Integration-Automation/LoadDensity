@@ -1,12 +1,13 @@
 import sys
+import types
 from typing import Tuple
 
-from je_load_density.utils.exception.exception import JELoadingTestExecuteException
-from je_load_density.utils.exception.exception_tag import executor_data_error
+from je_load_density.utils.exception.exception import LoadDensityTestExecuteException
+from je_load_density.utils.exception.exception_tag import executor_data_error, add_command_exception_tag
 from je_load_density.utils.exception.exception_tag import executor_list_error
+from je_load_density.utils.html_report.html_report_generate import generate_html
 from je_load_density.utils.json.json_file.json_file import read_action_json
 from je_load_density.wrapper.env_with_user.wrapper_env_and_user import loading_test_with_user
-from je_load_density.utils.html_report.html_report_generate import generate_html
 
 
 class Executor(object):
@@ -25,8 +26,10 @@ class Executor(object):
         event = self.event_dict.get(action[0])
         if len(action) == 2:
             return event(**action[1])
+        elif len(action) == 1:
+            return event()
         else:
-            raise JELoadingTestExecuteException(executor_data_error)
+            raise LoadDensityTestExecuteException(executor_data_error)
 
     def execute_action(self, action_list: list) -> Tuple[str, list]:
         """
@@ -44,7 +47,7 @@ class Executor(object):
             if len(action_list) > 0 or type(action_list) is list:
                 pass
             else:
-                raise JELoadingTestExecuteException(executor_list_error)
+                raise LoadDensityTestExecuteException(executor_list_error)
         except Exception as error:
             print(repr(error), file=sys.stderr)
         for action in action_list:
@@ -69,6 +72,14 @@ class Executor(object):
 
 
 executor = Executor()
+
+
+def add_command_to_executor(command_dict: dict):
+    for command_name, command in command_dict.items():
+        if isinstance(command, (types.MethodType, types.FunctionType)):
+            executor.event_dict.update({command_name: command})
+        else:
+            raise LoadDensityTestExecuteException(add_command_exception_tag)
 
 
 def execute_action(action_list: list) -> Tuple[str, list]:

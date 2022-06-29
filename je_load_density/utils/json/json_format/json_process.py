@@ -5,7 +5,7 @@ from json import loads
 
 from je_load_density.utils.exception.exception_tag import cant_reformat_json_error
 from je_load_density.utils.exception.exception_tag import wrong_json_data_error
-from je_load_density.utils.exception.exception import JELoadingTestJsonException
+from je_load_density.utils.exception.exception import LoadDensityTestJsonException
 
 
 def _process_json(json_string: str, **kwargs):
@@ -23,11 +23,11 @@ def _process_json(json_string: str, **kwargs):
         try:
             return dumps(json_string, indent=4, sort_keys=True, **kwargs)
         except TypeError:
-            raise JELoadingTestJsonException(wrong_json_data_error)
+            raise LoadDensityTestJsonException(wrong_json_data_error)
 
 
 def reformat_json(json_string: str, **kwargs):
     try:
         return _process_json(json_string, **kwargs)
-    except JELoadingTestJsonException:
-        raise JELoadingTestJsonException(cant_reformat_json_error)
+    except LoadDensityTestJsonException:
+        raise LoadDensityTestJsonException(cant_reformat_json_error)
