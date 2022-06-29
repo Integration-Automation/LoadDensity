@@ -10,3 +10,5 @@ executor_data_error = "executor receive wrong data"
 executor_list_error = "executor receive wrong data list is none or wrong type"
 # HTML
 html_generate_no_data_tag = "record is None"
+# add command
+add_command_exception_tag = "command value type should be as method or function"

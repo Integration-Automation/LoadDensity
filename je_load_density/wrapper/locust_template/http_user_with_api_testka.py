@@ -5,7 +5,7 @@ from locust import task
 from locust.clients import HttpSession
 
 from je_load_density.utils.get_data_strcture.get_api_data import get_api_response_data
-from je_load_density.utils.exception.exception import JELoadingAssertException
+from je_load_density.utils.exception.exception import LoadDensityAssertException
 
 loading_test_detail_dict = dict()
 record_list = list()
@@ -48,7 +48,7 @@ def http_method_and_assert(with_httpsession: [
         response_data = get_api_response_data(response, None, None)
         for key, value in assert_result_dict.items():
             if response_data.get(key) != value:
-                raise JELoadingAssertException(
+                raise LoadDensityAssertException(
                     "value should be {right_value} but value was {wrong_value}".format(
                         right_value=value, wrong_value=response_data.get(key)
                     )
