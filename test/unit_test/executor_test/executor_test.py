@@ -28,4 +28,4 @@ test_list = [
     ["generate_html"]
 ]
 
-execute_action(test_list)
+print(execute_action(test_list))
