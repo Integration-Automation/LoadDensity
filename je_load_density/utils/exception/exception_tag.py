@@ -12,3 +12,5 @@ executor_list_error = "executor receive wrong data list is none or wrong type"
 html_generate_no_data_tag = "record is None"
 # add command
 add_command_exception_tag = "command value type should be as method or function"
+# argparse
+argparse_get_wrong_data = "argparse receive wrong data"
