@@ -8,7 +8,8 @@ from je_load_density.wrapper.locust_template.http_user_with_api_testka import Ht
 # start
 from je_load_density.wrapper.locust_as_library.locust_as_library import start_test
 from je_load_density.wrapper.env_with_user.wrapper_env_and_user import loading_test_with_user
-
+# test record
+from je_load_density.utils.test_record.test_record_class import test_record_instance
 # executor
 from je_load_density.utils.executor.action_executor import execute_action
 from je_load_density.utils.executor.action_executor import execute_files
