@@ -5,7 +5,7 @@ with open("README.md", "r") as README:
 
 setuptools.setup(
     name="je_load_density_dev",
-    version="0.0.15",
+    version="0.0.17",
     author="JE-Chen",
     author_email="zenmailman@gmail.com",
     description="",
