@@ -20,4 +20,3 @@ from je_load_density.utils.file_process.get_dir_file_list import get_dir_files_a
 # report
 from je_load_density.utils.html_report.html_report_generate import generate_html
 
-
