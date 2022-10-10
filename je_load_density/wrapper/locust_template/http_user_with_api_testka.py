@@ -64,7 +64,7 @@ class HttpUserWrapper(HttpUser):
     max_wait = 20
 
     def __init__(self, *args, **kwargs):
-        super().__init__(args, kwargs)
+        super().__init__(*args, **kwargs)
         self.__test_client = None
         self.__loading_test_detail_dict = None
         self.__http_method_dict = None
