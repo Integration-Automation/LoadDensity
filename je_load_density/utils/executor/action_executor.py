@@ -32,6 +32,7 @@ class Executor(object):
 
     def execute_action(self, action_list: [list, dict]) -> dict:
         """
+        execute all action in action list
         :param action_list: like this structure
         [
             ["method on event_dict", {"param": params}],
@@ -67,6 +68,7 @@ class Executor(object):
 
     def execute_files(self, execute_files_list: list):
         """
+        execute action on all file in execute_files_list
         :param execute_files_list: list include execute files path
         :return: every execute detail as list
         """

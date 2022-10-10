@@ -29,7 +29,7 @@ class TCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
         self.close_flag: bool = False
 
 
-def start_autocontrol_socket_server(host: str = "localhost", port: int = 9939):
+def start_autocontrol_socket_server(host: str = "localhost", port: int = 9940):
     server = TCPServer((host, port), TCPServerHandler)
     server_thread = threading.Thread(target=server.serve_forever)
     server_thread.daemon = True
