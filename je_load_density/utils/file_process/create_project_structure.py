@@ -3,6 +3,7 @@ from pathlib import Path
 
 def _create_dir(dir_name: str):
     """
+    create project dir
     :param dir_name: create dir use dir name
     :return: None
     """
