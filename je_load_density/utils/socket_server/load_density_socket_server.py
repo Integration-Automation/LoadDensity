@@ -1,59 +1,63 @@
 import json
-import socketserver
 import sys
-import threading
+from socket import AF_INET, SOCK_STREAM
 
+import gevent
+from gevent import socket
+from gevent import monkey
 from je_load_density.utils.executor.action_executor import execute_action
 
 
-class TCPServerHandler(socketserver.BaseRequestHandler):
+class TCPServer(object):
 
-    def handle(self):
-        command_string = str(self.request.recv(8192).strip(), encoding="utf-8")
-        socket = self.request
+    def __init__(self):
+        self.close_flag: bool = False
+        self.server: socket.socket = socket.socket(AF_INET, SOCK_STREAM)
+
+    def socket_server(self, host: str, port: int):
+        self.server.bind((host, port))
+        self.server.listen()
+        while not self.close_flag:
+            connection, address = self.server.accept()
+            gevent.spawn(self.handle, connection)
+        else:
+            sys.exit(0)
+
+    def handle(self, connection):
+        connection_data = connection.recv(8192)
+        command_string = str(connection_data.strip(), encoding="utf-8")
         print("command is: " + command_string, flush=True)
         if command_string == "quit_server":
-            self.server.shutdown()
-            self.server.close_flag = True
+            connection.close()
+            self.close_flag = True
+            self.server.close()
             print("Now quit server", flush=True)
         else:
             try:
                 execute_str = json.loads(command_string)
                 if execute_str is not None:
                     for execute_function, execute_return in execute_action(execute_str).items():
-                        socket.sendto(str(execute_return).encode("utf-8"), self.client_address)
-                        socket.sendto("\n".encode("utf-8"), self.client_address)
+                        connection.send(str(execute_return).encode("utf-8"))
+                        connection.send("\n".encode("utf-8"))
                     else:
-                        socket.sendto("\n".encode("utf-8"), self.client_address)
-                socket.sendto("Return_Data_Over_JE".encode("utf-8"), self.client_address)
-                socket.sendto("\n".encode("utf-8"), self.client_address)
+                        connection.send("\n".encode("utf-8"))
+                connection.send("Return_Data_Over_JE".encode("utf-8"))
+                connection.send("\n".encode("utf-8"))
             except Exception as error:
                 try:
-                    socket.sendto(str(error).encode("utf-8"), self.client_address)
-                    socket.sendto("\n".encode("utf-8"), self.client_address)
-                    socket.sendto("Return_Data_Over_JE".encode("utf-8"), self.client_address)
-                    socket.sendto("\n".encode("utf-8"), self.client_address)
+                    connection.send(str(error).encode("utf-8"))
+                    connection.send("\n".encode("utf-8"))
+                    connection.send("Return_Data_Over_JE".encode("utf-8"))
+                    connection.send("\n".encode("utf-8"))
                 except Exception as error:
                     print(repr(error))
-
-
-class TCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
-
-    def __init__(self, server_address, RequestHandlerClass):
-        super().__init__(server_address, RequestHandlerClass)
-        self.close_flag: bool = False
+                    sys.exit(1)
+            finally:
+                connection.close()
 
 
 def start_load_density_socket_server(host: str = "localhost", port: int = 9940):
-    if len(sys.argv) == 2:
-        host = sys.argv[1]
-    elif len(sys.argv) == 3:
-        host = sys.argv[1]
-        port = int(sys.argv[2])
-    server = TCPServer((host, port), TCPServerHandler)
-    server_thread = threading.Thread(target=server.serve_forever)
-    server_thread.daemon = True
-    server_thread.start()
+    monkey.patch_all()
+    server = TCPServer()
+    actually_server = server.socket_server(host, port)
     return server
-
-
