@@ -19,6 +19,8 @@ def loading_test_with_user(
     """
     user = create_loading_test_user(user_detail_dict)
     start_test(
-        user, user_count, spawn_rate, test_time,
-        web_ui_dict, **kwargs
+        user_class=user, user_count=user_count, spawn_rate=spawn_rate, test_time=test_time,
+        web_ui_dict=web_ui_dict, **kwargs
     )
+    return str(user_detail_dict) + " " + "user_count: " + str(user_count) + " spawn_rate: " + str(
+        spawn_rate) + " test_time: " + str(test_time)
