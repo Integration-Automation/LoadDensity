@@ -1,9 +1,9 @@
 import gevent
-from locust.env import Environment
-from locust.stats import stats_printer, stats_history
-from locust.log import setup_logging
 from locust import User
 from locust import events
+from locust.env import Environment
+from locust.log import setup_logging
+from locust.stats import stats_printer, stats_history
 
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 
@@ -29,25 +29,25 @@ def handle_request(request_type, name, response_time, response_length, response,
     """
     if exception:
         test_record_instance.error_record_list.append(
-                {
-                    "http_method": request_type,
-                    "test_url": url,
-                    "name": name,
-                    "status_code": response.status_code,
-                    "error": exception
-                 }
+            {
+                "http_method": request_type,
+                "test_url": url,
+                "name": name,
+                "status_code": response.status_code,
+                "error": exception
+            }
         )
     else:
         test_record_instance.test_record_list.append(
-                {
-                    "http_method": request_type,
-                    "test_url": url,
-                    "name": name,
-                    "status_code": response.status_code,
-                    "text": response.text,
-                    "content": response.content,
-                    "headers": response.headers,
-                }
+            {
+                "http_method": request_type,
+                "test_url": url,
+                "name": name,
+                "status_code": response.status_code,
+                "text": response.text,
+                "content": response.content,
+                "headers": response.headers,
+            }
         )
 
 

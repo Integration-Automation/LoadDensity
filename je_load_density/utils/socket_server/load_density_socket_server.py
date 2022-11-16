@@ -3,8 +3,9 @@ import sys
 from socket import AF_INET, SOCK_STREAM
 
 import gevent
-from gevent import socket
 from gevent import monkey
+from gevent import socket
+
 from je_load_density.utils.executor.action_executor import execute_action
 
 

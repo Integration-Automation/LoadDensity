@@ -1,4 +1,5 @@
 from locust import HttpUser, task
+
 from je_load_density import start_test
 
 """
@@ -19,4 +20,3 @@ class User(HttpUser):
 
 
 start_test(User, user_count=100, test_time=10)
-

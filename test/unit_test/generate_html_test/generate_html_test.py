@@ -1,7 +1,6 @@
 from je_load_density import create_loading_test_user
-from je_load_density import start_test
 from je_load_density import generate_html
-
+from je_load_density import start_test
 
 # test and generate html
 
