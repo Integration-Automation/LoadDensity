@@ -81,7 +81,7 @@ def start_test(user_class: [User], user_count: int = 50, spawn_rate: int = 10, t
     if web_ui_dict is not None:
         env.create_web_ui(web_ui_dict.get("host", "127.0.0.1"), web_ui_dict.get("port", "8089"))
     if test_time is not None:
-        gevent.spawn_later(test_time, lambda: env.runner.quit())
+        gevent.spawn_later(test_time, env.runner.quit)
     env.runner.greenlet.join()
     if web_ui_dict is not None:
         env.web_ui.stop()
