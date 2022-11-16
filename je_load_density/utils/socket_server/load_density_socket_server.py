@@ -39,8 +39,6 @@ class TCPServer(object):
                     for execute_return in execute_action(execute_str).values():
                         connection.send(str(execute_return).encode("utf-8"))
                         connection.send("\n".encode("utf-8"))
-                    else:
-                        connection.send("\n".encode("utf-8"))
                 connection.send("Return_Data_Over_JE".encode("utf-8"))
                 connection.send("\n".encode("utf-8"))
             except Exception as error:
