@@ -18,10 +18,9 @@ class TCPServer(object):
         self.server.bind((host, port))
         self.server.listen()
         while not self.close_flag:
-            connection, address = self.server.accept()
+            connection = self.server.accept()[0]
             gevent.spawn(self.handle, connection)
-        else:
-            sys.exit(0)
+        sys.exit(0)
 
     def handle(self, connection):
         connection_data = connection.recv(8192)
@@ -36,7 +35,7 @@ class TCPServer(object):
             try:
                 execute_str = json.loads(command_string)
                 if execute_str is not None:
-                    for execute_function, execute_return in execute_action(execute_str).items():
+                    for execute_return in execute_action(execute_str).values():
                         connection.send(str(execute_return).encode("utf-8"))
                         connection.send("\n".encode("utf-8"))
                     else:
@@ -59,5 +58,5 @@ class TCPServer(object):
 def start_load_density_socket_server(host: str = "localhost", port: int = 9940):
     monkey.patch_all()
     server = TCPServer()
-    actually_server = server.socket_server(host, port)
+    server.socket_server(host, port)
     return server

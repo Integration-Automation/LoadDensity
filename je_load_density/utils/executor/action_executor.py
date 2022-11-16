@@ -41,13 +41,13 @@ class Executor(object):
         for loop and use execute_event function to execute
         :return: recode string, response as list
         """
-        if type(action_list) is dict:
+        if isinstance(action_list, dict):
             action_list = action_list.get("load_density", None)
             if action_list is None:
                 raise LoadDensityTestExecuteException(executor_list_error)
         execute_record_dict = dict()
         try:
-            if len(action_list) > 0 or type(action_list) is list:
+            if len(action_list) > 0 or isinstance(action_list, list):
                 pass
             else:
                 raise LoadDensityTestExecuteException(executor_list_error)
