@@ -4,8 +4,8 @@ from locust import HttpUser
 from locust import task
 from locust.clients import HttpSession
 
-from je_load_density.utils.get_data_strcture.get_api_data import get_api_response_data
 from je_load_density.utils.exception.exception import LoadDensityAssertException
+from je_load_density.utils.get_data_strcture.get_api_data import get_api_response_data
 
 loading_test_detail_dict = dict()
 record_list = list()

@@ -1,9 +1,9 @@
 import sys
+from threading import Lock
 
-from je_load_density.utils.test_record.test_record_class import test_record_instance
 from je_load_density.utils.exception.exception import LoadDensityHTMLException
 from je_load_density.utils.exception.exception_tag import html_generate_no_data_tag
-from threading import Lock
+from je_load_density.utils.test_record.test_record_class import test_record_instance
 
 _lock = Lock()
 
