@@ -14,7 +14,6 @@ _html_string_head = \
     <head>
         <meta charset="UTF-8"/>
         <title>Load Density Report</title>
-    
         <style>
           
             body{
