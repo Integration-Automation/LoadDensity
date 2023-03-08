@@ -189,11 +189,11 @@ def generate_html(html_name: str = "default_name"):
             for record_data in test_record_instance.error_record_list:
                 failure_list.append(
                     _failure_table.format(
-                        http_method=record_data[0].get("Method"),
-                        test_url=record_data[0].get("test_url"),
-                        name=record_data[0].get("name"),
-                        status_code=record_data[0].get("status_code"),
-                        error=record_data[0].get("error"),
+                        http_method=record_data.get("Method"),
+                        test_url=record_data.get("test_url"),
+                        name=record_data.get("name"),
+                        status_code=record_data.get("status_code"),
+                        error=record_data.get("error"),
                     )
                 )
         try:
