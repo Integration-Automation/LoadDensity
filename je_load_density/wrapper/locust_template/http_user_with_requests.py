@@ -1,10 +1,11 @@
 import sys
 
+from je_load_density.utils.test_record.test_record_class import test_record_instance
 from locust import HttpUser
 from locust import task
 from locust.clients import HttpSession
 
-from je_load_density.utils.exception.exception import LoadDensityAssertException
+from je_load_density.utils.exception.exceptions import LoadDensityAssertException
 from je_load_density.utils.get_data_strcture.get_api_data import get_api_response_data
 
 loading_test_detail_dict = dict()
@@ -46,13 +47,25 @@ def http_method_and_assert(with_httpsession: [
             **loading_test_detail_dict.get("another_test_setting_dict"),
     ) as response:
         response_data = get_api_response_data(response, None, None)
-        for key, value in assert_result_dict.items():
-            if response_data.get(key) != value:
-                raise LoadDensityAssertException(
-                    "value should be {right_value} but value was {wrong_value}".format(
-                        right_value=value, wrong_value=response_data.get(key)
+        try:
+            for key, value in assert_result_dict.items():
+                if response_data.get(key) != value:
+                    raise LoadDensityAssertException(
+                        "value should be {right_value} but value was {wrong_value}".format(
+                            right_value=value, wrong_value=response_data.get(key)
+                        )
                     )
-                )
+        except LoadDensityAssertException as error:
+            test_record_instance.error_record_list.append(
+                {
+                    "Method": loading_test_detail_dict.get("http_method"),
+                    "test_url": loading_test_detail_dict.get("request_url"),
+                    "name": None,
+                    "status_code": response.status_code,
+                    "error": repr(error)
+                }
+            )
+            raise error
 
 
 class HttpUserWrapper(HttpUser):
@@ -83,7 +96,7 @@ class HttpUserWrapper(HttpUser):
         self.__test_client = self.__http_method_dict.get(self.__loading_test_detail_dict.get("http_method"))
 
     @task
-    def task_with_api_testka(self):
+    def task(self):
         try:
             another_test_setting_dict: dict = self.__loading_test_detail_dict.get("another_test_setting_dict")
             assert_result_dict: dict = self.__loading_test_detail_dict.get("assert_result_dict")

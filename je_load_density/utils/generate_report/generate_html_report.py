@@ -1,7 +1,7 @@
 import sys
 from threading import Lock
 
-from je_load_density.utils.exception.exception import LoadDensityHTMLException
+from je_load_density.utils.exception.exceptions import LoadDensityHTMLException
 from je_load_density.utils.exception.exception_tag import html_generate_no_data_tag
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 
@@ -173,7 +173,7 @@ def generate_html(html_name: str = "default_name"):
         for record_data in test_record_instance.test_record_list:
             success_list.append(
                 _success_table.format(
-                    Method=record_data.get("http_method"),
+                    Method=record_data.get("Method"),
                     test_url=record_data.get("test_url"),
                     name=record_data.get("name"),
                     status_code=record_data.get("status_code"),
@@ -189,11 +189,11 @@ def generate_html(html_name: str = "default_name"):
             for record_data in test_record_instance.error_record_list:
                 failure_list.append(
                     _failure_table.format(
-                        http_method=record_data[0].get("http_method"),
-                        test_url=record_data[0].get("test_url"),
-                        name=record_data[0].get("name"),
-                        status_code=record_data[0].get("status_code"),
-                        error=record_data[0].get("error"),
+                        http_method=record_data.get("Method"),
+                        test_url=record_data.get("test_url"),
+                        name=record_data.get("name"),
+                        status_code=record_data.get("status_code"),
+                        error=record_data.get("error"),
                     )
                 )
         try:

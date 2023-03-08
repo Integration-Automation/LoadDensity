@@ -3,7 +3,7 @@ import argparse
 import json
 import sys
 
-from je_load_density.utils.exception.exception import LoadDensityTestExecuteException
+from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
 from je_load_density.utils.exception.exception_tag import argparse_get_wrong_data
 from je_load_density.utils.executor.action_executor import execute_action
 from je_load_density.utils.executor.action_executor import execute_files

@@ -5,6 +5,7 @@ cant_reformat_json_error: str = "can't reformat json is type right?"
 wrong_json_data_error: str = "can't parser json"
 cant_find_json_error: str = "can't find json"
 cant_save_json_error: str = "can't save json"
+cant_generate_json_report: str = "can't generate json report"
 # executor error
 executor_data_error: str = "executor receive wrong data"
 executor_list_error: str = "executor receive wrong data list is none or wrong type"
