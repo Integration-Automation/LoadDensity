@@ -3,7 +3,7 @@ import sys
 from json import dumps
 from json import loads
 
-from je_load_density.utils.exception.exception import LoadDensityTestJsonException
+from je_load_density.utils.exception.exceptions import LoadDensityTestJsonException
 from je_load_density.utils.exception.exception_tag import cant_reformat_json_error
 from je_load_density.utils.exception.exception_tag import wrong_json_data_error
 

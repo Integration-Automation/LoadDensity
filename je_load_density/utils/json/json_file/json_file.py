@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from threading import Lock
 
-from je_load_density.utils.exception.exception import LoadDensityTestJsonException
+from je_load_density.utils.exception.exceptions import LoadDensityTestJsonException
 from je_load_density.utils.exception.exception_tag import cant_find_json_error
 from je_load_density.utils.exception.exception_tag import cant_save_json_error
 

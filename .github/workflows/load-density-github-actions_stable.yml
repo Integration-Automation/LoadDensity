@@ -40,4 +40,7 @@ jobs:
       run: python ./test/unit_test/argparse/argparse_test.py
 
     - name: generate_html_test
-      run: python ./test/unit_test/generate_html_test/generate_html_test.py
+      run: python ./test/unit_test/generate_report_test/generate_html_test.py
+
+    - name: generate_json_test
+      run: python ./test/unit_test/generate_report_test/generate_json_test.py

@@ -30,8 +30,11 @@ jobs:
           command: python ./test/unit_test/argparse/argparse_test.py
           name: argparse_test
       - run:
-          command: python ./test/unit_test/generate_html_test/generate_html_test.py
+          command: python ./test/unit_test/generate_report_test/generate_html_test.py
           name: generate_html_test
+      - run:
+          command: python ./test/unit_test/generate_report_test/generate_json_test.py
+          name: generate_json_test
 
   build-and-test-stable:
     executor: python/default
@@ -58,8 +61,11 @@ jobs:
           command: python ./test/unit_test/argparse/argparse_test.py
           name: argparse_test
       - run:
-          command: python ./test/unit_test/generate_html_test/generate_html_test.py
+          command: python ./test/unit_test/generate_report_test/generate_html_test.py
           name: generate_html_test
+      - run:
+          command: python ./test/unit_test/generate_report_test/generate_json_test.py
+          name: generate_json_test
 
 workflows:
   main:

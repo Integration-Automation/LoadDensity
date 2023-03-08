@@ -1,10 +1,10 @@
 import sys
 import types
 
-from je_load_density.utils.exception.exception import LoadDensityTestExecuteException
+from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
 from je_load_density.utils.exception.exception_tag import executor_data_error, add_command_exception_tag
 from je_load_density.utils.exception.exception_tag import executor_list_error
-from je_load_density.utils.html_report.html_report_generate import generate_html
+from je_load_density.utils.generate_report.generate_html_report import generate_html
 from je_load_density.utils.json.json_file.json_file import read_action_json
 from je_load_density.wrapper.env_with_user.wrapper_env_and_user import loading_test_with_user
 

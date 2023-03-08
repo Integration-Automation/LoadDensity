@@ -1,4 +1,5 @@
 import gevent
+from je_load_density.utils.exception.exceptions import LoadDensityTestException
 from locust import User
 from locust import events
 from locust.env import Environment
@@ -30,7 +31,7 @@ def handle_request(request_type, name, response_time, response_length, response,
     if exception:
         test_record_instance.error_record_list.append(
             {
-                "http_method": request_type,
+                "Method": request_type,
                 "test_url": url,
                 "name": name,
                 "status_code": response.status_code,
@@ -40,13 +41,13 @@ def handle_request(request_type, name, response_time, response_length, response,
     else:
         test_record_instance.test_record_list.append(
             {
-                "http_method": request_type,
+                "Method": request_type,
                 "test_url": url,
                 "name": name,
                 "status_code": response.status_code,
-                "text": response.text,
-                "content": response.content,
-                "headers": response.headers,
+                "text": str(response.text),
+                "content": str(response.content),
+                "headers": str(response.headers),
             }
         )
 
