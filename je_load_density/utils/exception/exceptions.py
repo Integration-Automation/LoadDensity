@@ -5,9 +5,11 @@ class LocustNotFoundException(Exception):
 class LoadDensityTestException(Exception):
     pass
 
+
 # json
 class LoadDensityTestJsonException(LoadDensityTestException):
     pass
+
 
 class LoadDensityGenerateJsonReportException(LoadDensityTestException):
     pass
@@ -28,3 +30,12 @@ class LoadDensityHTMLException(LoadDensityTestException):
 class LoadDensityAddCommandException(LoadDensityTestException):
     pass
 
+
+# XML
+
+class XMLException(LoadDensityTestException):
+    pass
+
+
+class XMLTypeException(XMLException):
+    pass

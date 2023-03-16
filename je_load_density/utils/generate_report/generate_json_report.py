@@ -2,7 +2,7 @@ import json
 import sys
 from threading import Lock
 
-from je_load_density.utils.exception.exception_tag import cant_generate_json_report
+from je_load_density.utils.exception.exception_tags import cant_generate_json_report
 from je_load_density.utils.exception.exceptions import LoadDensityGenerateJsonReportException
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 

@@ -15,3 +15,6 @@ html_generate_no_data_tag: str = "record is None"
 add_command_exception_tag: str = "command value type should be as method or function"
 # argparse
 argparse_get_wrong_data: str = "argparse receive wrong data"
+# XML
+cant_read_xml_error: str = "can't read xml"
+xml_type_error: str = "xml type error"
