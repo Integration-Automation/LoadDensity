@@ -1,6 +1,6 @@
-from je_load_density import loading_test_with_user
+from je_load_density import start_test
 
-loading_test_with_user(
+start_test(
     {
         "request_method": "get",
         "request_url": "http://httpbin.org/get"

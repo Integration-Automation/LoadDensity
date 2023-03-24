@@ -7,14 +7,14 @@ from je_load_density.utils.exception.exception_tags import executor_list_error
 from je_load_density.utils.generate_report.generate_html_report import generate_html
 from je_load_density.utils.generate_report.generate_json_report import generate_json
 from je_load_density.utils.json.json_file.json_file import read_action_json
-from je_load_density.wrapper.env_with_user.wrapper_env_and_user import loading_test_with_user
+from je_load_density.wrapper.env_with_user.start_test import start_test
 
 
 class Executor(object):
 
     def __init__(self):
         self.event_dict = {
-            "loading_test_with_user": loading_test_with_user,
+            "start_test": start_test,
             "generate_html": generate_html,
             "generate_json_report": generate_json,
         }

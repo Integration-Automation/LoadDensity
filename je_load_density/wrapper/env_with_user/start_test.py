@@ -1,8 +1,8 @@
-from je_load_density.wrapper.locust_as_library.locust_as_library import start_test
+from je_load_density.wrapper.locust_as_library.locust_as_library import prepare_env
 from je_load_density.wrapper.locust_template.http_user_with_requests import create_loading_test_user
 
 
-def loading_test_with_user(
+def start_test(
         user_detail_dict: dict,
         user_count: int = 50, spawn_rate: int = 10, test_time: int = 60,
         web_ui_dict: dict = None,
@@ -18,7 +18,7 @@ def loading_test_with_user(
     :return: None
     """
     user = create_loading_test_user(user_detail_dict)
-    start_test(
+    prepare_env(
         user_class=user, user_count=user_count, spawn_rate=spawn_rate, test_time=test_time,
         web_ui_dict=web_ui_dict, **kwargs
     )

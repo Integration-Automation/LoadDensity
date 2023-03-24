@@ -65,9 +65,9 @@ def create_env(user_class: [User], another_event: events = events):
     return env
 
 
-def start_test(user_class: [User], user_count: int = 50, spawn_rate: int = 10, test_time: int = 60,
-               web_ui_dict: dict = None,
-               **kwargs):
+def prepare_env(user_class: [User], user_count: int = 50, spawn_rate: int = 10, test_time: int = 60,
+                web_ui_dict: dict = None,
+                **kwargs):
     """
     :param user_class: locust user class
     :param user_count: how many user we want to spawn
