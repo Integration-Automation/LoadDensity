@@ -24,7 +24,7 @@ test_list = [
     },
         "user_count": 50, "spawn_rate": 10, "test_time": 10}
      ],
-    ["generate_html"]
+    ["generate_html_report"]
 ]
 
 print(execute_action(test_list))

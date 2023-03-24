@@ -1,5 +1,5 @@
 from je_load_density import create_loading_test_user
-from je_load_density import generate_html_report
+from je_load_density import generate_xml_report
 from je_load_density import start_test
 
 # test and generate html
@@ -7,7 +7,7 @@ from je_load_density import start_test
 test_dict = {
     "request_method": "get",
     "request_url": "http://httpbin.org/get",
-    "assert_result_dict": {"status_code": 300}
+    "assert_result_dict": {"status_code": 200}
 }
 start_test(
     create_loading_test_user(test_dict),
@@ -16,4 +16,4 @@ start_test(
 )
 # after test, you can generate html report
 # if no data will raise exception
-generate_html_report()
+generate_xml_report()

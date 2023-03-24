@@ -5,7 +5,7 @@ from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteExc
 from je_load_density.utils.exception.exception_tags import executor_data_error, add_command_exception_tag
 from je_load_density.utils.exception.exception_tags import executor_list_error
 from je_load_density.utils.generate_report.generate_html_report import generate_html
-from je_load_density.utils.generate_report.generate_json_report import generate_json_report
+from je_load_density.utils.generate_report.generate_json_report import generate_json
 from je_load_density.utils.json.json_file.json_file import read_action_json
 from je_load_density.wrapper.env_with_user.wrapper_env_and_user import loading_test_with_user
 
@@ -16,7 +16,7 @@ class Executor(object):
         self.event_dict = {
             "loading_test_with_user": loading_test_with_user,
             "generate_html": generate_html,
-            "generate_json_report": generate_json_report,
+            "generate_json_report": generate_json,
         }
 
     def _execute_event(self, action: list):
