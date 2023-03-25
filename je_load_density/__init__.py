@@ -31,6 +31,7 @@ from je_load_density.wrapper.start_wrapper.start_test import start_test
 # Locust
 from locust import SequentialTaskSet
 from locust import task
+from locust import TaskSet
 
 __all__ = [
     "create_env", "start_test",
@@ -43,5 +44,5 @@ __all__ = [
     "generate_json", "generate_json_report",
     "generate_xml", "generate_xml_report",
     "start_load_density_socket_server",
-    "SequentialTaskSet", "task"
+    "SequentialTaskSet", "task", "TaskSet"
 ]

@@ -1,6 +1,6 @@
 from je_load_density.wrapper.user_template.fast_http_user_template import FastHttpUserWrapper, set_wrapper_http_user
 from je_load_density.wrapper.create_locust_env.create_locust_env import prepare_env
-from je_load_density.wrapper.user_template.sequence_user_template import SequenceUserWrapper, set_wrapper_sequence_user
+from je_load_density.wrapper.user_template.multi_action_user_template import MultiActionUserWrapper, set_wrapper_sequence_user
 
 
 def start_test(
@@ -20,7 +20,7 @@ def start_test(
     """
     user_dict = {
         "fast_http_user": {"actually_user": FastHttpUserWrapper, "init": set_wrapper_http_user},
-        "sequence_user": {"actually_user": SequenceUserWrapper, "init": set_wrapper_sequence_user}
+        "multi_action_user": {"actually_user": MultiActionUserWrapper, "init": set_wrapper_sequence_user}
     }
     user = user_dict.get(user_detail_dict.get("user", "fast_http_user"))
     actually_user = user.get("actually_user", "actually_user")
