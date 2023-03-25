@@ -1,15 +1,18 @@
-# LoadDensity
-
+## LoadDensity
+> Locust Wrapper \
+> Wrapper for Locust, simplifying complex Locust configurations. \
+> Solves problems:
+>> * Checking Requests & Response for each load test
+>> * Load testing for SOAP protocols
+>> * Comparison of numerical values for each load test
+>> * Detailed load test reports for each test.
 ---
-
-## Locust Wrapper a framework for stress testing and load testing
-
 ### Features
 
-* HTTP HTTPS stress testing and load testing
-* Action FIle
-* response compare
-* CLI with action file
+>* HTTP HTTPS stress testing and load testing
+>* Action FIle
+>* response compare
+>* CLI with action file
 
 ---
 
@@ -40,10 +43,9 @@ pip install je_locust_wrapper
 python 3.7 or later  
 ```
 
-* Test on
-    * windows 10 ~ 11
-    * osx 10.5 ~ 11 big sur
-    * ubuntu 20.0.4
-    * raspberry pi 3B+
-
-| All test in test dir
+>* Test on
+>>    * windows 10 ~ 11
+>>    * osx 10.5 ~ 11 big sur
+>>    * ubuntu 20.0.4
+>>    * raspberry pi 3B+
+>>    * All test in test dir

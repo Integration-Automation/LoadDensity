@@ -5,8 +5,6 @@ from je_load_density.utils.exception.exceptions import LoadDensityHTMLException
 from je_load_density.utils.exception.exception_tags import html_generate_no_data_tag
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 
-_lock = Lock()
-
 _html_string_head = \
     """
     <!DOCTYPE html>
@@ -160,11 +158,9 @@ _failure_table = \
     """.strip()
 
 
-def generate_html(html_name: str = "default_name"):
+def generate_html():
     """
-    format html_string and output html file
-    :param html_name: save html file name
-    :return: html_string
+    :return: success_test_dict, failure_test_dict
     """
     if len(test_record_instance.test_record_list) == 0 and len(test_record_instance.error_record_list) == 0:
         raise LoadDensityHTMLException(html_generate_no_data_tag)
@@ -196,21 +192,31 @@ def generate_html(html_name: str = "default_name"):
                         error=record_data.get("error"),
                     )
                 )
-        try:
-            _lock.acquire()
-            with open(html_name + ".html", "w+") as file_to_write:
-                file_to_write.writelines(
-                    _html_string_head
-                )
-                for success in success_list:
-                    file_to_write.write(success)
-                for failure in failure_list:
-                    file_to_write.write(failure)
-                file_to_write.writelines(
-                    _html_string_bottom
-                )
-        except Exception as error:
-            print(repr(error), file=sys.stderr)
-        finally:
-            _lock.release()
     return success_list, failure_list
+
+
+def generate_html_report(html_name: str = "default_name"):
+    """
+    format html_string and output html file
+    :param html_name: save html file name
+    :return: html_string
+    """
+    _lock = Lock()
+    success_list, failure_list = generate_html()
+    try:
+        _lock.acquire()
+        with open(html_name + ".html", "w+") as file_to_write:
+            file_to_write.writelines(
+                _html_string_head
+            )
+            for success in success_list:
+                file_to_write.write(success)
+            for failure in failure_list:
+                file_to_write.write(failure)
+            file_to_write.writelines(
+                _html_string_bottom
+            )
+    except Exception as error:
+        print(repr(error), file=sys.stderr)
+    finally:
+        _lock.release()
