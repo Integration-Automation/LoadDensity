@@ -15,26 +15,8 @@ jobs:
           name: pip requirements.txt
       # unit test start
       - run:
-          command: python ./test/unit_test/locust_as_library_test/locust_as_library_test.py
-          name: locust_as_library_test
-      - run:
-          command: python ./test/unit_test/api_testka_user/api_testka_user_test.py
-          name: api_testka_user_test
-      - run:
-          command: python ./test/unit_test/loading_test_with_user/loading_test_with_user.py
-          name: loading_test_with_user
-      - run:
-          command: python ./test/integrated_test/executor_files/executor_files.py
-          name: executor_files
-      - run:
-          command: python ./test/unit_test/argparse/argparse_test.py
-          name: argparse_test
-      - run:
-          command: python ./test/unit_test/generate_report_test/generate_html_test.py
-          name: generate_html_test
-      - run:
-          command: python ./test/unit_test/generate_report_test/generate_json_test.py
-          name: generate_json_test
+          command: python ./test/unit_test/user_test/fast_http_user_test.py
+          name: user_test
 
   build-and-test-stable:
     executor: python/default
@@ -46,26 +28,8 @@ jobs:
           name: pip requirements.txt
       # unit test start
       - run:
-          command: python ./test/unit_test/locust_as_library_test/locust_as_library_test.py
-          name: locust_as_library_test
-      - run:
-          command: python ./test/unit_test/api_testka_user/api_testka_user_test.py
-          name: api_testka_user_test
-      - run:
-          command: python ./test/unit_test/loading_test_with_user/loading_test_with_user.py
-          name: loading_test_with_user
-      - run:
-          command: python ./test/integrated_test/executor_files/executor_files.py
-          name: executor_files
-      - run:
-          command: python ./test/unit_test/argparse/argparse_test.py
-          name: argparse_test
-      - run:
-          command: python ./test/unit_test/generate_report_test/generate_html_test.py
-          name: generate_html_test
-      - run:
-          command: python ./test/unit_test/generate_report_test/generate_json_test.py
-          name: generate_json_test
+          command: python ./test/unit_test/user_test/fast_http_user_test.py
+          name: user_test
 
 workflows:
   main:

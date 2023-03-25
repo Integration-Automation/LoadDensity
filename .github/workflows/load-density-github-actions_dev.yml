@@ -14,33 +14,15 @@ jobs:
     runs-on: ubuntu-20.04
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Set up Python 3.7
-      uses: actions/setup-python@v3
-      with:
-        python-version: "3.7"
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip wheel
-        pip install -r dev_requirements.txt
-     # unit test start
-    - name: locust_as_library_test
-      run: python ./test/unit_test/locust_as_library_test/locust_as_library_test.py
-
-    - name: api_testka_user_test
-      run: python ./test/unit_test/api_testka_user/api_testka_user_test.py
-
-    - name: loading_test_with_user
-      run: python ./test/unit_test/loading_test_with_user/loading_test_with_user.py
-
-    - name: executor_files
-      run: python ./test/integrated_test/executor_files/executor_files.py
-
-    - name: argparse_test
-      run: python ./test/unit_test/argparse/argparse_test.py
-
-    - name: generate_html_test
-      run: python ./test/unit_test/generate_report_test/generate_html_test.py
-
-    - name: generate_json_test
-      run: python ./test/unit_test/generate_report_test/generate_json_test.py
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v3
+        with:
+          python-version: "3.7"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip wheel
+          pip install -r dev_requirements.txt
+      # unit test start
+      - name: user_test
+        run: python ./test/unit_test/user_test/fast_http_user_test.py

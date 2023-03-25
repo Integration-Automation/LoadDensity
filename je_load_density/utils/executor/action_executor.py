@@ -1,22 +1,27 @@
 import sys
 import types
 
-from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
 from je_load_density.utils.exception.exception_tags import executor_data_error, add_command_exception_tag
 from je_load_density.utils.exception.exception_tags import executor_list_error
-from je_load_density.utils.generate_report.generate_html_report import generate_html
-from je_load_density.utils.generate_report.generate_json_report import generate_json
+from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
+from je_load_density.utils.generate_report.generate_html_report import generate_html, generate_html_report
+from je_load_density.utils.generate_report.generate_json_report import generate_json, generate_json_report
+from je_load_density.utils.generate_report.generate_xml_report import generate_xml, generate_xml_report
 from je_load_density.utils.json.json_file.json_file import read_action_json
-from je_load_density.wrapper.env_with_user.start_test import start_test
+from je_load_density.wrapper.start_wrapper.start_test import start_test
 
 
 class Executor(object):
 
     def __init__(self):
         self.event_dict = {
-            "start_test": start_test,
+            "user_test": start_test,
             "generate_html": generate_html,
-            "generate_json_report": generate_json,
+            "generate_html_report": generate_html_report,
+            "generate_json": generate_json,
+            "generate_json_report": generate_json_report,
+            "generate_xml": generate_xml,
+            "generate_xml_report": generate_xml_report,
         }
 
     def _execute_event(self, action: list):
