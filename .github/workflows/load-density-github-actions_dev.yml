@@ -24,5 +24,7 @@ jobs:
           python -m pip install --upgrade pip wheel
           pip install -r dev_requirements.txt
       # unit test start
-      - name: user_test
+      - name: fast http user test
         run: python ./test/unit_test/user_test/fast_http_user_test.py
+      - name: multi action user test
+        run: python ./test/unit_test/user_test/multi_action_user_test.py

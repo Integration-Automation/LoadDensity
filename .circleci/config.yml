@@ -17,6 +17,9 @@ jobs:
       - run:
           command: python ./test/unit_test/user_test/fast_http_user_test.py
           name: user_test
+      - run:
+          command: python ./test/unit_test/user_test/multi_action_user_test.py
+          name: multi action user test
 
   build-and-test-stable:
     executor: python/default
@@ -29,7 +32,10 @@ jobs:
       # unit test start
       - run:
           command: python ./test/unit_test/user_test/fast_http_user_test.py
-          name: user_test
+          name: fast http user test
+      - run:
+          command: python ./test/unit_test/user_test/multi_action_user_test.py
+          name: multi action user test
 
 workflows:
   main:

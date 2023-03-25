@@ -25,7 +25,12 @@ def start_test(
     user = user_dict.get(user_detail_dict.get("user", "fast_http_user"))
     actually_user = user.get("actually_user", "actually_user")
     init_function = user.get("init", "init")
-    init_function(user_detail_dict, kwargs)
+    if init_function in [
+        set_wrapper_sequence_user
+    ]:
+        init_function(user_detail_dict, kwargs)
+    else:
+        init_function(user_detail_dict)
     prepare_env(
         user_class=actually_user, user_count=user_count, spawn_rate=spawn_rate, test_time=test_time,
         web_ui_dict=web_ui_dict, **kwargs

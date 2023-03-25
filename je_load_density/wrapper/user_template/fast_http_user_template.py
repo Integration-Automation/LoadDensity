@@ -4,7 +4,7 @@ from locust import task
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 
 
-def set_wrapper_http_user(user_detail_dict):
+def set_wrapper_http_user(user_detail_dict, **kwargs):
     locust_wrapper_proxy.user_dict.get("fast_http_user").setting(user_detail_dict)
     return FastHttpUserWrapper
 
