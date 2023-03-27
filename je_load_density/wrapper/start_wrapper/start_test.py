@@ -1,6 +1,6 @@
-from je_load_density.wrapper.user_template.fast_http_user_template import FastHttpUserWrapper, set_wrapper_http_user
 from je_load_density.wrapper.create_locust_env.create_locust_env import prepare_env
-from je_load_density.wrapper.user_template.multi_action_user_template import MultiActionUserWrapper, set_wrapper_sequence_user
+from je_load_density.wrapper.user_template.fast_http_user_template import FastHttpUserWrapper, set_wrapper_fasthttp_user
+from je_load_density.wrapper.user_template.http_user_template import HttpUserWrapper, set_wrapper_http_user
 
 
 def start_test(
@@ -19,18 +19,14 @@ def start_test(
     :return: None
     """
     user_dict = {
-        "fast_http_user": {"actually_user": FastHttpUserWrapper, "init": set_wrapper_http_user},
-        "multi_action_user": {"actually_user": MultiActionUserWrapper, "init": set_wrapper_sequence_user}
+        "fast_http_user": {"actually_user": FastHttpUserWrapper, "init": set_wrapper_fasthttp_user},
+        "http_user": {"actually_user": HttpUserWrapper, "init": set_wrapper_http_user}
     }
     user = user_dict.get(user_detail_dict.get("user", "fast_http_user"))
     actually_user = user.get("actually_user", "actually_user")
     init_function = user.get("init", "init")
-    if init_function in [
-        set_wrapper_sequence_user
-    ]:
-        init_function(user_detail_dict, kwargs)
-    else:
-        init_function(user_detail_dict)
+    init_function(user_detail_dict, **kwargs)
+
     prepare_env(
         user_class=actually_user, user_count=user_count, spawn_rate=spawn_rate, test_time=test_time,
         web_ui_dict=web_ui_dict, **kwargs

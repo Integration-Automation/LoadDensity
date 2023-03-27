@@ -1,4 +1,6 @@
 ## LoadDensity
+> Project Kanban \
+> https://github.com/users/JE-Chen/projects/35 \
 > Locust Wrapper \
 > Wrapper for Locust, simplifying complex Locust configurations. \
 > Solves problems:
