@@ -1,16 +1,16 @@
-from locust import FastHttpUser, task
+from locust import HttpUser, task
 
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 
 
-def set_wrapper_sequence_user(user_detail_dict: dict, tasks: dict):
-    locust_wrapper_proxy.user_dict.get("multi_action_user").setting(user_detail_dict, tasks)
-    return MultiActionUserWrapper
+def set_wrapper_http_user(user_detail_dict: dict, **kwargs):
+    locust_wrapper_proxy.user_dict.get("http_user").setting(user_detail_dict, **kwargs)
+    return HttpUserWrapper
 
 
-class MultiActionUserWrapper(FastHttpUser):
+class HttpUserWrapper(HttpUser):
     """
-    locust httpuser use to test
+    locust http user use to test
     """
     host = "http://localhost"
     min_wait = 5
@@ -30,7 +30,7 @@ class MultiActionUserWrapper(FastHttpUser):
 
     @task
     def test(self):
-        for test_task_method, test_task_data in locust_wrapper_proxy.user_dict.get("multi_action_user").tasks.items():
+        for test_task_method, test_task_data in locust_wrapper_proxy.user_dict.get("http_user").tasks.items():
             self.method.get(test_task_method)(test_task_data.get("request_url"))
 
 

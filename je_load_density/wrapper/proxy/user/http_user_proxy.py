@@ -1,4 +1,4 @@
-class ProxySequenceUser(object):
+class ProxyHTTPUser(object):
 
     def __init__(self):
         self.user_detail_dict = None
@@ -7,5 +7,3 @@ class ProxySequenceUser(object):
     def setting(self, user_detail_dict: dict, tasks: dict):
         self.user_detail_dict = user_detail_dict
         self.tasks = tasks
-
-
