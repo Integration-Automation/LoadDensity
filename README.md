@@ -20,7 +20,7 @@
 
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/b3f05488c16a44959cbf0ec28d4c977c)](https://www.codacy.com/gh/JE-Chen/LoadDensity/dashboard?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=JE-Chen/LoadDensity&amp;utm_campaign=Badge_Grade)
 
-[![CircleCI](https://dl.circleci.com/status-badge/img/gh/JE-Chen/LoadDensity/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/JE-Chen/LoadDensity/tree/main)
+[![CircleCI](https://dl.circleci.com/status-badge/img/gh/Integrated-Testing-Environment/LoadDensity/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/Integrated-Testing-Environment/LoadDensity/tree/main)
 
 [![LoadDensity GitHub Actions Dev](https://github.com/JE-Chen/LoadDensity/actions/workflows/load-density-github-actions_dev.yml/badge.svg)](https://github.com/JE-Chen/LoadDensity/actions/workflows/load-density-github-actions_dev.yml)
 
