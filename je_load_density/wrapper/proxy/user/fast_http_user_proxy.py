@@ -4,6 +4,6 @@ class ProxyFastHTTPUser(object):
         self.user_detail_dict = None
         self.tasks = None
 
-    def setting(self, user_detail_dict: dict, **kwargs):
+    def setting(self, user_detail_dict: dict, tasks):
         self.user_detail_dict = user_detail_dict
-        self.tasks = kwargs.get("tasks", None)
+        self.tasks = tasks
