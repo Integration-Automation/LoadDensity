@@ -39,3 +39,8 @@ class XMLException(LoadDensityTestException):
 
 class XMLTypeException(XMLException):
     pass
+
+
+# Execute callback
+class CallbackExecutorException(LoadDensityTestException):
+    pass

@@ -28,3 +28,5 @@ jobs:
         run: python ./test/unit_test/user_test/fast_http_user_test.py
       - name: multi action user test
         run: python ./test/unit_test/user_test/http_user_test.py
+      - name: callback_test
+        run: python ./test/unit_test/callback_test/callback_test.py

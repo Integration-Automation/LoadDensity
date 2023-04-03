@@ -20,6 +20,9 @@ jobs:
       - run:
           command: python ./test/unit_test/user_test/http_user_test.py
           name: http user test
+      - run:
+          command: python ./test/unit_test/callback_test/callback_test.py
+          name: callback_test
 
   build-and-test-stable:
     executor: python/default
@@ -35,7 +38,7 @@ jobs:
           name: fast http user test
       - run:
           command: python ./test/unit_test/user_test/http_user_test.py
-          name: http user test
+          name: callback_test
 
 workflows:
   main:

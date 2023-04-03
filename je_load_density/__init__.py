@@ -33,6 +33,9 @@ from locust import SequentialTaskSet
 from locust import task
 from locust import TaskSet
 
+# Callback
+from je_load_density.utils.callback.callback_function_executor import callback_executor
+
 __all__ = [
     "create_env", "start_test",
     "locust_wrapper_proxy",
@@ -44,5 +47,6 @@ __all__ = [
     "generate_json", "generate_json_report",
     "generate_xml", "generate_xml_report",
     "start_load_density_socket_server",
-    "SequentialTaskSet", "task", "TaskSet"
+    "SequentialTaskSet", "task", "TaskSet",
+    "callback_executor"
 ]
