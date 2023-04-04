@@ -1,3 +1,5 @@
+# hook
+from je_load_density.wrapper.event.request_hook import request_hook
 # env
 from je_load_density.utils.executor.action_executor import add_command_to_executor
 # executor
