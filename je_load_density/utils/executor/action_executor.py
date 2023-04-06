@@ -10,6 +10,7 @@ from je_load_density.utils.generate_report.generate_html_report import generate_
 from je_load_density.utils.generate_report.generate_json_report import generate_json, generate_json_report
 from je_load_density.utils.generate_report.generate_xml_report import generate_xml, generate_xml_report
 from je_load_density.utils.json.json_file.json_file import read_action_json
+from je_load_density.utils.package_manager.package_manager_class import package_manager
 from je_load_density.wrapper.start_wrapper.start_test import start_test
 
 
@@ -27,6 +28,7 @@ class Executor(object):
             # execute
             "execute_action": self.execute_action,
             "execute_files": self.execute_files,
+            "add_package_to_executor": package_manager.add_package_to_executor,
         }
         # get all time module builtin function and add to event dict
         for function in getmembers(time, isbuiltin):
@@ -96,6 +98,7 @@ class Executor(object):
 
 
 executor = Executor()
+package_manager.executor = executor
 
 
 def add_command_to_executor(command_dict: dict):
