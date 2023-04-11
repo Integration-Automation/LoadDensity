@@ -1,4 +1,4 @@
-from locust import FastHttpUser
+from locust import FastHttpUser, between
 from locust import task
 
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
@@ -14,8 +14,7 @@ class FastHttpUserWrapper(FastHttpUser):
     locust fast http user use to test
     """
     host = "http://localhost"
-    min_wait = 5
-    max_wait = 20
+    wait_time = between(0.1, 0.2)
 
     def __init__(self, environment):
         super().__init__(environment)
