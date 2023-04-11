@@ -23,6 +23,9 @@ jobs:
       - run:
           command: python ./test/unit_test/callback_test/callback_test.py
           name: callback_test
+      - run:
+          command: python ./test/unit_test/create_project/create_project.py
+          name: create_project
 
   build-and-test-stable:
     executor: python/default
@@ -39,6 +42,9 @@ jobs:
       - run:
           command: python ./test/unit_test/user_test/http_user_test.py
           name: callback_test
+      - run:
+          command: python ./test/unit_test/create_project/create_project.py
+          name: create_project
 
 workflows:
   main:

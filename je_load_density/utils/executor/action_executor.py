@@ -1,3 +1,4 @@
+import builtins
 import sys
 import time
 import types
@@ -18,7 +19,7 @@ class Executor(object):
 
     def __init__(self):
         self.event_dict = {
-            "user_test": start_test,
+            "start_test": start_test,
             "generate_html": generate_html,
             "generate_html_report": generate_html_report,
             "generate_json": generate_json,
@@ -30,9 +31,9 @@ class Executor(object):
             "execute_files": self.execute_files,
             "add_package_to_executor": package_manager.add_package_to_executor,
         }
-        # get all time module builtin function and add to event dict
-        for function in getmembers(time, isbuiltin):
-            self.event_dict.update({str(function): function})
+        # get all builtin function and add to event dict
+        for function in getmembers(builtins, isbuiltin):
+            self.event_dict.update({str(function[0]): function[1]})
 
     def _execute_event(self, action: list):
         """
@@ -41,7 +42,10 @@ class Executor(object):
         """
         event = self.event_dict.get(action[0])
         if len(action) == 2:
-            return event(**action[1])
+            if isinstance(action[1], dict):
+                return event(**action[1])
+            else:
+                return event(*action[1])
         elif len(action) == 1:
             return event()
         else:

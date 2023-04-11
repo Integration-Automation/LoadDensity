@@ -1,4 +1,4 @@
-from je_load_density import start_test, generate_html_report
+from je_load_density import start_test, generate_json_report
 
 start_test(
     {
@@ -12,4 +12,4 @@ start_test(
         }
     }
 )
-generate_html_report()
+generate_json_report()
