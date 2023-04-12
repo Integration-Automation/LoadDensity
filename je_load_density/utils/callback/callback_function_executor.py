@@ -48,7 +48,7 @@ class CallbackFunctionExecutor(object):
                 if callback_param_method == "kwargs":
                     callback_function(**callback_function_param)
                 else:
-                    callback_function(*callback_function_param.values())
+                    callback_function(*callback_function_param)
             else:
                 callback_function()
             return execute_return_value
