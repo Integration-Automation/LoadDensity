@@ -32,3 +32,9 @@ jobs:
         run: python ./test/unit_test/callback_test/callback_test.py
       - name: create_project
         run: python ./test/unit_test/create_project/create_project.py
+      - name: generate_html_report
+        run: python ./test/unit_test/generate_report/generate_html_report.py
+      - name: generate_xml_report
+        run: python ./test/unit_test/generate_report/generate_xml_report.py
+      - name: generate_json_report
+        run: python ./test/unit_test/generate_report/generate_json_report.py

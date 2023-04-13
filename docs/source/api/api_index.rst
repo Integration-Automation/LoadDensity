@@ -10,3 +10,4 @@ LoadDensity API Documentation
    utils/generate_report.rst
    utils/package_manager.rst
    utils/socket_server.rst
+   loaddensity/loaddensity.rst
