@@ -23,3 +23,27 @@ Or using CLI, this will generate a project at the project_path location.
 .. code-block:: console
 
     python -m je_load_density --create_project project_path
+
+Then, you can enter the project folder,
+navigate to the executor folder,
+choose one of the executors to run and observe.
+The keyword.json file in the keyword folder defines the actions to be executed.
+
+If you want to execute using pure Python, you can refer to the following example:
+
+.. code-block:: python
+
+    from je_load_density import start_test
+
+    start_test(
+        {
+            "user": "fast_http_user",
+        },
+        50, 10, 5,
+        **{
+            "tasks": {
+                "get": {"request_url": "http://httpbin.org/get"},
+                "post": {"request_url": "http://httpbin.org/post"}
+            }
+        }
+    )

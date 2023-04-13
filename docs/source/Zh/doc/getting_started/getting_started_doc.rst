@@ -23,3 +23,25 @@
 .. code-block:: console
 
     python -m je_load_density --create_project project_path
+
+然後可以進入專案資料夾，executor 資料夾，選擇其中一個 executor 執行並觀察，
+keyword 資料夾裡的 keyword json 檔案定義了要執行的動作。
+
+如果想要透過純 python 來執行的話可以參考以下範例:
+
+.. code-block:: python
+
+    from je_load_density import start_test
+
+    start_test(
+        {
+            "user": "fast_http_user",
+        },
+        50, 10, 5,
+        **{
+            "tasks": {
+                "get": {"request_url": "http://httpbin.org/get"},
+                "post": {"request_url": "http://httpbin.org/post"}
+            }
+        }
+    )

@@ -26,6 +26,15 @@ jobs:
       - run:
           command: python ./test/unit_test/create_project/create_project.py
           name: create_project
+      - run:
+          command: python ./test/unit_test/generate_report/generate_html_report.py
+          name: generate_html_report
+      - run:
+          command: python ./test/unit_test/generate_report/generate_xml_report.py
+          name: generate_xml_report
+      - run:
+          command: python ./test/unit_test/generate_report/generate_json_report.py
+          name: generate_json_report
 
   build-and-test-stable:
     executor: python/default
@@ -45,6 +54,15 @@ jobs:
       - run:
           command: python ./test/unit_test/create_project/create_project.py
           name: create_project
+      - run:
+          command: python ./test/unit_test/generate_report/generate_html_report.py
+          name: generate_html_report
+      - run:
+          command: python ./test/unit_test/generate_report/generate_xml_report.py
+          name: generate_xml_report
+      - run:
+          command: python ./test/unit_test/generate_report/generate_json_report.py
+          name: generate_json_report
 
 workflows:
   main:
