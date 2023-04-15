@@ -29,6 +29,8 @@ keyword 資料夾裡的 keyword json 檔案定義了要執行的動作。
 
 如果想要透過純 python 來執行的話可以參考以下範例:
 
+注意! 只能使用以下 HTTP Method ["get", "post", "put", "patch", "delete", "head", "options"]
+
 .. code-block:: python
 
     from je_load_density import start_test

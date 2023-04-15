@@ -30,6 +30,8 @@ choose one of the executors to run and observe.
 The keyword.json file in the keyword folder defines the actions to be executed.
 
 If you want to execute using pure Python, you can refer to the following example:
+Attention! Only the following HTTP methods can be used:
+['get', 'post', 'put', 'patch', 'delete', 'head', 'options']
 
 .. code-block:: python
 
