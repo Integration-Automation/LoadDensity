@@ -30,6 +30,6 @@ class HttpUserWrapper(HttpUser):
     @task
     def test(self):
         for test_task_method, test_task_data in locust_wrapper_proxy.user_dict.get("http_user").tasks.items():
-            self.method.get(test_task_method)(test_task_data.get("request_url"))
+            self.method.get(str(test_task_method).lower())(test_task_data.get("request_url"))
 
 
