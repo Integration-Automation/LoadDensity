@@ -12,7 +12,8 @@ def request_hook(
         response,
         exception,
         response_length,
-        response_time
+        response_time,
+        **kwargs
 ):
     if exception is None:
         test_record_instance.test_record_list.append(
