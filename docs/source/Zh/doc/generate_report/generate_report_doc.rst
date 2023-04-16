@@ -47,7 +47,7 @@ Generate Report 可以生成以下格式的報告
         }
     }
     )
-generate_json_report()
+    generate_json_report()
 
 以下是產生 XML 的範例。
 
