@@ -7,7 +7,6 @@ Generate Report
  * XML
 
 * Generate Report is mainly used to record and confirm which steps were executed and whether they were successful or not.
-* If you want to use Generate Report, you need to set the recording to True by using test_record_instance.init_record = True.
 * The following example is used with keywords and an executor. If you don't understand, please first take a look at the executor.
 
 Here's an example of generating an HTML report.
