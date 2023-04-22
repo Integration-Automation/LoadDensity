@@ -51,3 +51,6 @@ python 3.7 or later
 >>    * ubuntu 20.0.4
 >>    * raspberry pi 3B+
 >>    * All test in test dir
+>>    * 
+### Architecture Diagram
+![Architecture Diagram](architecture_diagram/LoadDnesity_Archirecture.drawio.png)
