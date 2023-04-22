@@ -1,4 +1,4 @@
-<mxfile host="app.diagrams.net" modified="2023-04-22T17:24:41.832Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.48" etag="LoPXQGJLEK8WTbHjp7kQ" version="21.2.1" type="google">
+<mxfile host="app.diagrams.net" modified="2023-04-22T17:31:15.122Z" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Safari/537.36 Edg/112.0.1722.48" etag="ld8FFhIJx1lgAzjet3aa" version="21.2.1" type="google">
   <diagram name="第 1 页" id="J8lM_nDxS5TgUlFvMCj_">
     <mxGraphModel grid="1" page="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
@@ -396,6 +396,9 @@
         </mxCell>
         <mxCell id="ULCW9xKcWNMjdS3p1XuG-174" value="Locust" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#0381FF;fontFamily=Times New Roman;fontSize=20;" vertex="1" parent="1">
           <mxGeometry x="2160" y="-660" width="260" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="ULCW9xKcWNMjdS3p1XuG-176" value="Proxy Pattern" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=20;fontFamily=Times New Roman;" vertex="1" parent="1">
+          <mxGeometry x="1514.0700000000002" y="-190" width="180" height="30" as="geometry" />
         </mxCell>
       </root>
     </mxGraphModel>
