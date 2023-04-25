@@ -1,5 +1,6 @@
 # argparse
 import argparse
+import json
 import sys
 
 from je_load_density.utils.exception.exception_tags import argparse_get_wrong_data
@@ -19,18 +20,33 @@ if __name__ == "__main__":
         def preprocess_execute_files(file_path: str):
             execute_files(get_dir_files_as_list(file_path))
 
+        def preprocess_read_str_execute_action(execute_str: str):
+            execute_str = json.loads(execute_str)
+            execute_action(execute_str)
+
 
         argparse_event_dict = {
             "execute_file": preprocess_execute_action,
             "execute_dir": preprocess_execute_files,
+            "execute_str": preprocess_read_str_execute_action,
             "create_project": create_project_dir
         }
         parser = argparse.ArgumentParser()
-        parser.add_argument("-e", "--execute_file", type=str, help="choose action file to execute")
-        parser.add_argument("-d", "--execute_dir", type=str, help="choose dir include action file to execute")
+        parser.add_argument(
+            "-e", "--execute_file",
+            type=str, help="choose action file to execute"
+        )
+        parser.add_argument(
+            "-d", "--execute_dir",
+            type=str, help="choose dir include action file to execute"
+        )
         parser.add_argument(
             "-c", "--create_project",
             type=str, help="create project with template"
+        )
+        parser.add_argument(
+            "--execute_str",
+            type=str, help="execute json str"
         )
         args = parser.parse_args()
         args = vars(args)
