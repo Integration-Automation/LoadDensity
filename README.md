@@ -1,6 +1,6 @@
 ## LoadDensity
 > Project Kanban \
-> https://github.com/orgs/Integrated-Testing-Environment/projects/4 \
+> https://github.com/orgs/Intergration-Automation-Testing/projects/2/views/1 \
 > Locust Wrapper \
 > Wrapper for Locust, simplifying complex Locust configurations. \
 > Solves problems:
