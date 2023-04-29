@@ -1,17 +1,17 @@
 ## LoadDensity
 > Project Kanban \
-> https://github.com/orgs/Integrated-Testing-Environment/projects/4 \
+> https://github.com/orgs/Intergration-Automation-Testing/projects/2/views/1 \
 > Locust Wrapper \
 > Wrapper for Locust, simplifying complex Locust configurations. \
 > Solves problems:
 >> * Checking Requests & Response for each load test
->> * Load testing for SOAP protocols
+>> * Load automation for SOAP protocols
 >> * Comparison of numerical values for each load test
 >> * Detailed load test reports for each test.
 ---
 ### Features
 
->* HTTP HTTPS stress testing and load testing
+>* HTTP HTTPS stress automation and load automation
 >* Action FIle
 >* response compare
 >* CLI with action file
@@ -42,7 +42,7 @@ pip install je_locust_wrapper
 ## require
 
 ```
-python 3.7 or later  
+python 3.8 or later  
 ```
 
 >* Test on
