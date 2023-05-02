@@ -26,7 +26,6 @@ classifiers = [
     "Operating System :: OS Independent"
 ]
 
-
 [project.urls]
 Homepage = "https://github.com/Intergration-Automation-Testing/LoadDensity"
 Documentation = "https://loaddensity.readthedocs.io/en/latest/"
