@@ -1,4 +1,4 @@
-name: LoadDensity GitHub Actions Dev
+name: LoadDensity Dev Python 3.11
 
 on:
   push:
@@ -15,26 +15,25 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.7
+      - name: Set up Python 3.11
         uses: actions/setup-python@v3
         with:
-          python-version: "3.7"
+          python-version: "3.11"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip wheel
           pip install -r dev_requirements.txt
-      # unit test start
-      - name: fast http user test
+      - name: Test Fast HTTP User
         run: python ./test/unit_test/user_test/fast_http_user_test.py
-      - name: multi action user test
+      - name: TestMulti Action User
         run: python ./test/unit_test/user_test/http_user_test.py
-      - name: callback_test
+      - name: Test Callback
         run: python ./test/unit_test/callback_test/callback_test.py
-      - name: create_project
+      - name: Test Create Project
         run: python ./test/unit_test/create_project/create_project.py
-      - name: generate_html_report
+      - name: Test Generate HTML Report
         run: python ./test/unit_test/generate_report/generate_html_report.py
-      - name: generate_xml_report
+      - name: Test Generate XML Report
         run: python ./test/unit_test/generate_report/generate_xml_report.py
-      - name: generate_json_report
+      - name: Test Generate JSON Report
         run: python ./test/unit_test/generate_report/generate_json_report.py
