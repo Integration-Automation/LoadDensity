@@ -18,7 +18,7 @@
 
 ---
 > Project Kanban \
-> https://github.com/orgs/Intergration-Automation-Testing/projects/2/views/1 \
+> https://github.com/orgs/Integration-Automation/projects/2/views/1 \
 > Locust Wrapper \
 > Wrapper for Locust, simplifying complex Locust configurations. \
 > Solves problems:
