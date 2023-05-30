@@ -4,8 +4,13 @@ start_test(
     {
         "user": "fast_http_user",
     },
-    50, 10, 5,
-    **{
+    1000, 100, 30,
+    web_ui_dict=
+    {
+        "host": "127.0.0.1",
+        "port": 8089
+    },
+    ** {
         "tasks": {
             "get": {"request_url": "http://httpbin.org/get"},
             "post": {"request_url": "http://httpbin.org/post"}

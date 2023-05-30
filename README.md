@@ -18,22 +18,18 @@
 
 ---
 > Project Kanban \
-> https://github.com/orgs/Integration-Automation/projects/2/views/1 \
-> Locust Wrapper \
-> Wrapper for Locust, simplifying complex Locust configurations. \
-> Solves problems:
->> * Checking Requests & Response for each load test
->> * Load automation for SOAP protocols
->> * Comparison of numerical values for each load test
->> * Detailed load test reports for each test.
----
-### Features
-
->* HTTP HTTPS stress automation and load automation
->* Action FIle
->* response compare
->* CLI with action file
-
+> https://github.com/orgs/Integration-Automation/projects/2/views/1 
+> * Load automation.
+> * Easy setup user template.
+> * Load Density script.
+> * Generate JSON/HTML/XML report.
+> * 1 sec / thousands requests.
+> * Fast spawn users.
+> * Multi test on one task.
+> * Specify test time.
+> * OS Independent.
+> * Remote automation support.
+> * Project & Template support.
 ---
 
 ## install
