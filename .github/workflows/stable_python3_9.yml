@@ -37,3 +37,7 @@ jobs:
         run: python ./test/unit_test/generate_report/generate_xml_report.py
       - name: Test Generate JSON Report
         run: python ./test/unit_test/generate_report/generate_json_report.py
+      - name: Test Interval Scheduler
+        run: python ./test/unit_test/scheduler_test/sec_interval_test.py
+      - name: Test Cron Scheduler
+        run: python ./test/unit_test/scheduler_test/sec_cron_test.py
