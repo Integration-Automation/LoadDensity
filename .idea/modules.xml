@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/LoadTesting.iml" filepath="$PROJECT_DIR$/.idea/LoadTesting.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/LoadDensity.iml" filepath="$PROJECT_DIR$/.idea/LoadDensity.iml" />
     </modules>
   </component>
 </project>
