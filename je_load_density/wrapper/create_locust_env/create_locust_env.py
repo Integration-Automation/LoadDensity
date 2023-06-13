@@ -5,6 +5,8 @@ from locust.env import Environment
 from locust.log import setup_logging
 from locust.stats import stats_printer, stats_history
 
+from je_load_density.utils.logging.loggin_instance import load_density_logger
+
 setup_logging("INFO", None)
 
 
@@ -20,6 +22,10 @@ def prepare_env(user_class: [User], user_count: int = 50, spawn_rate: int = 10, 
     :param kwargs: to catch unknown param
     :return: None
     """
+    load_density_logger.info(
+        f"prepare_env, user_class: {user_class}, user_count: {user_count}, spawn_rate: {spawn_rate}, "
+        f"test_time: {test_time}, web_ui_dict: {web_ui_dict}"
+    )
     env = create_env(user_class)
     env.runner.start(user_count, spawn_rate=spawn_rate)
     if web_ui_dict is not None:
@@ -37,6 +43,9 @@ def create_env(user_class: [User], another_event: events = events):
     :param user_class: locust user class
     :return: locust Environment(user_class, events) events is default event
     """
+    load_density_logger.info(
+        f"create_env, user_class: {user_class}, another_event: {another_event}"
+    )
     env = Environment(user_classes=[user_class], events=another_event)
     env.create_local_runner()
     gevent.spawn(stats_printer(env.stats))
