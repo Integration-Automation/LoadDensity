@@ -20,26 +20,26 @@ class Executor(object):
 
     def __init__(self):
         self.event_dict = {
-            "start_test": start_test,
-            "generate_html": generate_html,
-            "generate_html_report": generate_html_report,
-            "generate_json": generate_json,
-            "generate_json_report": generate_json_report,
-            "generate_xml": generate_xml,
-            "generate_xml_report": generate_xml_report,
+            "LD_start_test": start_test,
+            "LD_generate_html": generate_html,
+            "LD_generate_html_report": generate_html_report,
+            "LD_generate_json": generate_json,
+            "LD_generate_json_report": generate_json_report,
+            "LD_generate_xml": generate_xml,
+            "LD_generate_xml_report": generate_xml_report,
             # Execute
-            "execute_action": self.execute_action,
-            "execute_files": self.execute_files,
-            "add_package_to_executor": package_manager.add_package_to_executor,
+            "LD_execute_action": self.execute_action,
+            "LD_execute_files": self.execute_files,
+            "LD_add_package_to_executor": package_manager.add_package_to_executor,
             # Scheduler
-            "scheduler_event_trigger": self.scheduler_event_trigger,
-            "remove_blocking_scheduler_job": scheduler_manager.remove_blocking_job,
-            "remove_nonblocking_scheduler_job": scheduler_manager.remove_nonblocking_job,
-            "start_blocking_scheduler": scheduler_manager.start_block_scheduler,
-            "start_nonblocking_scheduler": scheduler_manager.start_nonblocking_scheduler,
-            "start_all_scheduler": scheduler_manager.start_all_scheduler,
-            "shutdown_blocking_scheduler": scheduler_manager.shutdown_blocking_scheduler,
-            "shutdown_nonblocking_scheduler": scheduler_manager.shutdown_nonblocking_scheduler,
+            "LD_scheduler_event_trigger": self.scheduler_event_trigger,
+            "LD_remove_blocking_scheduler_job": scheduler_manager.remove_blocking_job,
+            "LD_remove_nonblocking_scheduler_job": scheduler_manager.remove_nonblocking_job,
+            "LD_start_blocking_scheduler": scheduler_manager.start_block_scheduler,
+            "LD_start_nonblocking_scheduler": scheduler_manager.start_nonblocking_scheduler,
+            "LD_start_all_scheduler": scheduler_manager.start_all_scheduler,
+            "LD_shutdown_blocking_scheduler": scheduler_manager.shutdown_blocking_scheduler,
+            "LD_shutdown_nonblocking_scheduler": scheduler_manager.shutdown_nonblocking_scheduler,
         }
         # get all builtin function and add to event dict
         for function in getmembers(builtins, isbuiltin):
