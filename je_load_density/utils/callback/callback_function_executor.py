@@ -14,12 +14,12 @@ class CallbackFunctionExecutor(object):
     def __init__(self):
         self.event_dict: dict = {
             "user_test": start_test,
-            "generate_html": generate_html,
-            "generate_html_report": generate_html_report,
-            "generate_json": generate_json,
-            "generate_json_report": generate_json_report,
-            "generate_xml": generate_xml,
-            "generate_xml_report": generate_xml_report,
+            "LD_generate_html": generate_html,
+            "LD_generate_html_report": generate_html_report,
+            "LD_generate_json": generate_json,
+            "LD_generate_json_report": generate_json_report,
+            "LD_generate_xml": generate_xml,
+            "LD_generate_xml_report": generate_xml_report,
         }
 
     def callback_function(
