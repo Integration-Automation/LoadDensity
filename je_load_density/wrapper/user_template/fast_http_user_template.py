@@ -1,6 +1,3 @@
-import datetime
-import sys
-
 from locust import FastHttpUser, between
 from locust import task
 

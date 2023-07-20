@@ -39,9 +39,7 @@ def generate_xml_report(xml_file_name: str = "default_name"):
         lock.acquire()
         with open(xml_file_name + "_success.xml", "w+") as file_to_write:
             file_to_write.write(success_xml)
-            pass
     except Exception as error:
         print(repr(error), file=sys.stderr)
     finally:
         lock.release()
-
