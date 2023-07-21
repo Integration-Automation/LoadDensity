@@ -17,7 +17,7 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'je_load_density'
+project = 'LoadDensity'
 copyright = '2022, JE-Chen'
 author = 'JE-Chen'
 
