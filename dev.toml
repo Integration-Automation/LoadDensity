@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "je_load_density_dev"
-version = "0.0.61"
+version = "0.0.62"
 authors = [
     { name = "JE-Chen", email = "jechenmailman@gmail.com" },
 ]
@@ -14,8 +14,7 @@ description = "Load & Stress Automation Freamework"
 requires-python = ">=3.8"
 license = { text = "MIT" }
 dependencies = [
-    "locust",
-    "APScheduler",
+    "locust", "APScheduler",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.8",
