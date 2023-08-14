@@ -14,7 +14,7 @@ description = "Load & Stress Automation Freamework"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 dependencies = [
-    "locust", "APScheduler==3.10.1",
+    "locust", "APScheduler==3.10.3",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.9",
