@@ -15,6 +15,7 @@
 
 [![Documentation Status](https://readthedocs.org/projects/loaddensity/badge/?version=latest)](https://loaddensity.readthedocs.io/en/latest/?badge=latest)
 
+[LoadDensity Doc Click Here!](https://loaddensity.readthedocs.io/en/latest/)
 
 ---
 > Project Kanban \
