@@ -5,7 +5,7 @@ You can use scheduling to perform repetitive tasks, either by using a simple wra
 
 .. code-block:: python
 
-    from je_web_runner import SchedulerManager
+    from je_load_density import SchedulerManager
 
 
     def test_scheduler():
