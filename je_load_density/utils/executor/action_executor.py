@@ -78,9 +78,7 @@ class Executor(object):
                 raise LoadDensityTestExecuteException(executor_list_error)
         execute_record_dict = dict()
         try:
-            if len(action_list) > 0 or isinstance(action_list, list):
-                pass
-            else:
+            if len(action_list) == 0 or isinstance(action_list, list) is False:
                 raise LoadDensityTestExecuteException(executor_list_error)
         except Exception as error:
             print(repr(error), file=sys.stderr)
