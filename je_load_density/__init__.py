@@ -41,11 +41,8 @@ from je_load_density.utils.callback.callback_function_executor import callback_e
 
 from je_load_density.utils.project.create_project_structure import create_project_dir
 
-# Scheduler
-from je_load_density.utils.scheduler.extend_apscheduler import SchedulerManager
-
 __all__ = [
-    "create_env", "start_test", "SchedulerManager",
+    "create_env", "start_test",
     "locust_wrapper_proxy",
     "prepare_env", "prepare_env",
     "test_record_instance",
