@@ -1,12 +1,12 @@
-# Rename to dev version
-# This is dev version
+# Rename to stable version
+# This is stable version
 [build-system]
 requires = ["setuptools>=61.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "je_load_density_dev"
-version = "0.0.67"
+name = "je_load_density"
+version = "0.0.57"
 authors = [
     { name = "JE-Chen", email = "jechenmailman@gmail.com" },
 ]
@@ -33,7 +33,6 @@ Code = "https://github.com/Intergration-Automation-Testing/LoadDensity"
 [project.readme]
 file = "README.md"
 content-type = "text/markdown"
-
 
 [tool.setuptools.packages]
 find = { namespaces = false }
