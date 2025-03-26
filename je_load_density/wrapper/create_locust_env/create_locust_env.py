@@ -26,7 +26,7 @@ def prepare_env(user_class: [User], user_count: int = 50, spawn_rate: int = 10, 
         f"prepare_env, user_class: {user_class}, user_count: {user_count}, spawn_rate: {spawn_rate}, "
         f"test_time: {test_time}, web_ui_dict: {web_ui_dict}"
     )
-    env = create_env(user_class)
+    env = create_env(user_class, another_event=events)
     env.runner.start(user_count, spawn_rate=spawn_rate)
     if web_ui_dict is not None:
         env.create_web_ui(web_ui_dict.get("host", "127.0.0.1"), web_ui_dict.get("port", 8089))
