@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "je_load_density_dev"
-version = "0.0.69"
+version = "0.0.71"
 authors = [
     { name = "JE-Chen", email = "jechenmailman@gmail.com" },
 ]
@@ -38,4 +38,4 @@ content-type = "text/markdown"
 find = { namespaces = false }
 
 [project.optional-dependencies]
-gui = ["PySide6==6.9.0"]
+gui = ["PySide6==6.9.1", "qt-material"]
