@@ -2,7 +2,7 @@ traditional_chinese_word_dict = {
     # Main
     "application_name": "LoadDensity",
     # Widget
-    "url": "連結: ",
+    "url": "URL: ",
     "test_time": "測試時間: ",
     "user_count": "測試使用者總數: ",
     "spawn_rate": "產生速率: ",

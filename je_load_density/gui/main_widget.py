@@ -4,9 +4,9 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import QWidget, QFormLayout, QLineEdit, QComboBox, QPushButton, QTextEdit, QVBoxLayout, QLabel
 
-from je_load_density.gui.execute_thread import LoadDensityThread
+from je_load_density.gui.load_density_gui_thread import LoadDensityGUIThread
 from je_load_density.gui.language_wrapper.multi_language_wrapper import language_wrapper
-from je_load_density.log_to_ui_filter import InterceptAllFilter, locust_log_queue
+from je_load_density.gui.log_to_ui_filter import InterceptAllFilter, locust_log_queue
 
 
 class LoadDensityWidget(QWidget):
@@ -61,7 +61,7 @@ class LoadDensityWidget(QWidget):
         self.setLayout(main_layout)
 
     def run_load_density(self):
-        self.run_load_density_thread = LoadDensityThread()
+        self.run_load_density_thread = LoadDensityGUIThread()
         self.run_load_density_thread.url = self.url_input.text()
         self.run_load_density_thread.test_time = int(self.test_time_input.text())
         self.run_load_density_thread.user_count = int(self.user_count_input.text())

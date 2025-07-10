@@ -2,7 +2,7 @@ from PySide6.QtCore import QThread
 from je_load_density.wrapper.start_wrapper.start_test import start_test
 
 
-class LoadDensityThread(QThread):
+class LoadDensityGUIThread(QThread):
 
     def __init__(self):
         super().__init__()
