@@ -23,9 +23,3 @@ class LoadDensityUI(QMainWindow, QtStyleTools):
         self.load_density_widget = LoadDensityWidget()
         self.setCentralWidget(self.load_density_widget)
 
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = LoadDensityUI()
-    window.show()
-    sys.exit(app.exec())
