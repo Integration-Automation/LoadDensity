@@ -11,13 +11,13 @@ authors = [
     { name = "JE-Chen", email = "jechenmailman@gmail.com" },
 ]
 description = "Load & Stress Automation Freamework"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license-files = ["LICENSE"]
 dependencies = [
     "locust",
 ]
 classifiers = [
-    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
     "Development Status :: 2 - Pre-Alpha",
     "Environment :: Win32 (MS Windows)",
     "Environment :: MacOS X",
