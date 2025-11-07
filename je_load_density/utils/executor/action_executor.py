@@ -4,21 +4,43 @@ import types
 from inspect import getmembers, isbuiltin
 from typing import Union, Any
 
-from je_load_density.utils.exception.exception_tags import executor_data_error, add_command_exception_tag
-from je_load_density.utils.exception.exception_tags import executor_list_error
+from je_load_density.utils.exception.exception_tags import (
+    executor_data_error,
+    add_command_exception_tag,
+    executor_list_error,
+)
 from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
-from je_load_density.utils.generate_report.generate_html_report import generate_html, generate_html_report
-from je_load_density.utils.generate_report.generate_json_report import generate_json, generate_json_report
-from je_load_density.utils.generate_report.generate_xml_report import generate_xml, generate_xml_report
+from je_load_density.utils.generate_report.generate_html_report import (
+    generate_html,
+    generate_html_report,
+)
+from je_load_density.utils.generate_report.generate_json_report import (
+    generate_json,
+    generate_json_report,
+)
+from je_load_density.utils.generate_report.generate_xml_report import (
+    generate_xml,
+    generate_xml_report,
+)
 from je_load_density.utils.json.json_file.json_file import read_action_json
 from je_load_density.utils.package_manager.package_manager_class import package_manager
 from je_load_density.wrapper.start_wrapper.start_test import start_test
 
 
-class Executor(object):
+class Executor:
+    """
+    執行器 (Executor)
+    Event-driven executor
 
-    def __init__(self):
-        self.event_dict = {
+    提供事件字典 (event_dict)，可根據動作名稱執行對應函式，
+    並支援批次執行與檔案驅動。
+    Provides an event dictionary to execute functions by name,
+    supporting batch execution and file-driven execution.
+    """
+
+    def __init__(self) -> None:
+        # 初始化事件字典 (Initialize event dictionary)
+        self.event_dict: dict[str, Any] = {
             "LD_start_test": start_test,
             "LD_generate_html": generate_html,
             "LD_generate_html_report": generate_html_report,
@@ -26,21 +48,29 @@ class Executor(object):
             "LD_generate_json_report": generate_json_report,
             "LD_generate_xml": generate_xml,
             "LD_generate_xml_report": generate_xml_report,
-            # Execute
+            # Executor internal methods
             "LD_execute_action": self.execute_action,
             "LD_execute_files": self.execute_files,
             "LD_add_package_to_executor": package_manager.add_package_to_executor,
         }
-        # get all builtin function and add to event dict
-        for function in getmembers(builtins, isbuiltin):
-            self.event_dict.update({str(function[0]): function[1]})
 
-    def _execute_event(self, action: list):
+        # 將所有 Python 內建函式加入事件字典
+        # Add all Python built-in functions to event_dict
+        for name, func in getmembers(builtins, isbuiltin):
+            self.event_dict[name] = func
+
+    def _execute_event(self, action: list) -> Any:
         """
-        :param action: execute action
-        :return: what event return
+        執行單一事件
+        Execute a single event
+
+        :param action: 事件結構，例如 ["function_name", {"param": value}]
+        :return: 事件回傳值 (return value of executed event)
         """
         event = self.event_dict.get(action[0])
+        if event is None:
+            raise LoadDensityTestExecuteException(executor_data_error + " " + str(action))
+
         if len(action) == 2:
             if isinstance(action[1], dict):
                 return event(**action[1])
@@ -51,68 +81,87 @@ class Executor(object):
         else:
             raise LoadDensityTestExecuteException(executor_data_error + " " + str(action))
 
-    def execute_action(self, action_list: [list, dict]) -> dict:
+    def execute_action(self, action_list: Union[list, dict]) -> dict[str, Any]:
         """
-        execute all action in action list
-        :param action_list: like this structure
-        [
-            ["method on event_dict", {"param": params}],
-            ["method on event_dict", {"param": params}]
-        ]
-        for loop and use execute_event function to execute
-        :return: recode string, response as list
+        執行多個事件
+        Execute multiple actions
+
+        :param action_list: 事件列表，例如：
+            [
+                ["LD_start_test", {"param": value}],
+                ["LD_generate_json", {"param": value}]
+            ]
+        :return: 執行紀錄字典 (execution record dict)
         """
         if isinstance(action_list, dict):
             action_list = action_list.get("load_density", None)
             if action_list is None:
                 raise LoadDensityTestExecuteException(executor_list_error)
-        execute_record_dict = dict()
+
+        execute_record_dict: dict[str, Any] = {}
+
         try:
-            if len(action_list) == 0 or isinstance(action_list, list) is False:
+            if not isinstance(action_list, list) or len(action_list) == 0:
                 raise LoadDensityTestExecuteException(executor_list_error)
         except Exception as error:
             print(repr(error), file=sys.stderr)
+
         for action in action_list:
             try:
                 event_response = self._execute_event(action)
-                execute_record = "execute: " + str(action)
-                execute_record_dict.update({execute_record: event_response})
+                execute_record = f"execute: {action}"
+                execute_record_dict[execute_record] = event_response
             except Exception as error:
                 print(repr(error), file=sys.stderr)
                 print(action, file=sys.stderr)
-                execute_record = "execute: " + str(action)
-                execute_record_dict.update({execute_record: repr(error)})
+                execute_record = f"execute: {action}"
+                execute_record_dict[execute_record] = repr(error)
+
+        # 輸出執行結果 (Print execution results)
         for key, value in execute_record_dict.items():
             print(key)
             print(value)
+
         return execute_record_dict
 
-    def execute_files(self, execute_files_list: list):
+    def execute_files(self, execute_files_list: list[str]) -> list[dict[str, Any]]:
         """
-        execute action on all file in execute_files_list
-        :param execute_files_list: list include execute files path
-        :return: every execute detail as list
+        執行檔案中的事件
+        Execute actions from files
+
+        :param execute_files_list: 檔案路徑列表 (list of file paths)
+        :return: 每個檔案的執行結果列表 (list of execution results per file)
         """
-        execute_detail_list = list()
+        execute_detail_list: list[dict[str, Any]] = []
         for file in execute_files_list:
             execute_detail_list.append(self.execute_action(read_action_json(file)))
         return execute_detail_list
 
+
+# 建立全域執行器 (Global executor instance)
 executor = Executor()
 package_manager.executor = executor
 
 
-def add_command_to_executor(command_dict: dict):
+def add_command_to_executor(command_dict: dict[str, Any]) -> None:
+    """
+    新增自訂命令到執行器
+    Add custom commands to executor
+
+    :param command_dict: {command_name: function}
+    """
     for command_name, command in command_dict.items():
         if isinstance(command, (types.MethodType, types.FunctionType)):
-            executor.event_dict.update({command_name: command})
+            executor.event_dict[command_name] = command
         else:
             raise LoadDensityTestExecuteException(add_command_exception_tag)
 
 
-def execute_action(action_list: list) -> dict:
+def execute_action(action_list: list) -> dict[str, Any]:
+    """全域執行事件 (Global execute action)"""
     return executor.execute_action(action_list)
 
 
-def execute_files(execute_files_list: list) -> list:
+def execute_files(execute_files_list: list[str]) -> list[dict[str, Any]]:
+    """全域執行檔案事件 (Global execute files)"""
     return executor.execute_files(execute_files_list)

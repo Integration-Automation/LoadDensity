@@ -1,3 +1,5 @@
+from typing import List
+
 import gevent
 from locust import User
 from locust import events
@@ -10,7 +12,7 @@ from je_load_density.utils.logging.loggin_instance import load_density_logger
 setup_logging("INFO", None)
 
 
-def prepare_env(user_class: [User], user_count: int = 50, spawn_rate: int = 10, test_time: int = 60,
+def prepare_env(user_class: List[User], user_count: int = 50, spawn_rate: int = 10, test_time: int = 60,
                 web_ui_dict: dict = None,
                 **kwargs):
     """
@@ -37,7 +39,7 @@ def prepare_env(user_class: [User], user_count: int = 50, spawn_rate: int = 10, 
         env.web_ui.stop()
 
 
-def create_env(user_class: [User], another_event: events = events):
+def create_env(user_class: List[User], another_event: events = events):
     """
     :param another_event: you can use your locust event setting but don't change locust request event
     :param user_class: locust user class

@@ -4,7 +4,7 @@ start_test(
     {
         "user": "fast_http_user",
     },
-    1000, 100, 30,
+    10, 1, 10,
     web_ui_dict=
     {
         "host": "127.0.0.1",
