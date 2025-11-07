@@ -1,9 +1,9 @@
 from je_load_density import callback_executor
 
-print(
-    callback_executor.callback_function(
+def test_callback_executor_runs():
+    result = callback_executor.callback_function(
         trigger_function_name="user_test",
-        callback_function=print,
+        callback_function=lambda x: x,  # 用 lambda 取代 print，方便驗證回傳值
         callback_param_method="args",
         callback_function_param={"": "test"},
         **{
@@ -21,4 +21,6 @@ print(
             }
         }
     )
-)
+
+    # 驗證 callback_executor 有回傳結果
+    assert result is not None

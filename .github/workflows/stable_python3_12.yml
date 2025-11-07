@@ -25,19 +25,7 @@ jobs:
         run: |
           python -m pip install --upgrade pip wheel
           pip install -r requirements.txt
-      - name: Test Fast HTTP User
-        run: python ./test/unit_test/user_test/fast_http_user_test.py
-      - name: TestMulti Action User
-        run: python ./test/unit_test/user_test/http_user_test.py
-      - name: Test Callback
-        run: python ./test/unit_test/callback_test/callback_test.py
-      - name: Test Create Project
-        run: python ./test/unit_test/create_project/create_project.py
-      - name: Test Generate HTML Report
-        run: python ./test/unit_test/generate_report/generate_html_report.py
-      - name: Test Generate XML Report
-        run: python ./test/unit_test/generate_report/generate_xml_report.py
-      - name: Test Generate JSON Report
-        run: python ./test/unit_test/generate_report/generate_json_report.py
-      - name: Test Executor
-        run: python ./test/unit_test/executor_test/execute.py
+      - name: Install PyTest
+        run: pip install -r pytest
+      - name: PyTest
+        run: python -m pytest -v
