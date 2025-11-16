@@ -10,7 +10,7 @@ Designed to be cross‑platform and easy to integrate into your projects.
 - High throughput: Thousands of requests per second
 - Fast user spawning: Scale up test users instantly
 - Multi‑test support: Run multiple tests on a single task
-- ⏱Configurable test duration: Specify how long tests should run
+- Configurable test duration: Specify how long tests should run
 - OS independent: Works across major operating systems
 - Remote automation: Execute tests remotely
 - Project & template support: Organize and reuse test setup
