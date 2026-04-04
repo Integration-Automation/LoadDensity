@@ -1,60 +1,77 @@
 Socket Server API
-----
+=================
+
+A TCP server based on ``gevent`` for remote test execution via JSON commands.
+
+TCPServer Class
+---------------
 
 .. code-block:: python
 
-    import json
-    import socketserver
-    import sys
-    import threading
+    class TCPServer:
+        close_flag: bool
+        server: socket.socket
 
-    from je_auto_control.utils.executor.action_executor import execute_action
+        def socket_server(self, host: str, port: int) -> None: ...
+        def handle(self, connection: socket.socket) -> None: ...
 
+socket_server()
+~~~~~~~~~~~~~~~
 
-    class TCPServerHandler(socketserver.BaseRequestHandler):
+Start the TCP server. This is a blocking call.
 
-        def handle(self):
-            command_string = str(self.request.recv(8192).strip(), encoding="utf-8")
-            socket = self.request
-            print("command is: " + command_string, flush=True)
-            if command_string == "quit_server":
-                self.server.shutdown()
-                self.server.close_flag = True
-                print("Now quit server", flush=True)
-            else:
-                try:
-                    execute_str = json.loads(command_string)
-                    for execute_function, execute_return in execute_action(execute_str).items():
-                        socket.sendto(str(execute_return).encode("utf-8"), self.client_address)
-                        socket.sendto("\n".encode("utf-8"), self.client_address)
-                    socket.sendto("Return_Data_Over_JE".encode("utf-8"), self.client_address)
-                    socket.sendto("\n".encode("utf-8"), self.client_address)
-                except Exception as error:
-                    print(repr(error), file=sys.stderr)
-                    try:
-                        socket.sendto(str(error).encode("utf-8"), self.client_address)
-                        socket.sendto("\n".encode("utf-8"), self.client_address)
-                        socket.sendto("Return_Data_Over_JE".encode("utf-8"), self.client_address)
-                        socket.sendto("\n".encode("utf-8"), self.client_address)
-                    except Exception as error:
-                        print(repr(error))
+**Parameters:**
 
+* ``host`` — Server bind address
+* ``port`` — Server bind port
 
-    class TCPServer(socketserver.ThreadingMixIn, socketserver.TCPServer):
+The server listens for connections and spawns a ``gevent`` greenlet for each client.
 
-        def __init__(self, server_address, RequestHandlerClass):
-            super().__init__(server_address, RequestHandlerClass)
-            self.close_flag: bool = False
+handle()
+~~~~~~~~
 
+Handle a single client connection.
 
-    def start_autocontrol_socket_server(host: str = "localhost", port: int = 9938):
-        if len(sys.argv) == 2:
-            host = sys.argv[1]
-        elif len(sys.argv) == 3:
-            host = sys.argv[1]
-            port = int(sys.argv[2])
-        server = TCPServer((host, port), TCPServerHandler)
-        server_thread = threading.Thread(target=server.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
-        return server
+* Receives up to 8192 bytes
+* Parses the received data as JSON
+* Executes the actions via ``execute_action()``
+* Sends results back line by line, terminated by ``Return_Data_Over_JE\n``
+* Special command ``"quit_server"`` shuts down the server
+
+start_load_density_socket_server()
+----------------------------------
+
+Convenience function to start the LoadDensity TCP server.
+
+.. code-block:: python
+
+    def start_load_density_socket_server(
+        host: str = "localhost",
+        port: int = 9940
+    ) -> TCPServer
+
+**Parameters:**
+
+.. list-table::
+   :header-rows: 1
+   :widths: 20 15 15 50
+
+   * - Parameter
+     - Type
+     - Default
+     - Description
+   * - ``host``
+     - ``str``
+     - ``"localhost"``
+     - Server bind address
+   * - ``port``
+     - ``int``
+     - ``9940``
+     - Server bind port
+
+**Returns:** ``TCPServer`` instance.
+
+.. note::
+
+    This function calls ``gevent.monkey.patch_all()`` before starting the server,
+    which patches standard library modules for gevent compatibility.

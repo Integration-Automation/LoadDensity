@@ -1,14 +1,19 @@
-LoadDensity API Documentation
-----
+API Reference
+=============
+
+This section provides the complete API reference for LoadDensity, covering the core
+load testing functions, executor, report generation, callback executor, socket server,
+scheduler, package manager, and file utilities.
 
 .. toctree::
     :maxdepth: 4
+    :caption: API Modules
 
-    utils/callback.rst
-    utils/executor.rst
-    utils/file.rst
-    utils/generate_report.rst
-    utils/package_manager.rst
-    utils/socket_server.rst
-    utils/scheduler.rst
-    loaddensity/loaddensity.rst
+    loaddensity/loaddensity
+    utils/executor
+    utils/callback
+    utils/generate_report
+    utils/socket_server
+    utils/scheduler
+    utils/package_manager
+    utils/file
