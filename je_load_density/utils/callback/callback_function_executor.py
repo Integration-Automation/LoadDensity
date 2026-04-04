@@ -89,9 +89,8 @@ class CallbackFunctionExecutor:
             return execute_return_value
 
         except Exception as error:
-            # 目前只輸出錯誤，可以改成 logging 或 raise
-            # Currently prints error; can be replaced with logging or re-raise
             print(repr(error), file=stderr)
+            raise
 
 
 # 建立全域執行器實例

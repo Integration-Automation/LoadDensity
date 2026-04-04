@@ -1,4 +1,4 @@
-from typing import Dict, Any, Callable, List, Optional
+from typing import Dict, Any, Optional
 
 
 class ProxyHTTPUser:
@@ -13,28 +13,16 @@ class ProxyHTTPUser:
     def __init__(self) -> None:
         # 使用者細節 (User details)
         self.user_detail_dict: Optional[Dict[str, Any]] = None
-        # 任務列表 (Tasks list, 可是函式或其他可呼叫物件)
-        self.tasks: Optional[List[Callable]] = None
+        # 任務字典 (Tasks dictionary, HTTP method -> request config)
+        self.tasks: Optional[Dict[str, Dict[str, Any]]] = None
 
-    def configure(self, user_detail_dict: Dict[str, Any], tasks: List[Callable]) -> None:
+    def configure(self, user_detail_dict: Dict[str, Any], tasks: Dict[str, Dict[str, Any]]) -> None:
         """
         設定使用者細節與任務
         Configure user details and tasks
 
         :param user_detail_dict: 使用者細節字典 (User details dictionary)
-        :param tasks: 任務列表 (List of tasks, functions or callables)
+        :param tasks: 任務字典 (Tasks dictionary, e.g. {"get": {"request_url": "..."}, ...})
         """
         self.user_detail_dict = user_detail_dict
         self.tasks = tasks
-
-    def run_tasks(self) -> None:
-        """
-        執行所有任務
-        Run all tasks
-        """
-        if not self.tasks:
-            print("No tasks configured.")
-            return
-        for task in self.tasks:
-            if callable(task):
-                task(self.user_detail_dict)

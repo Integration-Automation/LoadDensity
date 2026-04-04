@@ -34,8 +34,8 @@ def create_template(parent_name: str, project_path: Optional[str] = None) -> Non
 
     # 建立 keyword JSON 檔案
     if keyword_dir_path.exists() and keyword_dir_path.is_dir():
-        write_action_json(str(keyword_dir_path) + "keyword1.json", template_keyword_1)
-        write_action_json(str(keyword_dir_path) + "keyword2.json", template_keyword_2)
+        write_action_json(str(keyword_dir_path / "keyword1.json"), template_keyword_1)
+        write_action_json(str(keyword_dir_path / "keyword2.json"), template_keyword_2)
 
     # 建立 executor Python 檔案
     if executor_dir_path.exists() and executor_dir_path.is_dir():
@@ -68,6 +68,6 @@ def create_project_dir(project_path: Optional[str] = None, parent_name: str = "L
         project_path = getcwd()
 
     project_root = Path(project_path) / parent_name
-    create_dir(str(project_root) + "keyword")
-    create_dir(str(project_root) + "executor")
+    create_dir(str(project_root / "keyword"))
+    create_dir(str(project_root / "executor"))
     create_template(parent_name, project_path)

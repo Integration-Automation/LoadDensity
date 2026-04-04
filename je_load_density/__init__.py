@@ -44,7 +44,7 @@ from je_load_density.utils.project.create_project_structure import create_projec
 __all__ = [
     "create_env", "start_test",
     "locust_wrapper_proxy",
-    "prepare_env", "prepare_env",
+    "prepare_env",
     "test_record_instance",
     "execute_action", "execute_files", "executor", "add_command_to_executor",
     "get_dir_files_as_list",
