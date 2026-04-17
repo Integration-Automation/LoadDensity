@@ -1,10 +1,12 @@
 import json
 from pathlib import Path
 from threading import Lock
-from typing import Any, Union
+from typing import Union
 
 from je_load_density.utils.exception.exceptions import LoadDensityTestJsonException
 from je_load_density.utils.exception.exception_tags import cant_find_json_error, cant_save_json_error
+
+_json_file_lock = Lock()
 
 
 def read_action_json(json_file_path: str) -> Union[dict, list]:
@@ -16,9 +18,8 @@ def read_action_json(json_file_path: str) -> Union[dict, list]:
     :return: JSON 內容 (dict or list)
     :raises LoadDensityTestJsonException: 當檔案不存在或無法讀取時 (if file not found or cannot be read)
     """
-    lock = Lock()
     try:
-        with lock:
+        with _json_file_lock:
             file_path = Path(json_file_path)
             if file_path.exists() and file_path.is_file():
                 with open(json_file_path, "r", encoding="utf-8") as read_file:
@@ -26,8 +27,6 @@ def read_action_json(json_file_path: str) -> Union[dict, list]:
             else:
                 raise LoadDensityTestJsonException(cant_find_json_error)
     except Exception as error:
-        # 捕捉所有錯誤並轉換成自訂例外
-        # Catch all errors and raise custom exception
         raise LoadDensityTestJsonException(f"{cant_find_json_error}: {error}")
 
 
@@ -40,9 +39,8 @@ def write_action_json(json_save_path: str, action_json: Union[dict, list]) -> No
     :param action_json: 要寫入的資料 (data to write, dict or list)
     :raises LoadDensityTestJsonException: 當檔案無法寫入時 (if file cannot be saved)
     """
-    lock = Lock()
     try:
-        with lock:
+        with _json_file_lock:
             with open(json_save_path, "w+", encoding="utf-8") as file_to_write:
                 json.dump(action_json, file_to_write, indent=4, ensure_ascii=False)
     except Exception as error:

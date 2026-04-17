@@ -7,6 +7,8 @@ from je_load_density.utils.exception.exception_tags import cant_generate_json_re
 from je_load_density.utils.exception.exceptions import LoadDensityGenerateJsonReportException
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 
+_json_report_lock = Lock()
+
 
 def generate_json() -> Tuple[Dict[str, dict], Dict[str, dict]]:
     """
@@ -55,14 +57,13 @@ def generate_json_report(json_file_name: str = "default_name") -> Tuple[str, str
     :param json_file_name: 輸出檔案名稱前綴 (Output file name prefix)
     :return: (成功檔案路徑, 失敗檔案路徑)
     """
-    lock = Lock()
     success_dict, failure_dict = generate_json()
 
     success_path = f"{json_file_name}_success.json"
     failure_path = f"{json_file_name}_failure.json"
 
     try:
-        with lock:  # 使用 with 確保自動 acquire/release
+        with _json_report_lock:
             with open(success_path, "w+", encoding="utf-8") as file_to_write:
                 json.dump(success_dict, file_to_write, indent=4, ensure_ascii=False)
 

@@ -26,6 +26,11 @@ from je_load_density.utils.json.json_file.json_file import read_action_json
 from je_load_density.utils.package_manager.package_manager_class import package_manager
 from je_load_density.wrapper.start_wrapper.start_test import start_test
 
+_UNSAFE_BUILTINS = frozenset({
+    "eval", "exec", "compile", "__import__",
+    "breakpoint", "open", "input",
+})
+
 
 class Executor:
     """
@@ -54,9 +59,11 @@ class Executor:
             "LD_add_package_to_executor": package_manager.add_package_to_executor,
         }
 
-        # 將所有 Python 內建函式加入事件字典
-        # Add all Python built-in functions to event_dict
+        # 將安全的 Python 內建函式加入事件字典，排除可執行任意程式碼者
+        # Add safe Python built-in functions; exclude those allowing arbitrary code execution
         for name, func in getmembers(builtins, isbuiltin):
+            if name in _UNSAFE_BUILTINS:
+                continue
             self.event_dict[name] = func
 
     def _execute_event(self, action: list) -> Any:
@@ -100,11 +107,8 @@ class Executor:
 
         execute_record_dict: dict[str, Any] = {}
 
-        try:
-            if not isinstance(action_list, list) or len(action_list) == 0:
-                raise LoadDensityTestExecuteException(executor_list_error)
-        except Exception as error:
-            print(repr(error), file=sys.stderr)
+        if not isinstance(action_list, list) or len(action_list) == 0:
+            raise LoadDensityTestExecuteException(executor_list_error)
 
         for action in action_list:
             try:
