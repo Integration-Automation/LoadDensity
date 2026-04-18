@@ -1,10 +1,14 @@
 import sys
-from threading import Lock
+from html import escape
 from typing import List, Tuple
 
 from je_load_density.utils.exception.exceptions import LoadDensityHTMLException
 from je_load_density.utils.exception.exception_tags import html_generate_no_data_tag
 from je_load_density.utils.test_record.test_record_class import test_record_instance
+
+
+def _safe(value: object) -> str:
+    return escape(str(value), quote=True)
 
 # HTML 標頭 (HTML head)
 _HTML_STRING_HEAD = """<!DOCTYPE html>
@@ -79,24 +83,24 @@ def generate_html() -> Tuple[List[str], List[str]]:
 
     success_list: List[str] = [
         _SUCCESS_TABLE.format(
-            Method=record.get("Method"),
-            test_url=record.get("test_url"),
-            name=record.get("name"),
-            status_code=record.get("status_code"),
-            text=record.get("text"),
-            content=record.get("content"),
-            headers=record.get("headers"),
+            Method=_safe(record.get("Method")),
+            test_url=_safe(record.get("test_url")),
+            name=_safe(record.get("name")),
+            status_code=_safe(record.get("status_code")),
+            text=_safe(record.get("text")),
+            content=_safe(record.get("content")),
+            headers=_safe(record.get("headers")),
         )
         for record in test_record_instance.test_record_list
     ]
 
     failure_list: List[str] = [
         _FAILURE_TABLE.format(
-            http_method=record.get("Method"),
-            test_url=record.get("test_url"),
-            name=record.get("name"),
-            status_code=record.get("status_code"),
-            error=record.get("error"),
+            http_method=_safe(record.get("Method")),
+            test_url=_safe(record.get("test_url")),
+            name=_safe(record.get("name")),
+            status_code=_safe(record.get("status_code")),
+            error=_safe(record.get("error")),
         )
         for record in test_record_instance.error_record_list
     ]
@@ -112,18 +116,16 @@ def generate_html_report(html_name: str = "default_name") -> str:
     :param html_name: 輸出檔案名稱 (Output file name, without extension)
     :return: HTML 字串 (HTML string)
     """
-    _lock = Lock()
     success_list, failure_list = generate_html()
 
     try:
-        with _lock:  # 使用 with 確保自動 acquire/release
-            html_path = f"{html_name}.html"
-            with open(html_path, "w+", encoding="utf-8") as file_to_write:
-                file_to_write.write(_HTML_STRING_HEAD)
-                file_to_write.writelines(success_list)
-                file_to_write.writelines(failure_list)
-                file_to_write.write(_HTML_STRING_BOTTOM)
-            return html_path
+        html_path = f"{html_name}.html"
+        with open(html_path, "w+", encoding="utf-8") as file_to_write:
+            file_to_write.write(_HTML_STRING_HEAD)
+            file_to_write.writelines(success_list)
+            file_to_write.writelines(failure_list)
+            file_to_write.write(_HTML_STRING_BOTTOM)
+        return html_path
     except Exception as error:
         print(repr(error), file=sys.stderr)
         return ""
