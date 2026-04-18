@@ -69,6 +69,68 @@ python -m build
 - Escape output to prevent injection (HTML, XML, JSON)
 - Pin dependency versions to avoid supply chain attacks
 
+### Linter Compliance (SonarQube / Codacy / Pylint / Flake8)
+
+Code must pass static analysis with no new issues introduced. Follow these rules proactively so SonarQube, Codacy, Pylint, Flake8, Bandit, and Radon do not flag regressions.
+
+#### Complexity & Structure
+
+- Cognitive complexity per function: ≤ 15 (SonarQube rule `python:S3776`)
+- Cyclomatic complexity per function: ≤ 10 (Radon grade A–B)
+- Function length: ≤ 80 lines; file length: ≤ 1000 lines
+- Max parameters per function: ≤ 7 (SonarQube `python:S107`)
+- Max nesting depth: ≤ 4 levels (SonarQube `python:S134`)
+- Avoid deeply nested `if/for/try` — extract helpers or use early returns
+- No duplicated code blocks ≥ 10 lines (SonarQube `common-py:DuplicatedBlocks`)
+- Keep boolean expressions simple: ≤ 3 operators (SonarQube `python:S1067`)
+
+#### Naming & Style (PEP 8 + Pylint)
+
+- `snake_case` for functions, methods, variables, modules
+- `PascalCase` for classes; `UPPER_SNAKE_CASE` for module-level constants
+- Private members prefixed with single underscore `_name`
+- Line length: ≤ 120 characters (soft limit), hard max 160
+- No single-letter names except loop counters (`i`, `j`, `k`) and comprehensions
+- Avoid shadowing built-ins (`id`, `list`, `type`, `dict`, `file`, etc.)
+- No unused function/method parameters — prefix with `_` if required by signature
+
+#### Bug-Prone Patterns
+
+- Never use mutable default arguments (`def f(x=[])`) — use `None` sentinel (SonarQube `python:S5644`)
+- Do not compare with `==` / `!=` to `None`, `True`, `False` — use `is` / `is not`
+- Do not catch bare `except:` — catch specific exceptions; never swallow silently
+- Always re-raise with `raise` or `raise X from e`, preserving context
+- Close resources with `with` context managers (files, sockets, locks)
+- Do not modify a collection while iterating over it
+- Avoid `assert` for runtime validation (stripped by `python -O`); raise explicit exceptions
+- No `TODO` / `FIXME` / `XXX` comments without a tracked issue reference
+- Remove unreachable code after `return`, `raise`, `break`, `continue`
+
+#### Type Safety & API Design
+
+- Public functions and methods should have type hints (parameters + return)
+- Avoid `Any` unless truly dynamic; prefer `Optional[T]`, `Union[...]`, protocols
+- Do not return inconsistent types from one function (e.g. `str` or `None` or `int`)
+- Prefer `@dataclass` or `TypedDict` over ad-hoc dict payloads
+- Use `enum.Enum` instead of string/int constants for closed sets
+
+#### Security (Bandit + SonarQube Security Hotspots)
+
+- No `eval`, `exec`, `pickle.loads`, `yaml.load` (use `yaml.safe_load`) on untrusted input
+- No `hashlib.md5` / `sha1` for security purposes — use `sha256` or `blake2b`
+- No `random` module for tokens/secrets — use `secrets` module
+- No `tempfile.mktemp` — use `mkstemp` / `NamedTemporaryFile`
+- Never log secrets, tokens, or raw request bodies containing credentials
+- Validate file paths against traversal (`..`, absolute paths, symlinks)
+- Set explicit timeouts on `requests.*` and socket operations
+
+#### Testing Hygiene
+
+- Tests must be deterministic — no reliance on wall-clock, network, or ordering
+- Each test asserts something; no test without an `assert`
+- Mock external side effects (filesystem writes, HTTP, subprocess)
+- Test names describe behavior: `test_<unit>_<condition>_<expected>`
+
 ### Git Commit Rules
 
 - Commit messages must NOT reference any AI tool, assistant, or model name
