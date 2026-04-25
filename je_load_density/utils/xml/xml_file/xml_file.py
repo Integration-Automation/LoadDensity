@@ -1,7 +1,9 @@
-import xml.dom.minidom
-from xml.etree import ElementTree
-from xml.etree.ElementTree import ParseError
 from typing import Optional
+from xml.etree import ElementTree as _SafeElementTree  # nosec B405 - used only for typing/wrapping; parsing routes through defusedxml  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
+from xml.etree.ElementTree import ParseError  # nosec B405  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
+
+import defusedxml.ElementTree as ElementTree
+from defusedxml.minidom import parseString as _parse_xml_string
 
 from je_load_density.utils.exception.exception_tags import cant_read_xml_error, xml_type_error
 from je_load_density.utils.exception.exceptions import XMLException, XMLTypeException
@@ -15,7 +17,7 @@ def reformat_xml_file(xml_string: str) -> str:
     :param xml_string: 原始 XML 字串 (Raw XML string)
     :return: 格式化後的 XML 字串 (Pretty-printed XML string)
     """
-    dom = xml.dom.minidom.parseString(xml_string)
+    dom = _parse_xml_string(xml_string)
     return dom.toprettyxml(indent="  ")
 
 
@@ -36,8 +38,8 @@ class XMLParser:
         :param xml_string: XML 字串或檔案路徑 (XML string or file path)
         :param xml_type: "string" 或 "file" (Parse from string or file)
         """
-        self.tree: Optional[ElementTree.ElementTree] = None
-        self.xml_root: Optional[ElementTree.Element] = None
+        self.tree: Optional[_SafeElementTree.ElementTree] = None
+        self.xml_root: Optional[_SafeElementTree.Element] = None
         self.xml_from_type: str = "string"
         self.xml_string: str = xml_string.strip()
 
@@ -50,7 +52,7 @@ class XMLParser:
         else:
             self.xml_parser_from_file()
 
-    def xml_parser_from_string(self, **kwargs) -> ElementTree.Element:
+    def xml_parser_from_string(self, **kwargs) -> _SafeElementTree.Element:
         """
         從字串解析 XML
         Parse XML from string
@@ -64,7 +66,7 @@ class XMLParser:
             raise XMLException(f"{cant_read_xml_error}: {error}")
         return self.xml_root
 
-    def xml_parser_from_file(self, **kwargs) -> ElementTree.Element:
+    def xml_parser_from_file(self, **kwargs) -> _SafeElementTree.Element:
         """
         從檔案解析 XML
         Parse XML from file
@@ -90,7 +92,7 @@ class XMLParser:
         """
         try:
             content = ElementTree.fromstring(write_content.strip())
-            tree = ElementTree.ElementTree(content)
+            tree = _SafeElementTree.ElementTree(content)
             tree.write(write_xml_filename, encoding="utf-8", xml_declaration=True)
         except ParseError as error:
             raise XMLException(f"{cant_read_xml_error}: {error}")

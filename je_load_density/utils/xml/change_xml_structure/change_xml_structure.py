@@ -1,9 +1,9 @@
 from collections import defaultdict
-from xml.etree import ElementTree
-from typing import Union, Dict, Any
+from typing import Any, Dict
+from xml.etree import ElementTree as _ElementTreeBuilder  # nosec B405 - construction only, no parsing  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
 
 
-def elements_tree_to_dict(elements_tree: ElementTree.Element) -> Dict[str, Any]:
+def elements_tree_to_dict(elements_tree: _ElementTreeBuilder.Element) -> Dict[str, Any]:
     """
     將 XML ElementTree 轉換為字典
     Convert XML ElementTree to dictionary
@@ -52,7 +52,7 @@ def dict_to_elements_tree(json_dict: Dict[str, Any]) -> str:
     :return: XML 字串 (XML string)
     """
 
-    def _to_elements_tree(json_dict: Any, root: ElementTree.Element) -> None:
+    def _to_elements_tree(json_dict: Any, root: _ElementTreeBuilder.Element) -> None:
         if isinstance(json_dict, str):
             root.text = json_dict
         elif isinstance(json_dict, dict):
@@ -67,9 +67,9 @@ def dict_to_elements_tree(json_dict: Dict[str, Any]) -> str:
                     root.set(key[1:], value)
                 elif isinstance(value, list):  # 處理子節點清單
                     for element in value:
-                        _to_elements_tree(element, ElementTree.SubElement(root, key))
+                        _to_elements_tree(element, _ElementTreeBuilder.SubElement(root, key))
                 else:  # 處理單一子節點
-                    _to_elements_tree(value, ElementTree.SubElement(root, key))
+                    _to_elements_tree(value, _ElementTreeBuilder.SubElement(root, key))
         else:
             raise TypeError(f"Invalid type in dict_to_elements_tree: {type(json_dict)}")
 
@@ -77,6 +77,6 @@ def dict_to_elements_tree(json_dict: Dict[str, Any]) -> str:
         raise ValueError("Input must be a dictionary with a single root element")
 
     tag, body = next(iter(json_dict.items()))
-    node = ElementTree.Element(tag)
+    node = _ElementTreeBuilder.Element(tag)
     _to_elements_tree(body, node)
-    return ElementTree.tostring(node, encoding="utf-8").decode("utf-8")
+    return _ElementTreeBuilder.tostring(node, encoding="utf-8").decode("utf-8")

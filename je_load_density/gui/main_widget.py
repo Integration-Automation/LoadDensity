@@ -1,5 +1,4 @@
 import logging
-import queue
 from typing import Optional
 
 from PySide6.QtCore import QTimer

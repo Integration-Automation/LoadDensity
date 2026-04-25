@@ -1,5 +1,5 @@
-# hook
-from je_load_density.wrapper.event.request_hook import request_hook
+# hook (side-effect import: registers Locust request hooks)
+from je_load_density.wrapper.event.request_hook import request_hook  # noqa: F401
 # env
 from je_load_density.utils.executor.action_executor import add_command_to_executor
 # executor

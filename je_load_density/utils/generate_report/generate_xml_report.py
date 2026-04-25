@@ -1,6 +1,6 @@
 import sys
 from threading import Lock
-from xml.dom.minidom import parseString
+from defusedxml.minidom import parseString
 from typing import Tuple
 
 from je_load_density.utils.generate_report.generate_json_report import generate_json

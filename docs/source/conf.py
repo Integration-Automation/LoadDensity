@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.abspath('../..'))
 
 # -- Project information -----------------------------------------------------
 project = 'LoadDensity'
-copyright = '2022, JE-Chen'
+project_copyright = '2022, JE-Chen'
 author = 'JE-Chen'
 
 # The full version, including alpha/beta/rc tags
