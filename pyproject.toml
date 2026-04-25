@@ -39,7 +39,7 @@ content-type = "text/markdown"
 find = { namespaces = false }
 
 [project.optional-dependencies]
-gui = ["PySide6==6.10.0", "qt-material"]
+gui = ["PySide6==6.11.0", "qt-material"]
 
 [tool.bandit]
 exclude_dirs = ["test", "tests", ".venv", "build", "dist"]
