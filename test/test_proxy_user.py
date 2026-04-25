@@ -12,10 +12,10 @@ class TestProxyHTTPUser:
 
     def test_configure(self):
         user = ProxyHTTPUser()
-        detail = {"user": "http_user", "host": "http://localhost"}
+        detail = {"user": "http_user", "host": "https://localhost"}
         tasks = {
-            "get": {"request_url": "http://example.com/get"},
-            "post": {"request_url": "http://example.com/post"},
+            "get": {"request_url": "https://example.com/get"},
+            "post": {"request_url": "https://example.com/post"},
         }
         user.configure(detail, tasks)
         assert user.user_detail_dict == detail
@@ -40,7 +40,7 @@ class TestProxyFastHTTPUser:
     def test_configure(self):
         user = ProxyFastHTTPUser()
         detail = {"user": "fast_http_user"}
-        tasks = {"get": {"request_url": "http://example.com"}}
+        tasks = {"get": {"request_url": "https://example.com"}}
         user.configure(detail, tasks)
         assert user.user_detail_dict == detail
         assert user.tasks == tasks

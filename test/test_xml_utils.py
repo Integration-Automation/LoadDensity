@@ -106,7 +106,7 @@ class TestRoundTrip:
             "xml_data": {
                 "Success_Test1": {
                     "Method": "GET",
-                    "test_url": "http://example.com",
+                    "test_url": "https://example.com",
                     "name": "test",
                     "status_code": "200",
                     "text": "OK",
@@ -117,4 +117,4 @@ class TestRoundTrip:
         }
         xml_str = dict_to_elements_tree(data)
         assert "<Method>GET</Method>" in xml_str
-        assert "<test_url>http://example.com</test_url>" in xml_str
+        assert "<test_url>https://example.com</test_url>" in xml_str
