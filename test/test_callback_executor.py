@@ -9,7 +9,7 @@ def _dummy_trigger(**kwargs):
 
 
 def _dummy_callback(*args, **kwargs):
-    pass
+    """No-op stub used to verify the executor invokes the callback path."""
 
 
 class TestCallbackFunctionExecutor:

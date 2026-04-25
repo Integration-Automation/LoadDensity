@@ -5,7 +5,7 @@ from inspect import getmembers, isfunction
 from sys import stderr
 from typing import Optional, Any
 
-_VALID_PACKAGE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$")
+_VALID_PACKAGE_NAME = re.compile(r"^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*$", re.ASCII)
 
 
 class PackageManager:

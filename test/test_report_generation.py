@@ -14,7 +14,7 @@ from je_load_density.utils.exception.exceptions import (
 
 _SUCCESS_RECORD = {
     "Method": "GET",
-    "test_url": "http://example.com/get",
+    "test_url": "https://example.com/get",
     "name": "/get",
     "status_code": "200",
     "text": "OK",
@@ -25,7 +25,7 @@ _SUCCESS_RECORD = {
 
 _FAILURE_RECORD = {
     "Method": "POST",
-    "test_url": "http://example.com/post",
+    "test_url": "https://example.com/post",
     "name": "/post",
     "status_code": "500",
     "error": "Internal Server Error",
@@ -111,7 +111,7 @@ class TestGenerateXml:
 
     def test_success_xml(self):
         test_record_instance.test_record_list.append(_SUCCESS_RECORD)
-        success_xml, failure_xml = generate_xml()
+        success_xml, _ = generate_xml()
         assert "<Method>GET</Method>" in success_xml
         assert "<xml_data" in success_xml
 

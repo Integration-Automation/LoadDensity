@@ -6,8 +6,8 @@ template_keyword_1: list = [
         "user_count": 50, "spawn_rate": 10, "test_time": 5,
         **{
             "tasks": {
-                "get": {"request_url": "http://httpbin.org/get"},
-                "post": {"request_url": "http://httpbin.org/post"}
+                "get": {"request_url": "https://httpbin.org/get"},
+                "post": {"request_url": "https://httpbin.org/post"}
             }
         }
     }]
@@ -21,8 +21,8 @@ template_keyword_2: list = [
         "user_count": 50, "spawn_rate": 10, "test_time": 5,
         **{
             "tasks": {
-                "get": {"request_url": "http://httpbin.org/get"},
-                "post": {"request_url": "http://httpbin.org/post"}
+                "get": {"request_url": "https://httpbin.org/get"},
+                "post": {"request_url": "https://httpbin.org/post"}
             }
         }
     }]
