@@ -1,8 +1,11 @@
+import re
 from importlib import import_module
 from importlib.util import find_spec
 from inspect import getmembers, isfunction
 from sys import stderr
 from typing import Optional, Any
+
+_VALID_PACKAGE_NAME = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*$")
 
 
 class PackageManager:
@@ -28,15 +31,17 @@ class PackageManager:
         :return: 套件模組或 None (Loaded module or None)
         """
         if package not in self.installed_package_dict:
+            if not _VALID_PACKAGE_NAME.fullmatch(package):
+                print(f"Rejected invalid package name: {package!r}", file=stderr)
+                return None
             found_spec = find_spec(package)
-            if found_spec is not None:
-                try:
-                    installed_package = import_module(found_spec.name)
-                    self.installed_package_dict[found_spec.name] = installed_package
-                except ModuleNotFoundError as error:
-                    print(repr(error), file=stderr)
-                    return None
-            else:
+            if found_spec is None or not _VALID_PACKAGE_NAME.fullmatch(found_spec.name):
+                return None
+            try:
+                installed_package = import_module(found_spec.name)  # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
+                self.installed_package_dict[found_spec.name] = installed_package
+            except ModuleNotFoundError as error:
+                print(repr(error), file=stderr)
                 return None
         return self.installed_package_dict.get(package)
 

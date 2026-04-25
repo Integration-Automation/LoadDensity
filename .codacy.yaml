@@ -1,0 +1,18 @@
+---
+engines:
+  bandit:
+    enabled: true
+    exclude_paths:
+      - 'test/**'
+      - 'tests/**'
+  prospector:
+    enabled: true
+  pylint:
+    enabled: true
+  pmd:
+    enabled: false
+exclude_paths:
+  - '.venv/**'
+  - 'build/**'
+  - 'dist/**'
+  - 'docs/build/**'

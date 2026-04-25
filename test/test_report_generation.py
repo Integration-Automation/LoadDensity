@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from je_load_density.utils.test_record.test_record_class import TestRecord, test_record_instance
+from je_load_density.utils.test_record.test_record_class import test_record_instance
 from je_load_density.utils.generate_report.generate_html_report import generate_html, generate_html_report
 from je_load_density.utils.generate_report.generate_json_report import generate_json, generate_json_report
 from je_load_density.utils.generate_report.generate_xml_report import generate_xml, generate_xml_report
