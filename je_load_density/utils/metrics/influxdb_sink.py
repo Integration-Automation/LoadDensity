@@ -50,12 +50,21 @@ def _send_udp(line: str, host: str, port: int) -> None:
         sock.close()
 
 
-_ALLOWED_HTTP_SCHEMES = ("http://", "https://")
+_ALLOWED_URL_SCHEMES = ("http://", "https://")
 
 
-def _send_http(line: str, url: str, token: Optional[str], timeout: float) -> None:
-    if not url.lower().startswith(_ALLOWED_HTTP_SCHEMES):
-        raise ValueError("InfluxDB HTTP URL must use http:// or https://")
+def _post_line_protocol(line: str, url: str, token: Optional[str], timeout: float) -> None:
+    """
+    POST one line-protocol record to a caller-supplied InfluxDB URL.
+
+    HTTPS is recommended for production deployments; plain HTTP is
+    permitted because operators routinely run InfluxDB on a private
+    network or through a TLS-terminating sidecar. The scheme is
+    enforced here so file://, gopher://, and the like cannot reach
+    urlopen even if a misconfigured caller supplies them.
+    """
+    if not url.lower().startswith(_ALLOWED_URL_SCHEMES):
+        raise ValueError("InfluxDB URL must use http:// or https://")
     headers = {"Content-Type": "text/plain; charset=utf-8"}
     if token:
         headers["Authorization"] = f"Token {token}"
@@ -64,7 +73,7 @@ def _send_http(line: str, url: str, token: Optional[str], timeout: float) -> Non
         with urllib_request.urlopen(req, timeout=timeout) as response:  # nosec B310 - scheme validated above
             response.read()
     except urllib_error.URLError as error:
-        load_density_logger.warning(f"InfluxDB HTTP write failed: {error}")
+        load_density_logger.warning(f"InfluxDB write failed: {error}")
 
 
 def start_influxdb_sink(
@@ -90,8 +99,8 @@ def start_influxdb_sink(
     if transport == "http":
         if not url:
             raise ValueError("url required when transport=http")
-        if not url.lower().startswith(_ALLOWED_HTTP_SCHEMES):
-            raise ValueError("InfluxDB HTTP URL must use http:// or https://")
+        if not url.lower().startswith(_ALLOWED_URL_SCHEMES):
+            raise ValueError("InfluxDB URL must use http:// or https://")
 
     with _lock:
         if _state["started"]:
@@ -121,7 +130,7 @@ def start_influxdb_sink(
                 if transport == "udp":
                     _send_udp(line, host, port)
                 else:
-                    _send_http(line, url, token, timeout)
+                    _post_line_protocol(line, url, token, timeout)
             except Exception as error:
                 load_density_logger.debug(f"InfluxDB write failed: {error}")
 
