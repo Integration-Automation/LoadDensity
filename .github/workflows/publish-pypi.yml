@@ -1,0 +1,89 @@
+name: Publish to PyPI
+
+on:
+  workflow_run:
+    workflows: ["CI Stable"]
+    types: [completed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tools
+        run: |
+          python -m pip install --upgrade pip
+          pip install build twine tomlkit
+
+      - name: Bump patch version in pyproject.toml
+        id: bump
+        run: |
+          python <<'PYEOF'
+          import os
+          import tomlkit
+
+          path = "pyproject.toml"
+          with open(path, encoding="utf-8") as f:
+              doc = tomlkit.parse(f.read())
+
+          old = str(doc["project"]["version"])
+          parts = old.split(".")
+          parts[-1] = str(int(parts[-1]) + 1)
+          new = ".".join(parts)
+          doc["project"]["version"] = new
+
+          with open(path, "w", encoding="utf-8") as f:
+              f.write(tomlkit.dumps(doc))
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write(f"old_version={old}\n")
+              f.write(f"new_version={new}\n")
+
+          print(f"Bumped version: {old} -> {new}")
+          PYEOF
+
+      - name: Build distributions
+        run: python -m build
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
+        run: twine upload dist/*
+
+      - name: Commit and tag bumped version
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add pyproject.toml
+          git commit -m "chore: bump version to ${{ steps.bump.outputs.new_version }} [skip ci]"
+          git tag "v${{ steps.bump.outputs.new_version }}"
+          git push origin main
+          git push origin "v${{ steps.bump.outputs.new_version }}"
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v${{ steps.bump.outputs.new_version }}" \
+            dist/* \
+            --title "v${{ steps.bump.outputs.new_version }}" \
+            --notes "Automated release for version ${{ steps.bump.outputs.new_version }}. Published to PyPI: https://pypi.org/project/je-load-density/${{ steps.bump.outputs.new_version }}/" \
+            --target main

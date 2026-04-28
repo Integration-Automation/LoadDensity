@@ -1,6 +1,13 @@
-from typing import Dict, Any
+from typing import Any, Dict
+
 from locust import FastHttpUser, between, task
+
+from je_load_density.utils.parameterization import (
+    register_csv_sources,
+    register_variables,
+)
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
+from je_load_density.wrapper.user_template.request_executor import execute_tasks
 
 
 def set_wrapper_fasthttp_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -8,6 +15,11 @@ def set_wrapper_fasthttp_user(user_detail_dict: Dict[str, Any], **kwargs) -> typ
     設定 FastHttpUser 的代理使用者
     Configure FastHttpUser proxy user
     """
+    if isinstance(kwargs.get("variables"), dict):
+        register_variables(kwargs["variables"])
+    if isinstance(kwargs.get("csv_sources"), list):
+        register_csv_sources(kwargs["csv_sources"])
+
     locust_wrapper_proxy.user_dict.get("fast_http_user").configure(user_detail_dict, **kwargs)
     return FastHttpUserWrapper
 
@@ -23,7 +35,6 @@ class FastHttpUserWrapper(FastHttpUser):
 
     def __init__(self, environment):
         super().__init__(environment)
-        # HTTP 方法映射 (HTTP method mapping)
         self.method: Dict[str, Any] = {
             "get": self.client.get,
             "post": self.client.post,
@@ -36,17 +47,7 @@ class FastHttpUserWrapper(FastHttpUser):
 
     @task
     def test(self) -> None:
-        """
-        執行測試任務
-        Execute test tasks
-        """
         proxy_user = locust_wrapper_proxy.user_dict.get("fast_http_user")
         if not proxy_user or not proxy_user.tasks:
             return
-
-        for test_task_method, test_task_data in proxy_user.tasks.items():
-            http_method = self.method.get(str(test_task_method).lower())
-            if http_method and isinstance(test_task_data, dict):
-                request_url = test_task_data.get("request_url")
-                if request_url:
-                    http_method(request_url)
+        execute_tasks(self.client, self.method, proxy_user.tasks)
