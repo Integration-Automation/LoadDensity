@@ -23,6 +23,11 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # nosemgrep: yaml.github-actions.security.workflow-run-target-code-checkout.workflow-run-target-code-checkout
+      # The job's `if` already gates on workflow_run.head_branch == 'main'
+      # and workflow_run.event != 'pull_request', so a fork PR head can
+      # never reach this checkout. We pin to workflow_run.head_sha to
+      # publish exactly the commit that passed CI on main.
       - name: Checkout the exact commit that passed CI
         uses: actions/checkout@v4
         with:
