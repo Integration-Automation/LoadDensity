@@ -3,6 +3,10 @@ from je_load_density.utils.logging.loggin_instance import load_density_logger
 from je_load_density.wrapper.create_locust_env.create_locust_env import prepare_env
 from je_load_density.wrapper.user_template.fast_http_user_template import FastHttpUserWrapper, set_wrapper_fasthttp_user
 from je_load_density.wrapper.user_template.http_user_template import HttpUserWrapper, set_wrapper_http_user
+from je_load_density.wrapper.user_template.websocket_user_template import (
+    WebSocketUserWrapper,
+    set_wrapper_websocket_user,
+)
 
 
 def start_test(
@@ -34,6 +38,7 @@ def start_test(
     user_dict = {
         "fast_http_user": {"actually_user": FastHttpUserWrapper, "init": set_wrapper_fasthttp_user},
         "http_user": {"actually_user": HttpUserWrapper, "init": set_wrapper_http_user},
+        "websocket_user": {"actually_user": WebSocketUserWrapper, "init": set_wrapper_websocket_user},
     }
 
     user_type = user_detail_dict.get("user", "fast_http_user")
