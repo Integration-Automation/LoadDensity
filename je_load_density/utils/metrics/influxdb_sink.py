@@ -50,13 +50,18 @@ def _send_udp(line: str, host: str, port: int) -> None:
         sock.close()
 
 
+_ALLOWED_HTTP_SCHEMES = ("http://", "https://")
+
+
 def _send_http(line: str, url: str, token: Optional[str], timeout: float) -> None:
+    if not url.lower().startswith(_ALLOWED_HTTP_SCHEMES):
+        raise ValueError("InfluxDB HTTP URL must use http:// or https://")
     headers = {"Content-Type": "text/plain; charset=utf-8"}
     if token:
         headers["Authorization"] = f"Token {token}"
     req = urllib_request.Request(url, data=line.encode("utf-8"), headers=headers, method="POST")
     try:
-        with urllib_request.urlopen(req, timeout=timeout) as response:  # noqa: S310 - configurable URL
+        with urllib_request.urlopen(req, timeout=timeout) as response:  # nosec B310 - scheme validated above
             response.read()
     except urllib_error.URLError as error:
         load_density_logger.warning(f"InfluxDB HTTP write failed: {error}")
@@ -82,8 +87,11 @@ def start_influxdb_sink(
     transport = transport.lower()
     if transport not in {"udp", "http"}:
         raise ValueError(f"unsupported transport: {transport}")
-    if transport == "http" and not url:
-        raise ValueError("url required when transport=http")
+    if transport == "http":
+        if not url:
+            raise ValueError("url required when transport=http")
+        if not url.lower().startswith(_ALLOWED_HTTP_SCHEMES):
+            raise ValueError("InfluxDB HTTP URL must use http:// or https://")
 
     with _lock:
         if _state["started"]:
@@ -131,8 +139,8 @@ def stop_influxdb_sink() -> None:
             return
         try:
             events.request.remove_listener(_state["listener"])
-        except Exception:
-            pass
+        except Exception as error:
+            load_density_logger.debug(f"influxdb listener detach failed: {error!r}")
         _state["started"] = False
         _state["listener"] = None
         _state["config"] = None

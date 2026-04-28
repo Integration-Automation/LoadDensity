@@ -1,4 +1,5 @@
 import importlib
+import re
 import time
 from typing import Any, Dict, Tuple
 
@@ -27,10 +28,25 @@ def set_wrapper_grpc_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
     return GrpcUserWrapper
 
 
+_SAFE_DOTTED_PATH = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
+
+
 def _import_dotted(path: str) -> Any:
+    """
+    Resolve a dotted ``module.attr`` path supplied in a load-test scenario.
+
+    The gRPC user genuinely needs to load operator-authored stub
+    modules at runtime, so a static import literal is not viable. We
+    accept this by validating that ``path`` is a syntactically safe
+    Python identifier chain (no separators, no relative dots, no
+    dunders bridged via traversal) before delegating to importlib.
+    """
+    if not isinstance(path, str) or not _SAFE_DOTTED_PATH.match(path):
+        raise ImportError(f"invalid dotted import path: {path!r}")
     module_name, _, attr = path.rpartition(".")
     if not module_name:
         raise ImportError(f"invalid dotted import path: {path!r}")
+    # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
     module = importlib.import_module(module_name)
     return getattr(module, attr)
 
@@ -74,8 +90,8 @@ class GrpcUserWrapper(User):
             if self._channel is not None:
                 try:
                     self._channel.close()
-                except Exception:
-                    pass
+                except Exception as error:
+                    load_density_logger.debug(f"grpc channel close before reconnect failed: {error!r}")
             self._channel = grpc.insecure_channel(target)
             self._target = target
         return self._channel

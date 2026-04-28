@@ -37,10 +37,14 @@ def _build_metrics():
     }
 
 
-def start_prometheus_exporter(port: int = 9646, addr: str = "0.0.0.0") -> Optional[int]:
+def start_prometheus_exporter(port: int = 9646, addr: str = "127.0.0.1") -> Optional[int]:
     """
     啟動 Prometheus 指標伺服器並掛上 Locust request 事件監聽。
     Start the Prometheus exporter HTTP server and attach a request listener.
+
+    Defaults to binding on loopback. Pass ``addr="0.0.0.0"`` explicitly
+    to expose the exporter to the network when running in a container
+    or remote node.
 
     Returns the port the exporter is listening on, or None if the optional
     dependency is not installed.
@@ -81,7 +85,7 @@ def stop_prometheus_exporter() -> None:
             return
         try:
             events.request.remove_listener(_state["listener"])
-        except Exception:
-            pass
+        except Exception as error:
+            load_density_logger.debug(f"prometheus listener detach failed: {error!r}")
         _state["started"] = False
         _state["listener"] = None

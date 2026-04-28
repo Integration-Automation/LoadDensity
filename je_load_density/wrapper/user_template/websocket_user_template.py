@@ -67,8 +67,8 @@ class WebSocketUserWrapper(User):
         if self._ws is not None:
             try:
                 self._ws.close()
-            except Exception:
-                pass
+            except Exception as error:
+                load_density_logger.debug(f"websocket close before reconnect failed: {error!r}")
         self._ws = create_connection(url, timeout=timeout)
         self._url = url
 

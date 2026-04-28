@@ -71,8 +71,8 @@ class MqttUserWrapper(User):
         if self._client is not None:
             try:
                 self._client.disconnect()
-            except Exception:
-                pass
+            except Exception as error:
+                load_density_logger.debug(f"mqtt disconnect before reconnect failed: {error!r}")
 
         client_id = step.get("client_id") or f"loaddensity-{secrets.token_hex(4)}"
         client = paho_client.Client(client_id=client_id, clean_session=True)
@@ -165,6 +165,6 @@ class MqttUserWrapper(User):
             try:
                 self._client.loop_stop()
                 self._client.disconnect()
-            except Exception:
-                pass
+            except Exception as error:
+                load_density_logger.debug(f"mqtt on_stop cleanup failed: {error!r}")
             self._client = None

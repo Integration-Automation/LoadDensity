@@ -103,14 +103,14 @@ def stop_opentelemetry_exporter() -> None:
             return
         try:
             events.request.remove_listener(_state["listener"])
-        except Exception:
-            pass
+        except Exception as error:
+            load_density_logger.debug(f"otel listener detach failed: {error!r}")
         provider = _state.get("provider")
         if provider is not None:
             try:
                 provider.shutdown()
-            except Exception:
-                pass
+            except Exception as error:
+                load_density_logger.debug(f"otel provider shutdown failed: {error!r}")
         _state["started"] = False
         _state["listener"] = None
         _state["instruments"] = None

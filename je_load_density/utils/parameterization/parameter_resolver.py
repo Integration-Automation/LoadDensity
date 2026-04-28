@@ -3,7 +3,7 @@ import itertools
 import os
 import re
 import threading
-from typing import Any, Callable, Dict, Iterable, Iterator, List, Optional
+from typing import Any, Dict, Iterable, Iterator, List, Optional
 
 _PLACEHOLDER_PATTERN = re.compile(r"\$\{([^}]+)\}")
 _FUNCTION_PATTERN = re.compile(r"^([a-zA-Z_][a-zA-Z0-9_]*)\((.*)\)$")
