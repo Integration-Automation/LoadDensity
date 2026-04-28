@@ -7,7 +7,7 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.user_template.request_executor import execute_tasks
+from je_load_density.wrapper.user_template.scenario_runner import run_scenario
 
 
 def set_wrapper_http_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -50,4 +50,4 @@ class HttpUserWrapper(HttpUser):
         proxy_user = locust_wrapper_proxy.user_dict.get("http_user")
         if not proxy_user or not proxy_user.tasks:
             return
-        execute_tasks(self.client, self.method, proxy_user.tasks)
+        run_scenario(self.client, self.method, proxy_user.tasks)
