@@ -31,7 +31,9 @@ def request_hook(
                 "text": str(response.text),
                 "content": str(response.content),
                 "headers": str(response.headers),
-                "error": None,  # 成功時 error 為 None
+                "response_time_ms": float(response_time or 0),
+                "response_length": int(response_length or 0),
+                "error": None,
             }
         )
     else:
@@ -43,6 +45,8 @@ def request_hook(
                 "name": str(name),
                 "status_code": str(response.status_code) if response else None,
                 "text": str(response.text) if response else None,
-                "error": str(exception),  # 失敗時紀錄 exception
+                "response_time_ms": float(response_time or 0),
+                "response_length": int(response_length or 0),
+                "error": str(exception),
             }
         )
