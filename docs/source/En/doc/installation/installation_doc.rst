@@ -15,65 +15,83 @@ Supported Platforms
    :widths: 30 70
 
    * - Platform
-     - Version
-   * - Windows
-     - 10 / 11
+     - Notes
+   * - Windows 10 / 11
+     - Fully supported
    * - macOS
-     - 10.15 ~ 11 (Big Sur)
-   * - Linux
-     - Ubuntu 20.04
+     - Fully supported
+   * - Ubuntu / Linux
+     - Fully supported
    * - Raspberry Pi
-     - 3B+
+     - Tested on 3B+ and later
 
-Basic Installation (CLI & Library)
-----------------------------------
-
-Install LoadDensity from PyPI:
+Base install (CLI & library)
+----------------------------
 
 .. code-block:: bash
 
     pip install je_load_density
 
-This installs the core library and CLI. `Locust <https://locust.io/>`_ is automatically
-installed as a dependency.
+This pulls in `Locust <https://locust.io/>`_ and ``defusedxml`` —
+nothing else.
 
-Installation with GUI Support
------------------------------
+Optional extras
+---------------
 
-To use the optional PySide6-based graphical interface:
+LoadDensity ships every protocol driver, exporter, recorder, and
+control surface as an opt-in extra. The base package never imports
+these modules eagerly, so the runtime footprint is unchanged for users
+who only need HTTP load testing.
 
-.. code-block:: bash
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
 
-    pip install je_load_density[gui]
+   * - Extra
+     - Adds
+   * - ``gui``
+     - PySide6 + qt-material (graphical front-end).
+   * - ``websocket``
+     - ``websocket-client`` (WebSocket user template).
+   * - ``grpc``
+     - ``grpcio`` + ``protobuf`` (gRPC user template).
+   * - ``mqtt``
+     - ``paho-mqtt`` (MQTT user template).
+   * - ``prometheus``
+     - ``prometheus-client`` (Prometheus exporter).
+   * - ``opentelemetry``
+     - OpenTelemetry SDK + OTLP gRPC exporter.
+   * - ``metrics``
+     - ``prometheus`` + ``opentelemetry`` bundle.
+   * - ``faker``
+     - ``Faker`` (powers ``${faker.method}`` placeholders).
+   * - ``mcp``
+     - ``mcp`` SDK (drives the MCP server for Claude).
+   * - ``all``
+     - Everything above.
 
-This additionally installs:
+Examples::
 
-* `PySide6 <https://doc.qt.io/qtforpython/>`_ — Qt for Python bindings
-* `qt-material <https://github.com/UN-GCPDS/qt-material>`_ — Material design theme
+    pip install "je_load_density[gui]"
+    pip install "je_load_density[mqtt,grpc,websocket]"
+    pip install "je_load_density[metrics]"
+    pip install "je_load_density[mcp]"
+    pip install "je_load_density[all]"
 
-Development Installation
--------------------------
-
-To install from source for development:
-
-.. code-block:: bash
-
-    git clone https://github.com/Intergration-Automation-Testing/LoadDensity.git
-    cd LoadDensity
-    pip install -e .
-    pip install -r dev_requirements.txt
-
-Verify Installation
+Development install
 -------------------
 
-After installation, verify that LoadDensity is correctly installed:
+.. code-block:: bash
+
+    git clone https://github.com/Integration-Automation/LoadDensity.git
+    cd LoadDensity
+    pip install -e ".[all]"
+    pip install -r requirements.txt
+
+Verify
+------
 
 .. code-block:: bash
 
-    python -c "from je_load_density import start_test; print('LoadDensity installed successfully')"
-
-You can also check the installed version:
-
-.. code-block:: bash
-
+    python -c "from je_load_density import start_test; print('LoadDensity installed')"
     pip show je_load_density

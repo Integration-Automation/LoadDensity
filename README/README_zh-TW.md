@@ -1,136 +1,534 @@
 # LoadDensity
 
-[![Python](https://img.shields.io/pypi/pyversions/je_load_density)](https://pypi.org/project/je_load_density/)
-[![PyPI](https://img.shields.io/pypi/v/je_load_density)](https://pypi.org/project/je_load_density/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://readthedocs.org/projects/loaddensity/badge/?version=latest)](https://loaddensity.readthedocs.io/en/latest/)
+<p align="center">
+  <strong>多協定壓力與負載自動化框架：Locust + WebSocket + gRPC + MQTT + 原生 socket，搭配內建電池的 JSON 動作執行器。</strong>
+</p>
 
-**LoadDensity** 是一個基於 [Locust](https://locust.io/) 建構的高效能負載與壓力測試自動化框架。它對 Locust 的核心功能進行了簡化封裝，提供快速使用者生成、透過模板與 JSON 腳本進行彈性測試配置、多格式報告生成（HTML / JSON / XML）、內建 GUI 圖形介面、透過 TCP Socket 伺服器進行遠端執行，以及測試後工作流程的回呼機制。
+<p align="center">
+  <a href="https://pypi.org/project/je-load-density/"><img src="https://img.shields.io/pypi/v/je_load_density" alt="PyPI Version"></a>
+  <a href="https://pypi.org/project/je-load-density/"><img src="https://img.shields.io/pypi/pyversions/je_load_density" alt="Python Version"></a>
+  <a href="https://github.com/Integration-Automation/LoadDensity/blob/main/LICENSE"><img src="https://img.shields.io/github/license/Integration-Automation/LoadDensity" alt="License"></a>
+  <a href="https://loaddensity.readthedocs.io/en/latest/"><img src="https://readthedocs.org/projects/loaddensity/badge/?version=latest" alt="Documentation Status"></a>
+</p>
 
-**[English](../README.md)** | **[简体中文](README_zh-CN.md)**
+<p align="center">
+  <a href="../README.md">English</a> |
+  <a href="README_zh-CN.md">简体中文</a>
+</p>
 
 ---
 
-## 功能特色
+LoadDensity（`je_load_density`）從 Locust 封裝起家，逐步擴展為完整的多協定負載框架：HTTP、FastHttp、WebSocket、gRPC、MQTT 與原生 TCP/UDP 等使用者模板，皆透過同一個 JSON 驅動的動作執行器；另含資料參數化、情境流程、報告、可觀測性、分散式 runner、錄製、持久化儲存，以及讓 Claude 端對端驅動測試的 MCP 控制介面。每個 executor 指令以 `LD_*` 命名、使用單一派發點，因此一份動作 JSON 可同時混用協定、exporter 與報告。
 
-- **簡化的 Locust 封裝** — 將 Locust 的 `Environment`、`Runner` 和 `User` 類別抽象化為簡潔的高階 API。
-- **兩種使用者類型** — 同時支援 `HttpUser` 和 `FastHttpUser`（基於 geventhttpclient，吞吐量更高）。
-- **快速使用者生成** — 可配置生成速率，輕鬆擴展至數千名並行使用者。
-- **JSON 驅動的測試腳本** — 將測試場景定義為 JSON 檔案，無需撰寫 Python 程式碼即可執行。
-- **動作執行器** — 內建的事件驅動執行器，將動作名稱映射到函式。支援批次執行與檔案驅動執行。
-- **報告生成** — 匯出三種格式的測試結果：
-  - **HTML** — 包含成功/失敗記錄的樣式化表格
-  - **JSON** — 適合程式化處理的結構化資料
-  - **XML** — 標準 XML 輸出，適合 CI/CD 整合
-- **請求鉤子** — 自動記錄每個請求（成功與失敗），包含方法、URL、狀態碼、回應內容、標頭與錯誤資訊。
-- **回呼執行器** — 將觸發函式與回呼函式串聯，用於測試後工作流程（例如：執行測試後自動生成報告）。
-- **TCP Socket 伺服器** — 基於 gevent 的遠端執行伺服器。透過 TCP 接收 JSON 指令以遠端執行測試。
-- **專案腳手架** — 自動生成專案目錄結構，包含關鍵字模板與執行器腳本。
-- **套件管理器** — 在執行期間動態載入外部 Python 套件，並將其函式註冊到執行器中。
-- **GUI 圖形介面（選用）** — 基於 PySide6 的圖形介面，支援即時日誌顯示，提供英文與繁體中文介面。
-- **CLI 命令列支援** — 直接從命令列執行測試、運行腳本或建立專案結構。
-- **跨平台** — 支援 Windows、macOS 和 Linux。
+> **選用相依、可選安裝** — 每個協定驅動與 exporter 都以 `pip install je_load_density[<extra>]` 提供。僅做 HTTP 壓測者執行期不受影響。
+
+## 目次
+
+- [亮點](#亮點)
+- [安裝](#安裝)
+- [架構](#架構)
+- [Quick Start](#quick-start)
+- [核心 API](#核心-api)
+- [動作 Executor](#動作-executor)
+- [使用者模板](#使用者模板)
+- [參數解析器](#參數解析器)
+- [情境模式](#情境模式)
+- [斷言與擷取](#斷言與擷取)
+- [報告](#報告)
+- [可觀測性](#可觀測性)
+- [分散式 Master / Worker](#分散式-master--worker)
+- [HAR 錄製／重放](#har-錄製重放)
+- [持久化紀錄（SQLite）](#持久化紀錄sqlite)
+- [MCP Server（給 Claude）](#mcp-server給-claude)
+- [硬化控制 Socket](#硬化控制-socket)
+- [GUI](#gui)
+- [CLI 用法](#cli-用法)
+- [測試紀錄](#測試紀錄)
+- [例外處理](#例外處理)
+- [日誌](#日誌)
+- [支援平台](#支援平台)
+- [授權](#授權)
+
+## 亮點
+
+- **一個 executor，六種協定** — HTTP、FastHttp、WebSocket、gRPC、MQTT、原生 TCP/UDP，全部透過 `LD_start_test` 以 `user` 切換派發。
+- **JSON 驅動** — 每支測試皆為動作 JSON 列表；可手寫、由 HAR 匯入產生、由 MCP 工具排程，或經控制 socket 傳送。
+- **參數解析器** — `${var.x}`、`${env.X}`、`${csv.source.col}`、`${faker.method}`，以及內建 `${uuid()}`、`${now()}`、`${randint(min,max)}` 等 helper；可從回應擷取值，後續 task 再用。
+- **情境流程** — 以 `sequence`（預設）／`weighted`／`conditional`（`run_if`、`skip_if`）宣告 task 流程，無需動到 Python。
+- **六種報告格式** — HTML、JSON、XML、CSV、JUnit XML，以及百分位摘要 JSON（總計、失敗率、per-name p50/p90/p95/p99）。
+- **三種 exporter** — Prometheus HTTP 端點、InfluxDB line-protocol UDP/HTTP sink、OpenTelemetry OTLP gRPC。
+- **分散式 runner** — `runner_mode="master"` / `"worker"`，跨機壓測使用同一份 start_test API。
+- **HAR 錄製／重放** — 將真實瀏覽流量轉成可執行動作 JSON，含 regex include/exclude 過濾。
+- **持久化紀錄** — 選用 SQLite sink，含 run／record／metadata schema，便於跨次回歸檢查。
+- **MCP server** — `python -m je_load_density.mcp_server` 對外開 11 個工具，讓 Claude 端對端驅動 LoadDensity。
+- **硬化控制 socket** — Length-prefix framing、選用 TLS、共享密鑰 token（環境變數或參數），同時保留與 PyBreeze 等工具相容的 legacy 模式。
+- **即時 GUI** — 選用的 PySide6 GUI 含即時統計面板（RPS、平均、p95、失敗），翻譯為英文、繁體中文、日文、韓文。
+- **CLI 子指令** — `run` / `run-dir` / `run-str` / `init` / `serve`。舊式 `-e/-d/-c/--execute_str` 旗標保留以維持下游工具相容。
 
 ## 安裝
-
-### 基本安裝（CLI 與函式庫）
 
 ```bash
 pip install je_load_density
 ```
 
-### 包含 GUI 支援
+引入 [Locust](https://locust.io/) 與 `defusedxml`，僅此而已。
+
+### 選用 extras
+
+| Extra | 加入 |
+|-------|------|
+| `gui` | PySide6 + qt-material（圖形介面） |
+| `websocket` | `websocket-client`（WebSocket user 模板） |
+| `grpc` | `grpcio` + `protobuf`（gRPC user 模板） |
+| `mqtt` | `paho-mqtt`（MQTT user 模板） |
+| `prometheus` | `prometheus-client`（Prometheus exporter） |
+| `opentelemetry` | OpenTelemetry SDK + OTLP gRPC exporter |
+| `metrics` | `prometheus` + `opentelemetry` 一次裝 |
+| `faker` | `Faker`（驅動 `${faker.method}` 占位符） |
+| `mcp` | `mcp` SDK（驅動 MCP server） |
+| `all` | 上列全部 |
 
 ```bash
-pip install je_load_density[gui]
+pip install "je_load_density[gui]"
+pip install "je_load_density[mqtt,grpc,websocket]"
+pip install "je_load_density[metrics]"
+pip install "je_load_density[mcp]"
+pip install "je_load_density[all]"
 ```
 
-這會安裝 [PySide6](https://doc.qt.io/qtforpython/) 和 [qt-material](https://github.com/UN-GCPDS/qt-material) 以提供圖形介面。
+### 開發安裝
 
-## 系統需求
+```bash
+git clone https://github.com/Integration-Automation/LoadDensity.git
+cd LoadDensity
+pip install -e ".[all]"
+pip install -r requirements.txt
+```
 
-- Python **3.10** 或更高版本
-- [Locust](https://locust.io/)（會作為依賴項自動安裝）
+## 架構
 
-## 快速上手
+```
+┌─────────────────────────────────────────────────────────────────┐
+│ CLI / MCP / GUI / 控制 Socket                                   │
+└──────────────────┬──────────────────────────────────────────────┘
+                   │ 動作 JSON
+┌──────────────────▼──────────────────────────────────────────────┐
+│ 動作 Executor（LD_* 派發 + 安全 builtin）                        │
+└──────────────────┬──────────────────────────────────────────────┘
+                   │ start_test
+┌──────────────────▼──────────────────────────────────────────────┐
+│ locust_wrapper_proxy（每協定 task store）                       │
+└──────────────────┬──────────────────────────────────────────────┘
+                   │
+   ┌───────────────┴───────────────┬──────────────┬──────────────┐
+   ▼                               ▼              ▼              ▼
+HTTP / FastHttp  WebSocket  gRPC  MQTT  原生 TCP / UDP
+   │                               │              │              │
+   └───────────────┬───────────────┴──────────────┴──────────────┘
+                   │ Locust 事件
+   ┌───────────────┴───────────────┐
+   ▼                               ▼
+test_record_instance         Prometheus / InfluxDB / OTel
+   │
+   ├── HTML / JSON / XML / CSV / JUnit / Summary 報告
+   └── SQLite 持久化（跨次比對）
+```
 
-### 1. 使用 Python API
+依賴方向永遠是動作層 → Locust。
+
+## Quick Start
+
+### Python API
 
 ```python
 from je_load_density import start_test
 
-# 定義使用者配置與任務
-result = start_test(
+start_test(
     user_detail_dict={"user": "fast_http_user"},
-    user_count=50,
-    spawn_rate=10,
-    test_time=10,
-    tasks={
-        "get": {"request_url": "http://httpbin.org/get"},
-        "post": {"request_url": "http://httpbin.org/post"},
-    }
+    user_count=50, spawn_rate=10, test_time=30,
+    variables={"base": "https://httpbin.org"},
+    tasks=[
+        {"method": "get",  "request_url": "${var.base}/get"},
+        {"method": "post", "request_url": "${var.base}/post",
+         "json": {"hello": "world"},
+         "assertions": [{"type": "status_code", "value": 200}]},
+    ],
 )
 ```
 
-**參數說明：**
-| 參數 | 類型 | 預設值 | 說明 |
-|---|---|---|---|
-| `user_detail_dict` | `dict` | — | 使用者類型配置。`{"user": "fast_http_user"}` 或 `{"user": "http_user"}` |
-| `user_count` | `int` | `50` | 模擬使用者總數 |
-| `spawn_rate` | `int` | `10` | 每秒生成的使用者數量 |
-| `test_time` | `int` | `60` | 測試持續時間（秒）。設為 `None` 則無限執行 |
-| `web_ui_dict` | `dict` | `None` | 啟用 Locust Web UI，例如 `{"host": "127.0.0.1", "port": 8089}` |
-| `tasks` | `dict` | — | HTTP 方法對應請求 URL 的映射 |
-
-### 2. 使用 JSON 腳本檔案
-
-建立 JSON 檔案（`test_scenario.json`）：
+### 動作 JSON
 
 ```json
-[
-    ["LD_start_test", {
-        "user_detail_dict": {"user": "fast_http_user"},
-        "user_count": 50,
-        "spawn_rate": 10,
-        "test_time": 5,
-        "tasks": {
-            "get": {"request_url": "http://httpbin.org/get"},
-            "post": {"request_url": "http://httpbin.org/post"}
-        }
-    }]
-]
+{"load_density": [
+  ["LD_register_variables", {"variables": {"base": "https://httpbin.org"}}],
+  ["LD_start_test", {
+    "user_detail_dict": {"user": "fast_http_user"},
+    "user_count": 20, "spawn_rate": 10, "test_time": 30,
+    "tasks": [
+      {"method": "get",  "request_url": "${var.base}/get"},
+      {"method": "post", "request_url": "${var.base}/post",
+       "json": {"hello": "world"}}
+    ]
+  }],
+  ["LD_generate_summary_report", {"report_name": "smoke"}]
+]}
 ```
 
-從 Python 執行：
-
-```python
-from je_load_density import execute_action, read_action_json
-
-execute_action(read_action_json("test_scenario.json"))
-```
-
-### 3. 使用 CLI 命令列
+CLI 執行：
 
 ```bash
-# 執行單一 JSON 腳本檔案
-python -m je_load_density -e test_scenario.json
-
-# 執行目錄中所有 JSON 檔案
-python -m je_load_density -d ./test_scripts/
-
-# 執行內嵌 JSON 字串
-python -m je_load_density --execute_str '[["LD_start_test", {"user_detail_dict": {"user": "fast_http_user"}, "user_count": 10, "spawn_rate": 5, "test_time": 5, "tasks": {"get": {"request_url": "http://httpbin.org/get"}}}]]'
-
-# 使用模板建立新專案
-python -m je_load_density -c MyProject
+python -m je_load_density run smoke.json
 ```
 
-### 4. 使用 GUI 圖形介面
+## 核心 API
+
+完整公開介面見 `je_load_density/__init__.py` 的 `__all__`。
 
 ```python
-from je_load_density.gui.main_window import LoadDensityUI
-from PySide6.QtWidgets import QApplication
+from je_load_density import (
+    start_test, prepare_env, create_env,
+    execute_action, execute_files, executor, add_command_to_executor,
+    test_record_instance, locust_wrapper_proxy,
+    register_variable, register_variables,
+    register_csv_source, register_csv_sources,
+    parameter_resolver, resolve,
+    har_to_action_json, har_to_tasks, load_har,
+    persist_records, list_runs, fetch_run_records,
+    start_prometheus_exporter, stop_prometheus_exporter,
+    start_influxdb_sink, stop_influxdb_sink,
+    start_opentelemetry_exporter, stop_opentelemetry_exporter,
+    start_load_density_socket_server,
+    generate_html_report, generate_json_report, generate_xml_report,
+    generate_csv_report, generate_junit_report, generate_summary_report,
+    build_summary,
+    create_project_dir, callback_executor, read_action_json,
+)
+```
+
+## 動作 Executor
+
+每個動作為列表：
+
+```python
+["command_name"]                        # 無參數
+["command_name", {"key": "value"}]      # 關鍵字參數
+["command_name", [arg1, arg2]]          # 位置參數
+```
+
+最上層為裸列表，或 `{"load_density": [...]}` 包裝。
+
+### 內建 `LD_*` 指令
+
+| 群組 | 指令 |
+|------|------|
+| 核心 | `LD_start_test`、`LD_execute_action`、`LD_execute_files`、`LD_add_package_to_executor`、`LD_start_socket_server` |
+| 報告 | `LD_generate_html(_report)`、`LD_generate_json(_report)`、`LD_generate_xml(_report)`、`LD_generate_csv_report`、`LD_generate_junit_report`、`LD_generate_summary_report`、`LD_summary` |
+| 持久化 | `LD_persist_records`、`LD_list_runs`、`LD_fetch_run_records`、`LD_clear_records` |
+| 參數 | `LD_register_variable(s)`、`LD_register_csv_source(s)`、`LD_clear_resolver` |
+| 錄製 | `LD_load_har`、`LD_har_to_tasks`、`LD_har_to_action_json` |
+| 指標 | `LD_start/stop_prometheus_exporter`、`LD_start/stop_influxdb_sink`、`LD_start/stop_opentelemetry_exporter` |
+
+安全的 Python builtin（`print`、`len`、`range` 等）也可使用；`eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 已被明確封鎖。
+
+### 自訂指令
+
+```python
+from je_load_density import add_command_to_executor
+
+def slack_notify(message: str) -> None:
+    ...
+
+add_command_to_executor({"LD_slack_notify": slack_notify})
+```
+
+## 使用者模板
+
+所有模板皆透過 `start_test` 的 `user_detail_dict={"user": "<key>"}` 註冊；HTTP / WebSocket / gRPC / MQTT / raw socket 共用相同 task 結構，僅協定相關欄位不同。
+
+### HTTP / FastHttp
+
+```python
+start_test(
+    user_detail_dict={"user": "fast_http_user"},
+    user_count=50, spawn_rate=10, test_time=60,
+    variables={"base": "https://api.example.com"},
+    tasks=[
+        {"method": "post", "request_url": "${var.base}/login",
+         "json": {"email": "u@example.com", "password": "secret"},
+         "extract": [{"var": "auth", "from": "json_path", "path": "data.token"}]},
+        {"method": "get", "request_url": "${var.base}/profile",
+         "headers": {"Authorization": "Bearer ${var.auth}"},
+         "assertions": [{"type": "status_code", "value": 200}]},
+    ],
+)
+```
+
+### WebSocket
+
+```python
+start_test(
+    user_detail_dict={"user": "websocket_user"},
+    user_count=10, spawn_rate=5, test_time=60,
+    tasks=[
+        {"method": "connect", "request_url": "wss://echo.example.com/socket"},
+        {"method": "sendrecv", "payload": '{"ping": 1}', "expect": "pong"},
+        {"method": "close"},
+    ],
+)
+```
+
+### gRPC
+
+```python
+start_test(
+    user_detail_dict={"user": "grpc_user"},
+    user_count=20, spawn_rate=5, test_time=60,
+    tasks=[{
+        "name": "say_hello",
+        "target": "localhost:50051",
+        "stub_path": "pkg.greeter_pb2_grpc.GreeterStub",
+        "request_path": "pkg.greeter_pb2.HelloRequest",
+        "method": "SayHello",
+        "payload": {"name": "world"},
+        "metadata": [["x-token", "abc"]],
+        "timeout": 5,
+    }],
+)
+```
+
+`stub_path` 與 `request_path` 在 `importlib.import_module` 之前皆通過嚴格識別符 regex 驗證，traversal 攻擊將被拒絕。
+
+### MQTT
+
+```python
+start_test(
+    user_detail_dict={"user": "mqtt_user"},
+    user_count=10, spawn_rate=5, test_time=60,
+    tasks=[
+        {"method": "connect",   "broker": "127.0.0.1:1883"},
+        {"method": "subscribe", "topic":  "telemetry/in", "qos": 1},
+        {"method": "publish",   "topic":  "telemetry/out", "payload": "ping", "qos": 1},
+        {"method": "disconnect"},
+    ],
+)
+```
+
+### 原生 TCP / UDP
+
+僅用標準函式庫，無需安裝。
+
+```python
+start_test(
+    user_detail_dict={"user": "socket_user"},
+    user_count=20, spawn_rate=5, test_time=60,
+    tasks=[
+        {"protocol": "tcp", "target": "127.0.0.1:9000",
+         "payload": "PING\n", "expect_bytes": 64,
+         "expect_substring": "PONG"},
+        {"protocol": "udp", "target": "127.0.0.1:9000",
+         "payload": "hex:DEADBEEF", "expect_bytes": 4},
+    ],
+)
+```
+
+## 參數解析器
+
+| 占位符 | 解析為 |
+|--------|--------|
+| `${var.NAME}` | `register_variable(s)` 設定的值 |
+| `${env.NAME}` | 環境變數 `NAME` |
+| `${csv.SOURCE.COL}` | CSV 來源 `SOURCE` 的下一筆（預設循環） |
+| `${faker.METHOD}` | `Faker().METHOD()`（lazy import） |
+| `${uuid()}` | 新 UUID 4 字串 |
+| `${now()}` | 本地 ISO-8601 時間（秒） |
+| `${randint(min, max)}` | 密碼學強度隨機整數 |
+
+未知占位符原樣保留，便於 dry run 偵錯。
+
+## 情境模式
+
+```json
+{
+  "mode": "weighted",
+  "tasks": [
+    {"method": "get", "request_url": "/products", "weight": 3},
+    {"method": "get", "request_url": "/expensive", "weight": 1}
+  ]
+}
+```
+
+| 模式 | 行為 |
+|------|------|
+| `sequence` | 依序執行所有 task（預設） |
+| `weighted` | 每 tick 依 `weight` 加權挑一個 |
+| `conditional` | 以 `run_if` / `skip_if` 預測式控制 |
+
+預測式：`bool`、`"${var.x}"`、`{"equals": [a,b]}`、`{"not_equals": [a,b]}`、`{"in": [needle, haystack]}`、`{"truthy": value}`。
+
+## 斷言與擷取
+
+```json
+{
+  "method": "post",
+  "request_url": "${var.base}/login",
+  "json": {"email": "u@example.com", "password": "secret"},
+  "assertions": [
+    {"type": "status_code", "value": 200},
+    {"type": "json_path", "path": "data.role", "value": "admin"}
+  ],
+  "extract": [
+    {"var": "auth_token", "from": "json_path", "path": "data.token"},
+    {"var": "request_id", "from": "header",    "name": "X-Request-Id"}
+  ]
+}
+```
+
+斷言類型：`status_code`、`contains`、`not_contains`、`json_path`、`header`。
+擷取來源：`json_path`、`header`、`status_code`。
+
+## 報告
+
+```python
+from je_load_density import (
+    generate_html_report, generate_json_report, generate_xml_report,
+    generate_csv_report, generate_junit_report, generate_summary_report,
+)
+
+generate_html_report("report")           # report.html
+generate_json_report("report")           # report_success.json + report_failure.json
+generate_xml_report("report")            # report_success.xml  + report_failure.xml
+generate_csv_report("report")            # report.csv
+generate_junit_report("report-junit")    # report-junit.xml（CI）
+generate_summary_report("report-sum")    # 總計 + per-name p50/p90/p95/p99
+```
+
+## 可觀測性
+
+```python
+from je_load_density import (
+    start_prometheus_exporter, start_influxdb_sink, start_opentelemetry_exporter,
+)
+
+start_prometheus_exporter(port=9646, addr="127.0.0.1")
+start_influxdb_sink(transport="udp", host="influxdb", port=8089)
+start_opentelemetry_exporter(endpoint="http://otel-collector:4317",
+                             service_name="loaddensity")
+```
+
+| Sink | 指標 |
+|------|------|
+| Prometheus | `loaddensity_requests_total`、`loaddensity_request_latency_ms`、`loaddensity_response_bytes` |
+| InfluxDB | `loaddensity_request` line-protocol（UDP 或 HTTP） |
+| OTel | `loaddensity.requests`、`loaddensity.request.latency`、`loaddensity.response.size` |
+
+三者皆 lazy load，由對應 install extra 控管相依。
+
+## 分散式 Master / Worker
+
+```python
+# master
+start_test(
+    user_detail_dict={"user": "fast_http_user"},
+    runner_mode="master",
+    master_bind_host="0.0.0.0", master_bind_port=5557,
+    expected_workers=4,
+    web_ui_dict={"host": "0.0.0.0", "port": 8089},
+    user_count=400, spawn_rate=40, test_time=600,
+    tasks=[...],
+)
+
+# worker
+start_test(
+    user_detail_dict={"user": "fast_http_user"},
+    runner_mode="worker",
+    master_host="10.0.0.10", master_port=5557,
+    tasks=[...],
+)
+```
+
+Master 在開始 ramp 前最多等 60 秒，等待 `expected_workers` 個 worker 加入。
+
+## HAR 錄製／重放
+
+```python
+from je_load_density import load_har, har_to_action_json
+
+har = load_har("recording.har")
+action_json = har_to_action_json(
+    har,
+    user="fast_http_user",
+    user_count=20, spawn_rate=10, test_time=120,
+    include=[r"api\.example\.com"],
+    exclude=[r"\.svg$"],
+)
+```
+
+可吃 Chrome / Firefox DevTools、mitmproxy、Charles 等錄製。狀態碼會轉成 `status_code` 斷言。
+
+## 持久化紀錄（SQLite）
+
+```python
+from je_load_density import persist_records, list_runs, fetch_run_records
+
+run_id = persist_records(
+    "loadtests.db",
+    label="checkout-2026-04-28",
+    metadata={"branch": "dev", "commit": "abc1234"},
+)
+for row in list_runs("loadtests.db", limit=10):
+    print(row)
+```
+
+Schema 採延遲建立。`run_id` 與 `name` 上有索引，跨次查詢快速。
+
+## MCP Server（給 Claude）
+
+```bash
+pip install "je_load_density[mcp]"
+python -m je_load_density.mcp_server
+```
+
+接到 Claude Desktop / Code：
+
+```json
+{
+  "mcpServers": {
+    "loaddensity": {
+      "command": "python",
+      "args": ["-m", "je_load_density.mcp_server"]
+    }
+  }
+}
+```
+
+對外開 11 個工具：`run_test`、`run_action_json`、`create_project`、`list_executor_commands`、`import_har`、`generate_reports`、`summary`、`persist_records`、`list_runs`、`fetch_run`、`clear_records`。
+
+## 硬化控制 Socket
+
+```bash
+python -m je_load_density serve \
+    --host 0.0.0.0 --port 9940 --framed \
+    --token "$LOAD_DENSITY_SOCKET_TOKEN" \
+    --tls-cert /etc/loaddensity/server.crt \
+    --tls-key /etc/loaddensity/server.key
+```
+
+- 4-byte big-endian 長度前綴框架（1 MiB 上限）
+- 選用 TLS（`ssl.create_default_context`，TLS 1.2+ minimum）
+- 共享密鑰 token，以 `hmac.compare_digest` 比對；一旦設定，所有 payload 須使用 `{"token": "...", "command": [...]}` 信封，可以 `"op": "quit"` 停機
+- Token 也可由 `LOAD_DENSITY_SOCKET_TOKEN` 環境變數讀取
+- 保留未驗證 legacy 模式以維持相容
+
+## GUI
+
+```bash
+pip install "je_load_density[gui]"
+```
+
+```python
 import sys
+from PySide6.QtWidgets import QApplication
+from je_load_density.gui.main_window import LoadDensityUI
 
 app = QApplication(sys.argv)
 window = LoadDensityUI()
@@ -138,221 +536,55 @@ window.show()
 sys.exit(app.exec())
 ```
 
-## 報告生成
+GUI 提供英文、繁體中文、日文、韓文翻譯，以及每秒輪詢 `test_record_instance` 的即時統計面板（RPS、平均、p95、失敗）。
 
-執行測試後，從記錄的資料生成報告：
-
-```python
-from je_load_density import (
-    generate_html_report,
-    generate_json_report,
-    generate_xml_report,
-)
-
-# HTML 報告 — 建立 "my_report.html"
-generate_html_report("my_report")
-
-# JSON 報告 — 建立 "my_report_success.json" 和 "my_report_failure.json"
-generate_json_report("my_report")
-
-# XML 報告 — 建立 "my_report_success.xml" 和 "my_report_failure.xml"
-generate_xml_report("my_report")
-```
-
-## 進階用法
-
-### 動作執行器
-
-執行器將字串動作名稱映射到可呼叫的函式。所有 Python 內建函式也可使用。
-
-```python
-from je_load_density import executor, add_command_to_executor
-
-# 註冊自訂函式
-def my_custom_action(message):
-    print(f"自訂動作: {message}")
-
-add_command_to_executor({"my_action": my_custom_action})
-
-# 程式化執行動作
-executor.execute_action([
-    ["my_action", ["Hello World"]],
-    ["print", ["測試完成"]],
-])
-```
-
-**內建執行器動作：**
-| 動作名稱 | 說明 |
-|---|---|
-| `LD_start_test` | 啟動負載測試 |
-| `LD_generate_html` | 生成 HTML 片段 |
-| `LD_generate_html_report` | 生成完整 HTML 報告檔案 |
-| `LD_generate_json` | 生成 JSON 資料結構 |
-| `LD_generate_json_report` | 生成 JSON 報告檔案 |
-| `LD_generate_xml` | 生成 XML 字串 |
-| `LD_generate_xml_report` | 生成 XML 報告檔案 |
-| `LD_execute_action` | 執行動作列表 |
-| `LD_execute_files` | 從多個檔案執行動作 |
-| `LD_add_package_to_executor` | 動態載入套件到執行器 |
-
-### 回呼執行器
-
-將觸發函式與回呼串聯：
-
-```python
-from je_load_density import callback_executor
-
-def after_test():
-    print("測試完成，正在生成報告...")
-
-callback_executor.callback_function(
-    trigger_function_name="user_test",
-    callback_function=after_test,
-    user_detail_dict={"user": "fast_http_user"},
-    user_count=10,
-    spawn_rate=5,
-    test_time=5,
-    tasks={"get": {"request_url": "http://httpbin.org/get"}},
-)
-```
-
-### TCP Socket 伺服器（遠端執行）
-
-啟動接收 JSON 指令的 TCP 伺服器：
-
-```python
-from je_load_density import start_load_density_socket_server
-
-# 啟動伺服器（阻塞式）
-start_load_density_socket_server(host="localhost", port=9940)
-```
-
-從客戶端發送指令：
-
-```python
-import socket, json
-
-sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-sock.connect(("localhost", 9940))
-
-command = json.dumps([
-    ["LD_start_test", {
-        "user_detail_dict": {"user": "fast_http_user"},
-        "user_count": 10, "spawn_rate": 5, "test_time": 5,
-        "tasks": {"get": {"request_url": "http://httpbin.org/get"}}
-    }]
-])
-sock.send(command.encode("utf-8"))
-response = sock.recv(8192)
-print(response.decode("utf-8"))
-sock.close()
-```
-
-發送 `"quit_server"` 可優雅地關閉伺服器。
-
-### 專案腳手架
-
-生成包含關鍵字模板與執行器腳本的專案：
-
-```python
-from je_load_density import create_project_dir
-
-create_project_dir(project_path="./my_tests", parent_name="LoadDensity")
-```
-
-這會建立以下結構：
-```
-my_tests/
-└── LoadDensity/
-    ├── keyword/
-    │   ├── keyword1.json    # FastHttpUser 測試模板
-    │   └── keyword2.json    # HttpUser 測試模板
-    └── executor/
-        ├── executor_one_file.py   # 執行單一關鍵字檔案
-        └── executor_folder.py     # 執行 keyword/ 目錄中所有檔案
-```
-
-### 動態套件載入
-
-載入外部套件並將其函式註冊到執行器中：
-
-```python
-from je_load_density import executor
-
-# 載入套件並使其函式可作為執行器動作使用
-executor.execute_action([
-    ["LD_add_package_to_executor", ["my_custom_package"]]
-])
-```
-
-### 測試記錄
-
-以程式化方式存取原始測試記錄：
-
-```python
-from je_load_density import test_record_instance
-
-# 執行測試後
-for record in test_record_instance.test_record_list:
-    print(record["Method"], record["test_url"], record["status_code"])
-
-for error in test_record_instance.error_record_list:
-    print(error["Method"], error["test_url"], error["error"])
-
-# 清除記錄
-test_record_instance.clear_records()
-```
-
-## 架構
+## CLI 用法
 
 ```
-je_load_density/
-├── __init__.py              # 公開 API 匯出
-├── __main__.py              # CLI 進入點
-├── gui/                     # PySide6 GUI（選用依賴）
-│   ├── main_window.py       # 主視窗（QMainWindow）
-│   ├── main_widget.py       # 測試參數表單與日誌面板
-│   ├── load_density_gui_thread.py  # 測試背景執行緒
-│   ├── log_to_ui_filter.py  # GUI 顯示的日誌攔截器
-│   └── language_wrapper/    # 國際化（英文、繁體中文）
-├── wrapper/
-│   ├── create_locust_env/   # Locust Environment 與 Runner 設定
-│   ├── start_wrapper/       # 高階 start_test() 進入點
-│   ├── user_template/       # HttpUser 與 FastHttpUser 封裝
-│   ├── proxy/               # 使用者代理容器與配置
-│   └── event/               # 請求鉤子（記錄所有請求）
-└── utils/
-    ├── executor/            # 動作執行器（事件驅動）
-    ├── generate_report/     # HTML、JSON、XML 報告生成器
-    ├── test_record/         # 測試記錄儲存
-    ├── socket_server/       # 遠端執行 TCP 伺服器
-    ├── callback/            # 回呼函式執行器
-    ├── project/             # 專案腳手架與模板
-    ├── package_manager/     # 動態套件載入
-    ├── json/                # JSON 檔案讀寫工具
-    ├── xml/                 # XML 結構工具
-    ├── file_process/        # 目錄檔案列表
-    ├── logging/             # Logger 實例
-    └── exception/           # 自訂例外與錯誤標籤
+python -m je_load_density run FILE              # 執行單一動作 JSON 檔
+python -m je_load_density run-dir DIR           # 執行 DIR 下所有 .json
+python -m je_load_density run-str JSON          # 執行 inline JSON
+python -m je_load_density init PATH             # 建立專案骨架
+python -m je_load_density serve [--host ...]    # 啟動控制 socket
 ```
 
-## 已測試平台
+舊式 `-e/-d/-c/--execute_str` 仍接受，相容下游工具。
 
-- Windows 10 / 11
-- macOS 10.15 ~ 11（Big Sur）
-- Ubuntu 20.04
-- Raspberry Pi 3B+
+## 測試紀錄
 
-## 授權條款
+`test_record_instance.test_record_list` 與 `error_record_list` 收集每筆請求：`Method`、`test_url`、`name`、`status_code`、`response_time_ms`、`response_length`，失敗則含 `error`。報告與 SQLite sink 直接讀取此處。
 
-本專案採用 [MIT 授權條款](../LICENSE)。
+## 例外處理
 
-## 貢獻指南
+```
+LoadDensityTestException
+├── LoadDensityTestJsonException
+├── LoadDensityGenerateJsonReportException
+├── LoadDensityTestExecuteException
+├── LoadDensityAssertException
+├── LoadDensityHTMLException
+├── LoadDensityAddCommandException
+├── XMLException → XMLTypeException
+└── CallbackExecutorException
+```
 
-請參閱 [CONTRIBUTING.md](../CONTRIBUTING.md) 了解貢獻規範。
+所有自訂例外皆繼承 `LoadDensityTestException`；攔該類別即可全面處理。
 
-## 相關連結
+## 日誌
 
-- **PyPI**：https://pypi.org/project/je_load_density/
-- **文件**：https://loaddensity.readthedocs.io/en/latest/
-- **原始碼**：https://github.com/Intergration-Automation-Testing/LoadDensity
+LoadDensity 提供已配置好的 logger（`load_density_logger`，位於 `je_load_density.utils.logging.loggin_instance`）。以標準 `logging` 模組 API 即可整合既有日誌系統。
+
+## 支援平台
+
+| 平台 | 狀態 |
+|------|------|
+| Windows 10 / 11 | 完整支援 |
+| macOS | 完整支援 |
+| Ubuntu / Linux | 完整支援 |
+| Raspberry Pi | 已測 3B+ 以上 |
+
+需 Python 3.10+。
+
+## 授權
+
+MIT — 見 [LICENSE](../LICENSE)。

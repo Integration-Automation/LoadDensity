@@ -1,87 +1,80 @@
-GUI（圖形化使用者介面）
-======================
+GUI 圖形介面
+============
 
-LoadDensity 包含一個可選的 PySide6 圖形化介面，可透過視覺化表單執行負載測試，
-並即時顯示日誌。
+概觀
+----
 
-安裝需求
---------
+LoadDensity 內含選用的 PySide6 圖形前端。提供啟動快速 HTTP 測試的表單控制元件、鏡像框架日誌的 log panel，以及每秒輪詢 ``test_record_instance`` 的即時統計面板。
 
-GUI 需要額外的相依套件。請使用以下方式安裝：
+安裝
+----
 
 .. code-block:: bash
 
-    pip install je_load_density[gui]
+    pip install "je_load_density[gui]"
 
-這會安裝：
+引入：
 
-* **PySide6** (6.10.0) — Qt for Python 綁定
-* **qt-material** — Material Design 主題
+* ``PySide6`` — Qt for Python bindings。
+* ``qt-material`` — Material design 主題。
 
-啟動 GUI
---------
+啟動
+----
 
 .. code-block:: python
 
-    from je_load_density.gui.main_window import LoadDensityUI
-    from PySide6.QtWidgets import QApplication
     import sys
+    from PySide6.QtWidgets import QApplication
+    from je_load_density.gui.main_window import LoadDensityUI
 
     app = QApplication(sys.argv)
     window = LoadDensityUI()
     window.show()
     sys.exit(app.exec())
 
-GUI 功能
---------
+版面
+----
 
-GUI 提供以下功能：
+* **測試參數表單** — URL、測試時間、user 數、spawn rate、HTTP method。
+* **開始按鈕** — 在背景 ``QThread`` 啟動壓測。
+* **即時統計面板** — 總請求、目前速率、平均與 p95 延遲、失敗數。每 1 秒重新整理。
+* **Log panel** — 即時框架日誌。
+* **Material Design 主題** — ``qt-material`` 的 ``dark_amber.xml``。
 
-* **測試參數表單** — 輸入欄位包含：
+語言
+----
 
-  * 目標 URL
-  * 測試持續時間（秒）
-  * 使用者數量（模擬使用者總數）
-  * 生成速率（每秒生成使用者數量）
-  * HTTP 方法選擇（GET、POST、PUT、PATCH、DELETE、HEAD、OPTIONS）
+GUI 內含英文、繁體中文、日文、韓文翻譯。透過 ``LanguageWrapper.reset_language`` 切換：
 
-* **啟動按鈕** — 在背景執行緒中啟動負載測試（不會阻塞 UI）
-* **即時日誌面板** — 每 50 毫秒更新一次，即時顯示測試執行的日誌訊息
-* **Material Design 主題** — 使用 qt-material 的 ``dark_amber.xml`` 主題
+.. code-block:: python
 
-語言支援
---------
-
-GUI 支援兩種語言：
-
-* **英文**（預設）
-* **繁體中文**
-
-語言字串由 ``je_load_density/gui/language_wrapper/`` 下的 ``language_wrapper`` 模組管理。
+    from je_load_density.gui.language_wrapper.multi_language_wrapper import (
+        language_wrapper,
+    )
+    language_wrapper.reset_language("Japanese")     # 或 Korean / Traditional_Chinese / English
 
 架構
 ----
 
-GUI 由以下元件組成：
-
 .. list-table::
    :header-rows: 1
-   :widths: 35 65
+   :widths: 30 70
 
    * - 元件
      - 說明
    * - ``LoadDensityUI``
-     - 主視窗（``QMainWindow``）。套用主題並包含 widget。
+     - ``QMainWindow`` 主機。套用主題並嵌入中央 widget。
    * - ``LoadDensityWidget``
-     - 中央 widget，包含表單輸入、啟動按鈕和日誌面板。
+     - 表單 + 開始按鈕 + 統計面板 + log panel。
+   * - ``StatsPanel``
+     - 由 QTimer 驅動、讀取 ``test_record_instance`` 的面板。
    * - ``LoadDensityGUIThread``
-     - 背景 ``QThread``，在不阻塞 UI 的情況下執行負載測試。
+     - 在背景跑測試的 ``QThread``，避免阻擋 UI。
    * - ``InterceptAllFilter``
-     - 日誌過濾器，將日誌訊息擷取到佇列中供 GUI 顯示。
+     - 將 log records 攔截至 thread-safe queue。
    * - ``log_message_queue``
-     - 執行緒安全的佇列，連接日誌系統與 GUI 日誌面板。
+     - 連接 logger 與 GUI log panel 的橋接 queue。
 
 .. note::
 
-    在 Windows 平台上，GUI 會透過 ``ctypes`` 設定 ``AppUserModelID``，
-    讓工作列能正確識別應用程式。
+    在 Windows 上，主視窗會以 ``ctypes`` 設定 ``AppUserModelID``，工作列才會顯示正確的應用名稱。

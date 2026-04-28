@@ -1,89 +1,88 @@
 GUI (Graphical User Interface)
 ==============================
 
-LoadDensity includes an optional PySide6-based graphical interface for running load tests
-with a visual form and real-time log display.
+Overview
+--------
 
-Requirements
-------------
+LoadDensity ships an optional PySide6 graphical front-end. It carries
+the form controls for kicking off a quick HTTP test, a log panel that
+mirrors the framework log, and a live stats panel that polls
+``test_record_instance`` once a second.
 
-The GUI requires additional dependencies. Install with:
+Install
+-------
 
 .. code-block:: bash
 
-    pip install je_load_density[gui]
+    pip install "je_load_density[gui]"
 
-This installs:
+Pulls in:
 
-* **PySide6** (6.10.0) — Qt for Python bindings
-* **qt-material** — Material design theme
+* ``PySide6`` — Qt for Python bindings.
+* ``qt-material`` — Material design theme.
 
-Launching the GUI
------------------
+Launch
+------
 
 .. code-block:: python
 
-    from je_load_density.gui.main_window import LoadDensityUI
-    from PySide6.QtWidgets import QApplication
     import sys
+    from PySide6.QtWidgets import QApplication
+    from je_load_density.gui.main_window import LoadDensityUI
 
     app = QApplication(sys.argv)
     window = LoadDensityUI()
     window.show()
     sys.exit(app.exec())
 
-GUI Features
-------------
+Layout
+------
 
-The GUI provides:
+* **Test parameter form** — URL, test duration, user count, spawn rate,
+  HTTP method.
+* **Start button** — Launches the load test in a background ``QThread``.
+* **Live stats panel** — Total requests, current rate, average and p95
+  latency, failure count. Refreshes every 1 s.
+* **Log panel** — Real-time framework log feed.
+* **Material Design theme** — ``dark_amber.xml`` from ``qt-material``.
 
-* **Test Parameter Form** — Input fields for:
+Languages
+---------
 
-  * Target URL
-  * Test duration (seconds)
-  * User count (number of simulated users)
-  * Spawn rate (users per second)
-  * HTTP method selection (GET, POST, PUT, PATCH, DELETE, HEAD, OPTIONS)
+The GUI ships with English, Traditional Chinese, Japanese, and
+Korean translations. Switch via the ``LanguageWrapper.reset_language``
+helper:
 
-* **Start Button** — Launches the load test in a background thread (non-blocking UI)
-* **Real-time Log Panel** — Displays log messages from the test execution in real-time,
-  updated every 50ms via a QTimer
-* **Material Design Theme** — Uses the ``dark_amber.xml`` theme from qt-material
+.. code-block:: python
 
-Language Support
-----------------
-
-The GUI supports two languages:
-
-* **English** (default)
-* **Traditional Chinese** (繁體中文)
-
-Language strings are managed via the ``language_wrapper`` module under
-``je_load_density/gui/language_wrapper/``.
+    from je_load_density.gui.language_wrapper.multi_language_wrapper import (
+        language_wrapper,
+    )
+    language_wrapper.reset_language("Japanese")     # or Korean / Traditional_Chinese / English
 
 Architecture
 ------------
 
-The GUI consists of the following components:
-
 .. list-table::
    :header-rows: 1
-   :widths: 35 65
+   :widths: 30 70
 
    * - Component
      - Description
    * - ``LoadDensityUI``
-     - Main window (``QMainWindow``). Applies theme and contains the widget.
+     - ``QMainWindow`` host. Applies theme and wires the central widget.
    * - ``LoadDensityWidget``
-     - Central widget with form inputs, start button, and log panel.
+     - Form + start button + stats panel + log panel.
+   * - ``StatsPanel``
+     - QTimer-driven panel reading ``test_record_instance``.
    * - ``LoadDensityGUIThread``
-     - Background ``QThread`` that runs the load test without blocking the UI.
+     - Background ``QThread`` that runs the test without blocking the UI.
    * - ``InterceptAllFilter``
-     - Log filter that captures log messages into a queue for GUI display.
+     - Captures log records into a thread-safe queue.
    * - ``log_message_queue``
-     - Thread-safe queue bridging the logger and the GUI log panel.
+     - Bridges the logger and the GUI log panel.
 
 .. note::
 
-    On Windows, the GUI sets ``AppUserModelID`` via ``ctypes`` so the taskbar correctly
-    identifies the application.
+    On Windows the main window sets ``AppUserModelID`` via ``ctypes`` so
+    the taskbar correctly identifies the application.

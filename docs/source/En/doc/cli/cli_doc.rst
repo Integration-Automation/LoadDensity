@@ -1,106 +1,86 @@
 CLI (Command Line Interface)
 ============================
 
-LoadDensity provides a full command-line interface via ``python -m je_load_density``.
+LoadDensity ships a subcommand-style CLI. Run
+``python -m je_load_density --help`` for the full surface.
 
-CLI Arguments
--------------
+Subcommands
+-----------
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 10 65
+   :widths: 25 75
 
-   * - Argument
-     - Short
-     - Description
-   * - ``--execute_file``
-     - ``-e``
-     - Execute a single JSON script file
-   * - ``--execute_dir``
-     - ``-d``
-     - Execute all JSON files in a directory
-   * - ``--execute_str``
-     - —
-     - Execute an inline JSON string
-   * - ``--create_project``
-     - ``-c``
-     - Scaffold a new project with templates
+   * - Subcommand
+     - Purpose
+   * - ``run FILE``
+     - Execute one action JSON file.
+   * - ``run-dir DIR``
+     - Execute every ``.json`` in a directory.
+   * - ``run-str JSON``
+     - Execute an inline JSON string (Windows double-encoding handled
+       transparently).
+   * - ``init PATH``
+     - Scaffold a new project skeleton.
+   * - ``serve``
+     - Start the hardened TCP control socket server.
 
-Execute a Single JSON File
---------------------------
-
-Run a test defined in a single JSON keyword file:
+``run``
+-------
 
 .. code-block:: bash
 
-    python -m je_load_density -e test_scenario.json
+    python -m je_load_density run smoke.json
 
-The JSON file should follow the action list format:
+Where ``smoke.json`` is::
 
-.. code-block:: json
+    {"load_density": [
+      ["LD_start_test", {
+        "user_detail_dict": {"user": "fast_http_user"},
+        "user_count": 20, "spawn_rate": 10, "test_time": 30,
+        "tasks": [{"method": "get", "request_url": "https://httpbin.org/get"}]
+      }],
+      ["LD_generate_summary_report", {"report_name": "smoke"}]
+    ]}
 
-    [
-        ["LD_start_test", {
-            "user_detail_dict": {"user": "fast_http_user"},
-            "user_count": 50,
-            "spawn_rate": 10,
-            "test_time": 5,
-            "tasks": {
-                "get": {"request_url": "http://httpbin.org/get"},
-                "post": {"request_url": "http://httpbin.org/post"}
-            }
-        }]
-    ]
+``run-dir``
+-----------
 
-Execute All JSON Files in a Directory
--------------------------------------
+Run every ``.json`` action file in a directory tree::
 
-Run all JSON keyword files in a specified directory recursively:
+    python -m je_load_density run-dir ./scenarios
 
-.. code-block:: bash
+``run-str``
+-----------
 
-    python -m je_load_density -d ./test_scripts/
+Inline JSON (handy for CI scripts)::
 
-This scans the directory for all ``.json`` files and executes each one sequentially.
+    python -m je_load_density run-str '{"load_density":[["LD_summary",{}]]}'
 
-Execute an Inline JSON String
------------------------------
+``init``
+--------
 
-Execute a JSON action list directly as a string:
+Scaffold a project at PATH::
 
-.. code-block:: bash
+    python -m je_load_density init ./my_load_test
 
-    python -m je_load_density --execute_str '[["LD_start_test", {"user_detail_dict": {"user": "fast_http_user"}, "user_count": 10, "spawn_rate": 5, "test_time": 5, "tasks": {"get": {"request_url": "http://httpbin.org/get"}}}]]'
+``serve``
+---------
 
-.. note::
-
-    On **Windows**, inline JSON strings are automatically double-parsed due to shell
-    escaping differences. The CLI handles this transparently.
-
-Create a Project
-----------------
-
-Scaffold a new project with keyword templates and executor scripts:
+Start the control socket server. See
+:doc:`../socket_server/socket_server_doc` for protocol details.
 
 .. code-block:: bash
 
-    python -m je_load_density -c MyProject
+    python -m je_load_density serve \
+        --host 0.0.0.0 --port 9940 \
+        --framed --token "$LOAD_DENSITY_SOCKET_TOKEN" \
+        --tls-cert /etc/loaddensity/server.crt \
+        --tls-key /etc/loaddensity/server.key
 
-This generates a project directory structure:
+Legacy flags
+------------
 
-.. code-block:: text
-
-    MyProject/
-    └── LoadDensity/
-        ├── keyword/
-        │   ├── keyword1.json
-        │   └── keyword2.json
-        └── executor/
-            ├── executor_one_file.py
-            └── executor_folder.py
-
-Error Handling
---------------
-
-If no valid argument is provided, the CLI raises a ``LoadDensityTestExecuteException``
-and exits with code 1. All errors are printed to stderr.
+The flat ``-e/-d/-c/--execute_str`` flags from previous releases are
+still accepted (suppressed in ``--help``) for backwards compatibility
+with tools such as PyBreeze. New scripts should use the subcommands.

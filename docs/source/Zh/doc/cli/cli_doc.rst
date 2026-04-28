@@ -1,106 +1,81 @@
-命令列介面（CLI）
-==================
+CLI 命令列介面
+==============
 
-LoadDensity 提供完整的命令列介面，透過 ``python -m je_load_density`` 使用。
+LoadDensity 採子指令式 CLI。執行 ``python -m je_load_density --help`` 可查看完整介面。
 
-CLI 參數
---------
+子指令
+------
 
 .. list-table::
    :header-rows: 1
-   :widths: 25 10 65
+   :widths: 25 75
 
-   * - 參數
-     - 簡寫
-     - 說明
-   * - ``--execute_file``
-     - ``-e``
-     - 執行單一 JSON 腳本檔案
-   * - ``--execute_dir``
-     - ``-d``
-     - 執行目錄下所有 JSON 檔案
-   * - ``--execute_str``
-     - —
-     - 執行行內 JSON 字串
-   * - ``--create_project``
-     - ``-c``
-     - 建置新專案（包含模板）
+   * - 子指令
+     - 用途
+   * - ``run FILE``
+     - 執行單一動作 JSON 檔。
+   * - ``run-dir DIR``
+     - 執行目錄下所有 ``.json``。
+   * - ``run-str JSON``
+     - 直接執行 inline JSON 字串（Windows 雙重編碼自動處理）。
+   * - ``init PATH``
+     - 建立新的專案骨架。
+   * - ``serve``
+     - 啟動硬化的 TCP 控制 socket server。
 
-執行單一 JSON 檔案
---------------------
-
-執行定義在單一 JSON 關鍵字檔案中的測試：
+``run``
+-------
 
 .. code-block:: bash
 
-    python -m je_load_density -e test_scenario.json
+    python -m je_load_density run smoke.json
 
-JSON 檔案應遵循動作列表格式：
+``smoke.json`` 內容::
 
-.. code-block:: json
+    {"load_density": [
+      ["LD_start_test", {
+        "user_detail_dict": {"user": "fast_http_user"},
+        "user_count": 20, "spawn_rate": 10, "test_time": 30,
+        "tasks": [{"method": "get", "request_url": "https://httpbin.org/get"}]
+      }],
+      ["LD_generate_summary_report", {"report_name": "smoke"}]
+    ]}
 
-    [
-        ["LD_start_test", {
-            "user_detail_dict": {"user": "fast_http_user"},
-            "user_count": 50,
-            "spawn_rate": 10,
-            "test_time": 5,
-            "tasks": {
-                "get": {"request_url": "http://httpbin.org/get"},
-                "post": {"request_url": "http://httpbin.org/post"}
-            }
-        }]
-    ]
+``run-dir``
+-----------
 
-執行目錄下所有 JSON 檔案
---------------------------
+對目錄樹下所有 ``.json`` 動作檔執行::
 
-遞迴執行指定目錄下所有 JSON 關鍵字檔案：
+    python -m je_load_density run-dir ./scenarios
 
-.. code-block:: bash
+``run-str``
+-----------
 
-    python -m je_load_density -d ./test_scripts/
+Inline JSON（CI script 友善）::
 
-此命令會掃描目錄中所有 ``.json`` 檔案，依序執行。
+    python -m je_load_density run-str '{"load_density":[["LD_summary",{}]]}'
 
-執行行內 JSON 字串
---------------------
-
-直接以字串形式執行 JSON 動作列表：
-
-.. code-block:: bash
-
-    python -m je_load_density --execute_str '[["LD_start_test", {"user_detail_dict": {"user": "fast_http_user"}, "user_count": 10, "spawn_rate": 5, "test_time": 5, "tasks": {"get": {"request_url": "http://httpbin.org/get"}}}]]'
-
-.. note::
-
-    在 **Windows** 平台上，行內 JSON 字串會因為 shell 跳脫字元差異而自動進行雙重解析。
-    CLI 會自動處理此差異。
-
-建立專案
+``init``
 --------
 
-建置包含關鍵字模板與執行器腳本的新專案：
+於 PATH 建立專案骨架::
+
+    python -m je_load_density init ./my_load_test
+
+``serve``
+---------
+
+啟動控制 socket server。詳見 :doc:`../socket_server/socket_server_doc`。
 
 .. code-block:: bash
 
-    python -m je_load_density -c MyProject
+    python -m je_load_density serve \
+        --host 0.0.0.0 --port 9940 \
+        --framed --token "$LOAD_DENSITY_SOCKET_TOKEN" \
+        --tls-cert /etc/loaddensity/server.crt \
+        --tls-key /etc/loaddensity/server.key
 
-產生的專案目錄結構：
-
-.. code-block:: text
-
-    MyProject/
-    └── LoadDensity/
-        ├── keyword/
-        │   ├── keyword1.json
-        │   └── keyword2.json
-        └── executor/
-            ├── executor_one_file.py
-            └── executor_folder.py
-
-錯誤處理
+舊式旗標
 --------
 
-若未提供有效參數，CLI 會拋出 ``LoadDensityTestExecuteException`` 並以結束碼 1 退出。
-所有錯誤訊息會輸出至 stderr。
+之前版本的扁平旗標 ``-e/-d/-c/--execute_str`` 仍接受（在 ``--help`` 中隱藏），維持與 PyBreeze 等下游工具相容。新腳本應使用子指令。

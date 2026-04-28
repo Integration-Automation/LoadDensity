@@ -1,22 +1,49 @@
-Welcome to LoadDensity's documentation!
-=============================================
+==================
+LoadDensity
+==================
 
-**LoadDensity** is a high-performance load & stress testing automation framework built on top of
-`Locust <https://locust.io/>`_. It provides a simplified wrapper around Locust's core functionality,
-enabling fast user spawning, flexible test configuration via templates and JSON-driven scripts,
-report generation in multiple formats (HTML / JSON / XML), a built-in GUI, remote execution
-via TCP socket server, and a callback mechanism for post-test workflows.
+**A multi-protocol load and stress automation framework built on Locust**
 
-.. note::
+LoadDensity (``je_load_density``) wraps Locust with a JSON-driven action
+executor and adds first-class support for HTTP, WebSocket, gRPC, MQTT,
+and raw TCP/UDP user templates. Every executor command has a
+deterministic name (``LD_*``) and a single dispatch point, so an action
+JSON can mix protocols, parameterised data, scenario flow, reports, and
+metrics exporters in the same script.
 
-   - **PyPI**: https://pypi.org/project/je_load_density/
-   - **Source Code**: https://github.com/Intergration-Automation-Testing/LoadDensity
-   - **License**: MIT
+* **PyPI**: https://pypi.org/project/je_load_density/
+* **GitHub**: https://github.com/Integration-Automation/LoadDensity
+* **License**: MIT
+
+----
+
+The documentation is split by language and by content type. Each
+language manual is organised into chapters (Getting Started, Core API,
+Actions, User Templates, Reporting, Orchestration, Recording & Data,
+Tooling, Integrations, Reference); the API book holds the
+auto-generated Python reference.
 
 .. toctree::
-    :maxdepth: 4
-    :caption: Contents
+   :maxdepth: 2
+   :caption: English manual
 
-    En/en_index
-    Zh/zh_index
-    api/api_index
+   En/en_index.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: 繁體中文手冊
+
+   Zh/zh_index.rst
+
+.. toctree::
+   :maxdepth: 2
+   :caption: API reference
+
+   api/api_index.rst
+
+----
+
+RoadMap
+-------
+
+* Project Kanban: https://github.com/orgs/Integration-Automation/projects
