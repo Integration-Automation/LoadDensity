@@ -1,11 +1,11 @@
 安裝
 ====
 
-系統需求
---------
+需求
+----
 
-* Python **3.10** 或更新版本
-* pip 19.3 或更新版本
+* Python **3.10** 以上
+* pip 19.3 以上
 
 支援平台
 ~~~~~~~~
@@ -15,64 +15,79 @@
    :widths: 30 70
 
    * - 平台
-     - 版本
-   * - Windows
-     - 10 / 11
+     - 註記
+   * - Windows 10 / 11
+     - 完整支援
    * - macOS
-     - 10.15 ~ 11 (Big Sur)
-   * - Linux
-     - Ubuntu 20.04
+     - 完整支援
+   * - Ubuntu / Linux
+     - 完整支援
    * - Raspberry Pi
-     - 3B+
+     - 已測 3B+ 以上
 
 基本安裝（CLI 與函式庫）
---------------------------
-
-從 PyPI 安裝 LoadDensity：
+------------------------
 
 .. code-block:: bash
 
     pip install je_load_density
 
-這會安裝核心函式庫與 CLI 工具。`Locust <https://locust.io/>`_ 會作為相依套件自動安裝。
+僅引入 `Locust <https://locust.io/>`_ 與 ``defusedxml`` — 其餘皆為選用。
 
-安裝 GUI 支援
---------------
+選用 extras
+-----------
 
-若要使用可選的 PySide6 圖形化介面：
+LoadDensity 將每個協定驅動、exporter、錄製器與控制介面都拆成可選 extras。基礎套件不會 eager import 這些模組，僅做 HTTP 壓測者執行期不受影響。
 
-.. code-block:: bash
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
 
-    pip install je_load_density[gui]
+   * - Extra
+     - 加入
+   * - ``gui``
+     - PySide6 + qt-material（圖形介面）。
+   * - ``websocket``
+     - ``websocket-client``（WebSocket user 模板）。
+   * - ``grpc``
+     - ``grpcio`` + ``protobuf``（gRPC user 模板）。
+   * - ``mqtt``
+     - ``paho-mqtt``（MQTT user 模板）。
+   * - ``prometheus``
+     - ``prometheus-client``（Prometheus exporter）。
+   * - ``opentelemetry``
+     - OpenTelemetry SDK + OTLP gRPC exporter。
+   * - ``metrics``
+     - 結合 ``prometheus`` 與 ``opentelemetry``。
+   * - ``faker``
+     - ``Faker``（驅動 ``${faker.method}`` 占位符）。
+   * - ``mcp``
+     - ``mcp`` SDK（驅動 Claude 用的 MCP server）。
+   * - ``all``
+     - 上述全部。
 
-這會額外安裝：
+範例::
 
-* `PySide6 <https://doc.qt.io/qtforpython/>`_ — Qt for Python 綁定
-* `qt-material <https://github.com/UN-GCPDS/qt-material>`_ — Material Design 主題
+    pip install "je_load_density[gui]"
+    pip install "je_load_density[mqtt,grpc,websocket]"
+    pip install "je_load_density[metrics]"
+    pip install "je_load_density[mcp]"
+    pip install "je_load_density[all]"
 
-開發者安裝
-----------
-
-從原始碼安裝進行開發：
-
-.. code-block:: bash
-
-    git clone https://github.com/Intergration-Automation-Testing/LoadDensity.git
-    cd LoadDensity
-    pip install -e .
-    pip install -r dev_requirements.txt
-
-驗證安裝
+開發安裝
 --------
 
-安裝後，驗證 LoadDensity 是否正確安裝：
+.. code-block:: bash
+
+    git clone https://github.com/Integration-Automation/LoadDensity.git
+    cd LoadDensity
+    pip install -e ".[all]"
+    pip install -r requirements.txt
+
+驗證
+----
 
 .. code-block:: bash
 
-    python -c "from je_load_density import start_test; print('LoadDensity 安裝成功')"
-
-也可以檢查已安裝的版本：
-
-.. code-block:: bash
-
+    python -c "from je_load_density import start_test; print('LoadDensity installed')"
     pip show je_load_density

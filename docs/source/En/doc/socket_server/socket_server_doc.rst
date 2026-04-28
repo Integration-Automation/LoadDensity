@@ -1,110 +1,107 @@
-TCP Socket Server (Remote Execution)
-=====================================
+TCP Control Socket Server
+=========================
 
-LoadDensity includes a TCP server based on ``gevent`` that accepts JSON commands over the
-network, enabling remote test execution.
+Overview
+--------
 
-Starting the Server
--------------------
+The control socket server is a gevent-based TCP listener that runs
+LoadDensity action JSON sent over the wire. The hardened protocol adds
+length-prefix framing, optional TLS, and a shared-secret token; the
+legacy unauthenticated mode is preserved for backwards compatibility.
 
-.. code-block:: python
-
-    from je_load_density import start_load_density_socket_server
-
-    # Start server (blocking call)
-    start_load_density_socket_server(host="localhost", port=9940)
+Modes
+-----
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 15 50
+   :widths: 25 75
 
-   * - Parameter
-     - Type
-     - Default
-     - Description
-   * - ``host``
-     - ``str``
-     - ``"localhost"``
-     - Server bind address
-   * - ``port``
-     - ``int``
-     - ``9940``
-     - Server bind port
+   * - Mode
+     - Notes
+   * - ``legacy``
+     - Single ``recv(8192)``, raw JSON, no auth. Default to keep older
+       clients (e.g. PyBreeze) working.
+   * - ``framed``
+     - 4-byte big-endian length prefix + JSON body. Safer against
+       partial reads and oversized payloads (1 MiB cap).
+   * - ``framed + TLS``
+     - Wrap the connection with ``ssl.create_default_context`` (TLS
+       1.2+ minimum) using a cert/key on disk.
 
-The server starts listening and prints ``Server started on {host}:{port}``. Each incoming
-connection is handled in a separate ``gevent`` greenlet for concurrent request handling.
+Auth
+----
 
-Sending Commands from a Client
--------------------------------
+Pass ``token=`` (or set ``LOAD_DENSITY_SOCKET_TOKEN``) to require a
+shared secret. Once configured:
 
-Commands are sent as JSON-encoded action lists — the same format used in JSON script files.
+* ``quit_server`` is rejected without a valid token.
+* All command payloads must use the envelope
+  ``{"token": "...", "command": [...action JSON...]}`` and may set
+  ``"op": "quit"`` to signal a shutdown.
 
-.. code-block:: python
+Tokens are compared with ``hmac.compare_digest`` to avoid timing
+oracles.
 
-    import socket
-    import json
+Starting the server
+-------------------
 
-    # Connect to server
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(("localhost", 9940))
+Python::
 
-    # Send a test command
-    command = json.dumps([
-        ["LD_start_test", {
-            "user_detail_dict": {"user": "fast_http_user"},
-            "user_count": 10,
-            "spawn_rate": 5,
-            "test_time": 5,
-            "tasks": {"get": {"request_url": "http://httpbin.org/get"}}
-        }]
-    ])
-    sock.send(command.encode("utf-8"))
+    from je_load_density import start_load_density_socket_server
 
-    # Receive response
-    response = sock.recv(8192)
-    print(response.decode("utf-8"))
-    sock.close()
+    start_load_density_socket_server(
+        host="0.0.0.0",
+        port=9940,
+        framed=True,
+        token="ROTATE_ME",
+        certfile="/etc/loaddensity/server.crt",
+        keyfile="/etc/loaddensity/server.key",
+    )
 
-Server Protocol
----------------
+CLI::
 
-* **Command format**: JSON-encoded action list (same format as JSON script files)
-* **Response**: Each action's return value is sent back as a line, terminated by
-  ``Return_Data_Over_JE\n``
-* **Error handling**: If an error occurs during execution, the error message is sent back
-  followed by ``Return_Data_Over_JE\n``
-* **Buffer size**: 8192 bytes per receive
+    python -m je_load_density serve \
+        --host 0.0.0.0 --port 9940 --framed \
+        --token "$LOAD_DENSITY_SOCKET_TOKEN"
 
-Shutting Down the Server
-------------------------
-
-Send the string ``"quit_server"`` to gracefully shut down the server:
+Sending commands (framed mode)
+------------------------------
 
 .. code-block:: python
 
-    import socket
+    import json, socket, struct
 
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(("localhost", 9940))
-    sock.send(b"quit_server")
-    response = sock.recv(8192)
-    print(response.decode("utf-8"))  # "Server shutting down"
+    payload = json.dumps({
+        "token": "ROTATE_ME",
+        "command": {"load_density": [["LD_summary", {}]]}
+    }).encode("utf-8")
+
+    sock = socket.create_connection(("127.0.0.1", 9940))
+    sock.sendall(struct.pack("!I", len(payload)) + payload)
+    while True:
+        header = sock.recv(4)
+        if not header:
+            break
+        (length,) = struct.unpack("!I", header)
+        chunk = sock.recv(length)
+        if chunk == b"Return_Data_Over_JE\n":
+            break
+        print(chunk.decode("utf-8"))
     sock.close()
 
-The server will close all connections and print ``Server shutdown complete``.
+Shutdown
+--------
 
-Architecture
-------------
+* Legacy mode: send the literal string ``quit_server``.
+* Framed mode (with token): send
+  ``{"token": "...", "op": "quit"}``.
 
-The TCP server consists of two components:
+The server prints ``Server shutdown complete`` and exits.
 
-* **TCPServer** — Main server class based on ``gevent.socket``. Listens for connections
-  and spawns greenlets for each client.
-* **start_load_density_socket_server()** — Convenience function that patches the process
-  with ``gevent.monkey.patch_all()`` and starts the server.
+Notes
+-----
 
-.. note::
-
-    ``gevent.monkey.patch_all()`` is called when starting the socket server. This patches
-    standard library modules (socket, threading, etc.) to be gevent-compatible. Be aware
-    of this if integrating the socket server into a larger application.
+* ``gevent.monkey.patch_all()`` is invoked on start-up. Plan
+  integration accordingly.
+* The token may be read from the ``LOAD_DENSITY_SOCKET_TOKEN``
+  environment variable so CI secrets stay out of process arguments.

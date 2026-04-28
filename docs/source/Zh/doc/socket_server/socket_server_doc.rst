@@ -1,106 +1,94 @@
-TCP Socket 伺服器（遠端執行）
-==============================
+TCP 控制 Socket Server
+======================
 
-LoadDensity 內建基於 ``gevent`` 的 TCP 伺服器，可透過網路接收 JSON 指令，實現遠端測試執行。
+概觀
+----
 
-啟動伺服器
-----------
+控制 socket server 是 gevent 為基礎的 TCP listener，將收到的 LoadDensity 動作 JSON 透過網路執行。硬化版協定加入 length-prefix framing、選用 TLS，以及共享密鑰 token；舊版未驗證模式仍保留以維持相容。
 
-.. code-block:: python
-
-    from je_load_density import start_load_density_socket_server
-
-    # 啟動伺服器（阻塞呼叫）
-    start_load_density_socket_server(host="localhost", port=9940)
+模式
+----
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 15 50
+   :widths: 25 75
 
-   * - 參數
-     - 類型
-     - 預設值
-     - 說明
-   * - ``host``
-     - ``str``
-     - ``"localhost"``
-     - 伺服器綁定位址
-   * - ``port``
-     - ``int``
-     - ``9940``
-     - 伺服器綁定埠號
+   * - 模式
+     - 註記
+   * - ``legacy``
+     - 單次 ``recv(8192)``、純 JSON、無驗證。預設模式以維持舊客戶端（如 PyBreeze）相容。
+   * - ``framed``
+     - 4-byte big-endian 長度前綴 + JSON body。對 partial read 與超大 payload 較安全（1 MiB 上限）。
+   * - ``framed + TLS``
+     - 以 ``ssl.create_default_context``（TLS 1.2+）包裝連線，需 cert/key 檔案。
 
-伺服器啟動後會輸出 ``Server started on {host}:{port}``。每個連入的連線會在獨立的
-``gevent`` greenlet 中處理，支援並行請求。
-
-從客戶端發送指令
------------------
-
-指令以 JSON 編碼的動作列表發送 — 與 JSON 腳本檔案使用相同的格式。
-
-.. code-block:: python
-
-    import socket
-    import json
-
-    # 連接到伺服器
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(("localhost", 9940))
-
-    # 發送測試指令
-    command = json.dumps([
-        ["LD_start_test", {
-            "user_detail_dict": {"user": "fast_http_user"},
-            "user_count": 10,
-            "spawn_rate": 5,
-            "test_time": 5,
-            "tasks": {"get": {"request_url": "http://httpbin.org/get"}}
-        }]
-    ])
-    sock.send(command.encode("utf-8"))
-
-    # 接收回應
-    response = sock.recv(8192)
-    print(response.decode("utf-8"))
-    sock.close()
-
-伺服器協定
-----------
-
-* **指令格式**：JSON 編碼的動作列表（與 JSON 腳本檔案格式相同）
-* **回應**：每個動作的回傳值以一行傳回，最後以 ``Return_Data_Over_JE\n`` 結尾
-* **錯誤處理**：若執行過程中發生錯誤，錯誤訊息會傳回，後接 ``Return_Data_Over_JE\n``
-* **緩衝區大小**：每次接收 8192 bytes
-
-關閉伺服器
-----------
-
-發送字串 ``"quit_server"`` 即可優雅地關閉伺服器：
-
-.. code-block:: python
-
-    import socket
-
-    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    sock.connect(("localhost", 9940))
-    sock.send(b"quit_server")
-    response = sock.recv(8192)
-    print(response.decode("utf-8"))  # "Server shutting down"
-    sock.close()
-
-伺服器會關閉所有連線並輸出 ``Server shutdown complete``。
-
-架構
+驗證
 ----
 
-TCP 伺服器由兩個元件組成：
+傳入 ``token=``（或設定 ``LOAD_DENSITY_SOCKET_TOKEN``）即可要求共享密鑰。一旦設定：
 
-* **TCPServer** — 基於 ``gevent.socket`` 的主伺服器類別。監聽連線並為每個客戶端產生 greenlet。
-* **start_load_density_socket_server()** — 便利函式，呼叫
-  ``gevent.monkey.patch_all()`` 並啟動伺服器。
+* ``quit_server`` 沒有正確 token 將被拒絕。
+* 所有指令 payload 必須使用 envelope ``{"token": "...", "command": [...action JSON...]}``，可以 ``"op": "quit"`` 表示停機。
 
-.. note::
+Token 以 ``hmac.compare_digest`` 比對，避免 timing oracle。
 
-    啟動 socket 伺服器時會呼叫 ``gevent.monkey.patch_all()``。這會修補標準函式庫模組
-    （socket、threading 等）以相容 gevent。若將 socket 伺服器整合到較大的應用程式中，
-    請注意此行為。
+啟動 server
+-----------
+
+Python::
+
+    from je_load_density import start_load_density_socket_server
+
+    start_load_density_socket_server(
+        host="0.0.0.0",
+        port=9940,
+        framed=True,
+        token="ROTATE_ME",
+        certfile="/etc/loaddensity/server.crt",
+        keyfile="/etc/loaddensity/server.key",
+    )
+
+CLI::
+
+    python -m je_load_density serve \
+        --host 0.0.0.0 --port 9940 --framed \
+        --token "$LOAD_DENSITY_SOCKET_TOKEN"
+
+傳送指令（framed 模式）
+-----------------------
+
+.. code-block:: python
+
+    import json, socket, struct
+
+    payload = json.dumps({
+        "token": "ROTATE_ME",
+        "command": {"load_density": [["LD_summary", {}]]}
+    }).encode("utf-8")
+
+    sock = socket.create_connection(("127.0.0.1", 9940))
+    sock.sendall(struct.pack("!I", len(payload)) + payload)
+    while True:
+        header = sock.recv(4)
+        if not header:
+            break
+        (length,) = struct.unpack("!I", header)
+        chunk = sock.recv(length)
+        if chunk == b"Return_Data_Over_JE\n":
+            break
+        print(chunk.decode("utf-8"))
+    sock.close()
+
+關閉
+----
+
+* Legacy 模式：傳送字面字串 ``quit_server``。
+* Framed 模式（含 token）：傳送 ``{"token": "...", "op": "quit"}``。
+
+Server 列印 ``Server shutdown complete`` 後結束。
+
+注意事項
+--------
+
+* 啟動時會呼叫 ``gevent.monkey.patch_all()``，整合時請留意。
+* token 可由環境變數 ``LOAD_DENSITY_SOCKET_TOKEN`` 讀取，避免將密鑰寫進指令參數。
