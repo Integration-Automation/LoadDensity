@@ -7,6 +7,10 @@ from je_load_density.wrapper.user_template.grpc_user_template import (
     GrpcUserWrapper,
     set_wrapper_grpc_user,
 )
+from je_load_density.wrapper.user_template.mqtt_user_template import (
+    MqttUserWrapper,
+    set_wrapper_mqtt_user,
+)
 from je_load_density.wrapper.user_template.websocket_user_template import (
     WebSocketUserWrapper,
     set_wrapper_websocket_user,
@@ -44,6 +48,7 @@ def start_test(
         "http_user": {"actually_user": HttpUserWrapper, "init": set_wrapper_http_user},
         "websocket_user": {"actually_user": WebSocketUserWrapper, "init": set_wrapper_websocket_user},
         "grpc_user": {"actually_user": GrpcUserWrapper, "init": set_wrapper_grpc_user},
+        "mqtt_user": {"actually_user": MqttUserWrapper, "init": set_wrapper_mqtt_user},
     }
 
     user_type = user_detail_dict.get("user", "fast_http_user")
