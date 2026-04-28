@@ -50,11 +50,12 @@ class TCPServer:
         self.server: socket.socket = socket.socket(AF_INET, SOCK_STREAM)
         self._tls_context: Optional[ssl.SSLContext] = None
         if certfile and keyfile:
-            # create_default_context picks Python's hardened TLS defaults
-            # (TLS 1.2+ minimum, restricted ciphers, no compression). We
-            # pin minimum_version explicitly as belt-and-braces in case
-            # the default ever loosens on an older interpreter.
-            self._tls_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)
+            # create_default_context(Purpose.CLIENT_AUTH) is the stdlib
+            # helper for a TLS server that may verify client certs; it
+            # ships hardened defaults (TLS 1.2+, secure cipher list, no
+            # compression). minimum_version is pinned explicitly as a
+            # belt-and-braces guard if the default ever loosens.
+            self._tls_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)  # NOSONAR S4423 - hardened defaults pinned below
             self._tls_context.minimum_version = ssl.TLSVersion.TLSv1_2
             self._tls_context.load_cert_chain(certfile=certfile, keyfile=keyfile)
 
