@@ -76,6 +76,46 @@ def _post_line_protocol(line: str, url: str, token: Optional[str], timeout: floa
         load_density_logger.warning(f"InfluxDB write failed: {error}")
 
 
+def _validate_transport(transport: str, url: Optional[str]) -> None:
+    if transport not in {"udp", "http"}:
+        raise ValueError(f"unsupported transport: {transport}")
+    if transport == "http":
+        if not url:
+            raise ValueError("url required when transport=http")
+        if not url.lower().startswith(_ALLOWED_URL_SCHEMES):
+            raise ValueError("InfluxDB URL must use http:// or https://")
+
+
+def _build_listener(config: Dict[str, Any]):
+    transport = config["transport"]
+    host = config["host"]
+    port = config["port"]
+    url = config["url"]
+    token = config["token"]
+    measurement = config["measurement"]
+    timeout = config["timeout"]
+
+    def _listener(request_type, name, response_time, response_length, exception=None, **_kwargs):
+        tags = {"request_type": str(request_type), "name": str(name)}
+        fields: Dict[str, Any] = {
+            "latency_ms": float(response_time or 0),
+            "response_bytes": int(response_length or 0),
+            "success": exception is None,
+        }
+        if exception is not None:
+            fields["error"] = repr(exception)[:512]
+        line = _build_line(measurement, tags, fields, time.time_ns())
+        try:
+            if transport == "udp":
+                _send_udp(line, host, port)
+            else:
+                _post_line_protocol(line, url, token, timeout)
+        except Exception as error:
+            load_density_logger.debug(f"InfluxDB write failed: {error}")
+
+    return _listener
+
+
 def start_influxdb_sink(
     transport: str = "udp",
     host: str = "127.0.0.1",
@@ -84,7 +124,7 @@ def start_influxdb_sink(
     token: Optional[str] = None,
     measurement: str = "loaddensity_request",
     timeout: float = 2.0,
-) -> bool:
+) -> None:
     """
     啟動 InfluxDB sink，將每個 request 寫入 line protocol。
     Start an InfluxDB sink that writes each request as a line-protocol
@@ -94,17 +134,11 @@ def start_influxdb_sink(
     InfluxDB endpoint; not a hard-coded destination.
     """
     transport = transport.lower()
-    if transport not in {"udp", "http"}:
-        raise ValueError(f"unsupported transport: {transport}")
-    if transport == "http":
-        if not url:
-            raise ValueError("url required when transport=http")
-        if not url.lower().startswith(_ALLOWED_URL_SCHEMES):
-            raise ValueError("InfluxDB URL must use http:// or https://")
+    _validate_transport(transport, url)
 
     with _lock:
         if _state["started"]:
-            return True
+            return
 
         config = {
             "transport": transport,
@@ -115,31 +149,13 @@ def start_influxdb_sink(
             "measurement": measurement,
             "timeout": timeout,
         }
+        listener = _build_listener(config)
 
-        def _listener(request_type, name, response_time, response_length, exception=None, **_kwargs):
-            tags = {"request_type": str(request_type), "name": str(name)}
-            fields: Dict[str, Any] = {
-                "latency_ms": float(response_time or 0),
-                "response_bytes": int(response_length or 0),
-                "success": exception is None,
-            }
-            if exception is not None:
-                fields["error"] = repr(exception)[:512]
-            line = _build_line(measurement, tags, fields, time.time_ns())
-            try:
-                if transport == "udp":
-                    _send_udp(line, host, port)
-                else:
-                    _post_line_protocol(line, url, token, timeout)
-            except Exception as error:
-                load_density_logger.debug(f"InfluxDB write failed: {error}")
-
-        events.request.add_listener(_listener)
+        events.request.add_listener(listener)
         _state["started"] = True
-        _state["listener"] = _listener
+        _state["listener"] = listener
         _state["config"] = config
         load_density_logger.info(f"InfluxDB sink started transport={transport}")
-        return True
 
 
 def stop_influxdb_sink() -> None:

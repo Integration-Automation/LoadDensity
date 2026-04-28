@@ -6,7 +6,7 @@ import threading
 from typing import Any, Dict, Iterable, Iterator, List, Optional
 
 _PLACEHOLDER_PATTERN = re.compile(r"\$\{([^}]+)\}")
-_FUNCTION_PATTERN = re.compile(r"^([a-zA-Z_][a-zA-Z0-9_]*)\((.*)\)$")
+_FUNCTION_PATTERN = re.compile(r"^([a-zA-Z_]\w*)\((.*)\)$")
 
 
 class ParameterResolver:

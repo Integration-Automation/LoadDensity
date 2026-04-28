@@ -254,8 +254,8 @@ def build_server():
     """
     Build the MCP Server instance with the LoadDensity tool surface.
     """
-    Server, _, mcp_types = _ensure_mcp()
-    server = Server("loaddensity")
+    server_cls, _, mcp_types = _ensure_mcp()
+    server = server_cls("loaddensity")
 
     @server.list_tools()
     async def _list_tools():
@@ -283,7 +283,7 @@ def run_stdio() -> None:
     """
     Run the MCP server over stdio (the standard transport for Claude).
     """
-    Server, stdio_server, _ = _ensure_mcp()
+    _, stdio_server, _ = _ensure_mcp()
     server = build_server()
 
     import asyncio

@@ -28,7 +28,7 @@ def set_wrapper_grpc_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
     return GrpcUserWrapper
 
 
-_SAFE_DOTTED_PATH = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*(\.[A-Za-z_][A-Za-z0-9_]*)*$")
+_SAFE_DOTTED_PATH = re.compile(r"^[A-Za-z_]\w*(\.[A-Za-z_]\w*)*$")
 
 
 def _import_dotted(path: str) -> Any:

@@ -17,29 +17,17 @@ def load_har(file_path: str) -> Dict[str, Any]:
         return json.load(fh)
 
 
-def _entry_to_task(entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    request = entry.get("request") or {}
-    method = str(request.get("method", "")).lower()
-    url = request.get("url")
-    if not method or not url:
-        return None
-
-    headers = {}
-    for header in request.get("headers") or []:
+def _extract_request_headers(raw_headers: Any) -> Dict[str, str]:
+    headers: Dict[str, str] = {}
+    for header in raw_headers or []:
         name = str(header.get("name", "")).strip()
         value = header.get("value", "")
         if name and name.lower() not in _NON_REQUEST_HEADERS:
             headers[name] = value
+    return headers
 
-    task: Dict[str, Any] = {
-        "method": method,
-        "request_url": url,
-        "name": f"{method.upper()} {_path_only(url)}",
-    }
-    if headers:
-        task["headers"] = headers
 
-    post_data = request.get("postData") or {}
+def _attach_post_body(task: Dict[str, Any], post_data: Dict[str, Any]) -> None:
     mime = str(post_data.get("mimeType", "")).lower()
     text = post_data.get("text")
     params = post_data.get("params")
@@ -49,10 +37,31 @@ def _entry_to_task(entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
             task["json"] = json.loads(text)
         except json.JSONDecodeError:
             task["data"] = text
-    elif params:
+        return
+    if params:
         task["data"] = {p.get("name"): p.get("value") for p in params if p.get("name")}
-    elif text:
+        return
+    if text:
         task["data"] = text
+
+
+def _entry_to_task(entry: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    request = entry.get("request") or {}
+    method = str(request.get("method", "")).lower()
+    url = request.get("url")
+    if not method or not url:
+        return None
+
+    task: Dict[str, Any] = {
+        "method": method,
+        "request_url": url,
+        "name": f"{method.upper()} {_path_only(url)}",
+    }
+    headers = _extract_request_headers(request.get("headers"))
+    if headers:
+        task["headers"] = headers
+
+    _attach_post_body(task, request.get("postData") or {})
 
     expected_status = (entry.get("response") or {}).get("status")
     if isinstance(expected_status, int) and expected_status:

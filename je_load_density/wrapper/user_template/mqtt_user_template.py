@@ -106,44 +106,56 @@ class MqttUserWrapper(User):
         method = str(step.get("method", "publish")).lower()
         broker = step.get("broker") or step.get("host") or self.host
         name = step.get("name") or f"{method}:{step.get('topic', '')}"
-        topic = step.get("topic", "")
-        qos = int(step.get("qos", 0))
-        retain = bool(step.get("retain", False))
 
         start = time.monotonic()
         try:
-            if method == "disconnect":
-                if self._client is not None:
-                    self._client.loop_stop()
-                    self._client.disconnect()
-                    self._client = None
-                self._fire(name, broker, start, 0)
-                return
-
-            client = self._ensure_client(broker, step)
-
-            if method == "connect":
-                self._fire(name, broker, start, 0)
-                return
-
-            if method == "publish":
-                payload = step.get("payload", "")
-                info = client.publish(topic, payload=payload, qos=qos, retain=retain)
-                if hasattr(info, "wait_for_publish"):
-                    info.wait_for_publish(timeout=float(step.get("timeout", 5)))
-                length = len(payload) if isinstance(payload, (bytes, str)) else 0
-                if info.rc != 0:
-                    raise RuntimeError(f"publish failed rc={info.rc}")
-                self._fire(name, broker, start, length)
-            elif method == "subscribe":
-                result, _ = client.subscribe(topic, qos=qos)
-                if result != 0:
-                    raise RuntimeError(f"subscribe failed rc={result}")
-                self._fire(name, broker, start, 0)
-            else:
-                raise ValueError(f"unsupported mqtt method: {method}")
+            length = self._dispatch_step(method, broker, step)
+            self._fire(name, broker, start, length)
         except Exception as error:
             self._fire(name, broker, start, 0, error)
+
+    def _dispatch_step(self, method: str, broker: str, step: Dict[str, Any]) -> int:
+        if method == "disconnect":
+            self._teardown_client()
+            return 0
+
+        client = self._ensure_client(broker, step)
+
+        if method == "connect":
+            return 0
+        if method == "publish":
+            return self._publish(client, step)
+        if method == "subscribe":
+            return self._subscribe(client, step)
+        raise ValueError(f"unsupported mqtt method: {method}")
+
+    def _teardown_client(self) -> None:
+        if self._client is not None:
+            self._client.loop_stop()
+            self._client.disconnect()
+            self._client = None
+
+    @staticmethod
+    def _publish(client, step: Dict[str, Any]) -> int:
+        topic = step.get("topic", "")
+        qos = int(step.get("qos", 0))
+        retain = bool(step.get("retain", False))
+        payload = step.get("payload", "")
+        info = client.publish(topic, payload=payload, qos=qos, retain=retain)
+        if hasattr(info, "wait_for_publish"):
+            info.wait_for_publish(timeout=float(step.get("timeout", 5)))
+        if info.rc != 0:
+            raise RuntimeError(f"publish failed rc={info.rc}")
+        return len(payload) if isinstance(payload, (bytes, str)) else 0
+
+    @staticmethod
+    def _subscribe(client, step: Dict[str, Any]) -> int:
+        topic = step.get("topic", "")
+        qos = int(step.get("qos", 0))
+        result, _ = client.subscribe(topic, qos=qos)
+        if result != 0:
+            raise RuntimeError(f"subscribe failed rc={result}")
+        return 0
 
     @task
     def run_tasks(self) -> None:

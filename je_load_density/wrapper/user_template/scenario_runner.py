@@ -32,6 +32,18 @@ def _condition_passes(task: Dict[str, Any]) -> bool:
     return True
 
 
+def _is_pair(value: Any) -> bool:
+    return isinstance(value, list) and len(value) == 2
+
+
+_CONDITION_OPS = {
+    "equals": lambda v: v[0] == v[1] if _is_pair(v) else False,
+    "not_equals": lambda v: v[0] != v[1] if _is_pair(v) else False,
+    "in": lambda v: (v[0] in (v[1] or [])) if _is_pair(v) else False,
+    "truthy": bool,
+}
+
+
 def _eval_condition(expression: Any) -> bool:
     """
     Resolve a condition. Supports:
@@ -40,23 +52,19 @@ def _eval_condition(expression: Any) -> bool:
         {"equals": ["${var.x}", "ok"]}      -> equality
         {"not_equals": [...]}
         {"in": ["${var.x}", ["a", "b"]]}
+        {"truthy": "${var.x}"}
     """
     if isinstance(expression, (bool, int)):
         return bool(expression)
     if isinstance(expression, str):
         return bool(parameter_resolver.resolve(expression))
-    if isinstance(expression, dict):
-        for op, args in expression.items():
-            op = op.lower()
-            resolved = parameter_resolver.resolve(args)
-            if op == "equals" and isinstance(resolved, list) and len(resolved) == 2:
-                return resolved[0] == resolved[1]
-            if op == "not_equals" and isinstance(resolved, list) and len(resolved) == 2:
-                return resolved[0] != resolved[1]
-            if op == "in" and isinstance(resolved, list) and len(resolved) == 2:
-                return resolved[0] in (resolved[1] or [])
-            if op == "truthy":
-                return bool(resolved)
+    if not isinstance(expression, dict):
+        return False
+    for op, args in expression.items():
+        handler = _CONDITION_OPS.get(op.lower())
+        if handler is None:
+            continue
+        return handler(parameter_resolver.resolve(args))
     return False
 
 
@@ -74,7 +82,7 @@ def _pick_weighted(tasks: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
     return tasks[-1]
 
 
-def run_scenario(client: Any, method_map: Dict[str, Any], raw_tasks: Any) -> None:
+def run_scenario(method_map: Dict[str, Any], raw_tasks: Any) -> None:
     payload = _coerce_tasks_payload(raw_tasks)
     mode = payload["mode"]
     tasks = payload["tasks"]
@@ -84,17 +92,17 @@ def run_scenario(client: Any, method_map: Dict[str, Any], raw_tasks: Any) -> Non
     if mode == "weighted":
         chosen = _pick_weighted(tasks)
         if chosen and _condition_passes(chosen):
-            _safe_execute(client, method_map, chosen)
+            _safe_execute(method_map, chosen)
         return
 
     for task in tasks:
         if not _condition_passes(task):
             continue
-        _safe_execute(client, method_map, task)
+        _safe_execute(method_map, task)
 
 
-def _safe_execute(client: Any, method_map: Dict[str, Any], task: Dict[str, Any]) -> None:
+def _safe_execute(method_map: Dict[str, Any], task: Dict[str, Any]) -> None:
     try:
-        execute_task(client, method_map, task)
+        execute_task(method_map, task)
     except Exception as error:
         load_density_logger.error(f"scenario step failed: {error!r}")

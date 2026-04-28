@@ -33,34 +33,66 @@ def _build_kwargs(task: Dict[str, Any]) -> Dict[str, Any]:
     return kwargs
 
 
+def _assert_status_code(response: Any, assertion: Dict[str, Any]) -> Optional[str]:
+    target = assertion.get("value")
+    actual = getattr(response, "status_code", None)
+    if int(actual) != int(target):
+        return f"status_code expected {target}, got {actual}"
+    return None
+
+
+def _assert_contains(response: Any, assertion: Dict[str, Any]) -> Optional[str]:
+    target = assertion.get("value")
+    text = getattr(response, "text", "") or ""
+    if str(target) not in text:
+        return f"body does not contain {target!r}"
+    return None
+
+
+def _assert_not_contains(response: Any, assertion: Dict[str, Any]) -> Optional[str]:
+    target = assertion.get("value")
+    text = getattr(response, "text", "") or ""
+    if str(target) in text:
+        return f"body unexpectedly contains {target!r}"
+    return None
+
+
+def _assert_json_path(response: Any, assertion: Dict[str, Any]) -> Optional[str]:
+    path = assertion.get("path", "")
+    expected = assertion.get("value")
+    actual = _resolve_json_path(response, path)
+    if actual != expected:
+        return f"json_path {path} expected {expected!r}, got {actual!r}"
+    return None
+
+
+def _assert_header(response: Any, assertion: Dict[str, Any]) -> Optional[str]:
+    target = assertion.get("value")
+    header_name = assertion.get("name", "")
+    headers = getattr(response, "headers", {}) or {}
+    if headers.get(header_name) != target:
+        return f"header {header_name} expected {target!r}, got {headers.get(header_name)!r}"
+    return None
+
+
+_ASSERTION_HANDLERS = {
+    "status_code": _assert_status_code,
+    "contains": _assert_contains,
+    "not_contains": _assert_not_contains,
+    "json_path": _assert_json_path,
+    "header": _assert_header,
+}
+
+
 def _check_assertions(response: Any, assertions: Iterable[Dict[str, Any]]) -> Tuple[bool, Optional[str]]:
     for assertion in assertions:
         kind = str(assertion.get("type", "")).lower()
-        target = assertion.get("value")
-
-        if kind == "status_code":
-            actual = getattr(response, "status_code", None)
-            if int(actual) != int(target):
-                return False, f"status_code expected {target}, got {actual}"
-        elif kind == "contains":
-            text = getattr(response, "text", "") or ""
-            if str(target) not in text:
-                return False, f"body does not contain {target!r}"
-        elif kind == "not_contains":
-            text = getattr(response, "text", "") or ""
-            if str(target) in text:
-                return False, f"body unexpectedly contains {target!r}"
-        elif kind == "json_path":
-            path = assertion.get("path", "")
-            expected = assertion.get("value")
-            actual = _resolve_json_path(response, path)
-            if actual != expected:
-                return False, f"json_path {path} expected {expected!r}, got {actual!r}"
-        elif kind == "header":
-            header_name = assertion.get("name", "")
-            headers = getattr(response, "headers", {}) or {}
-            if headers.get(header_name) != target:
-                return False, f"header {header_name} expected {target!r}, got {headers.get(header_name)!r}"
+        handler = _ASSERTION_HANDLERS.get(kind)
+        if handler is None:
+            continue
+        reason = handler(response, assertion)
+        if reason is not None:
+            return False, reason
     return True, None
 
 
@@ -126,7 +158,7 @@ def _normalise_tasks(raw_tasks: Any) -> List[Dict[str, Any]]:
     return []
 
 
-def execute_task(client: Any, method_map: Dict[str, Any], task: Dict[str, Any]) -> None:
+def execute_task(method_map: Dict[str, Any], task: Dict[str, Any]) -> None:
     """
     Resolve placeholders, execute one request, run assertions, and apply extractors.
     """
@@ -161,10 +193,10 @@ def execute_task(client: Any, method_map: Dict[str, Any], task: Dict[str, Any]) 
             response.success()
 
 
-def execute_tasks(client: Any, method_map: Dict[str, Any], raw_tasks: Any) -> None:
+def execute_tasks(method_map: Dict[str, Any], raw_tasks: Any) -> None:
     for task in _normalise_tasks(raw_tasks):
         try:
-            execute_task(client, method_map, task)
+            execute_task(method_map, task)
         except Exception as error:
             load_density_logger.error(f"task execution failed: {error!r}")
 

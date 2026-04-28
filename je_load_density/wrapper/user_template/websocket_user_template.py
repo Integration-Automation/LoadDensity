@@ -94,42 +94,55 @@ class WebSocketUserWrapper(User):
 
         start = time.monotonic()
         try:
-            if method == "connect":
-                self._connect(url, timeout)
-                self._fire(name, start, 0)
-                return
-            if method == "close":
-                if self._ws is not None:
-                    self._ws.close()
-                    self._ws = None
-                self._fire(name, start, 0)
-                return
-
-            if self._ws is None and url:
-                self._connect(url, timeout)
-            if self._ws is None:
-                raise RuntimeError("websocket connection not established")
-
-            if method == "send":
-                payload = step.get("payload", "")
-                self._ws.send(payload)
-                self._fire(name, start, len(payload))
-            elif method == "recv":
-                self._ws.settimeout(timeout)
-                data = self._ws.recv()
-                _verify_expect(data, step.get("expect"))
-                self._fire(name, start, len(data) if data else 0)
-            elif method == "sendrecv":
-                payload = step.get("payload", "")
-                self._ws.send(payload)
-                self._ws.settimeout(timeout)
-                data = self._ws.recv()
-                _verify_expect(data, step.get("expect"))
-                self._fire(name, start, len(payload) + (len(data) if data else 0))
-            else:
-                raise ValueError(f"unsupported websocket method: {method}")
+            length = self._dispatch_step(method, url, timeout, step)
+            self._fire(name, start, length)
         except Exception as error:
             self._fire(name, start, 0, error)
+
+    def _dispatch_step(self, method: str, url: str, timeout: float, step: Dict[str, Any]) -> int:
+        if method == "connect":
+            self._connect(url, timeout)
+            return 0
+        if method == "close":
+            self._close_socket()
+            return 0
+
+        if self._ws is None and url:
+            self._connect(url, timeout)
+        if self._ws is None:
+            raise RuntimeError("websocket connection not established")
+
+        if method == "send":
+            return self._send_only(step)
+        if method == "recv":
+            return self._recv_only(timeout, step)
+        if method == "sendrecv":
+            return self._send_then_recv(timeout, step)
+        raise ValueError(f"unsupported websocket method: {method}")
+
+    def _close_socket(self) -> None:
+        if self._ws is not None:
+            self._ws.close()
+            self._ws = None
+
+    def _send_only(self, step: Dict[str, Any]) -> int:
+        payload = step.get("payload", "")
+        self._ws.send(payload)
+        return len(payload)
+
+    def _recv_only(self, timeout: float, step: Dict[str, Any]) -> int:
+        self._ws.settimeout(timeout)
+        data = self._ws.recv()
+        _verify_expect(data, step.get("expect"))
+        return len(data) if data else 0
+
+    def _send_then_recv(self, timeout: float, step: Dict[str, Any]) -> int:
+        payload = step.get("payload", "")
+        self._ws.send(payload)
+        self._ws.settimeout(timeout)
+        data = self._ws.recv()
+        _verify_expect(data, step.get("expect"))
+        return len(payload) + (len(data) if data else 0)
 
     @task
     def run_tasks(self) -> None:

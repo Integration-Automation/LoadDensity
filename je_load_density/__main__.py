@@ -4,7 +4,6 @@ import sys
 from typing import List, Optional
 
 from je_load_density.utils.exception.exception_tags import argparse_get_wrong_data
-from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
 from je_load_density.utils.executor.action_executor import execute_action, execute_files
 from je_load_density.utils.file_process.get_dir_file_list import get_dir_files_as_list
 from je_load_density.utils.json.json_file.json_file import read_action_json
@@ -114,7 +113,8 @@ def main(argv: Optional[List[str]] = None) -> int:
     if _dispatch_legacy(args):
         return 0
 
-    raise LoadDensityTestExecuteException(argparse_get_wrong_data)
+    print(argparse_get_wrong_data, file=sys.stderr)
+    return 2
 
 
 if __name__ == "__main__":

@@ -50,4 +50,4 @@ class FastHttpUserWrapper(FastHttpUser):
         proxy_user = locust_wrapper_proxy.user_dict.get("fast_http_user")
         if not proxy_user or not proxy_user.tasks:
             return
-        run_scenario(self.client, self.method, proxy_user.tasks)
+        run_scenario(self.method, proxy_user.tasks)

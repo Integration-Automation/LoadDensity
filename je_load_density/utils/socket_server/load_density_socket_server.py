@@ -15,6 +15,8 @@ from je_load_density.utils.executor.action_executor import execute_action
 
 _MAX_PAYLOAD_BYTES = 1 << 20  # 1 MiB
 _FRAME_HEADER = struct.Struct("!I")
+_RESPONSE_TERMINATOR = b"Return_Data_Over_JE\n"
+_AUTH_FAILED = object()
 
 
 class TCPServer:
@@ -49,6 +51,9 @@ class TCPServer:
         self._tls_context: Optional[ssl.SSLContext] = None
         if certfile and keyfile:
             self._tls_context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER)
+            # Pin minimum TLS version so older insecure suites cannot be
+            # negotiated; PROTOCOL_TLS_SERVER alone permits TLS 1.0/1.1.
+            self._tls_context.minimum_version = ssl.TLSVersion.TLSv1_2
             self._tls_context.load_cert_chain(certfile=certfile, keyfile=keyfile)
 
     def socket_server(self, host: str, port: int) -> None:
@@ -119,48 +124,65 @@ class TCPServer:
             print(f"Command received: {len(command_string)} bytes", flush=True)
 
             if command_string == "quit_server":
-                if self.token is not None:
-                    self._send_frame(connection, b"Error: token required\n")
-                    return
-                self.close_flag = True
-                self._send_frame(connection, b"Server shutting down\n")
-                print("Now quit server", flush=True)
+                self._handle_legacy_quit(connection)
                 return
 
-            try:
-                payload = json.loads(command_string)
-            except json.JSONDecodeError as error:
-                self._send_frame(connection, f"Error: {error}\n".encode("utf-8"))
-                self._send_frame(connection, b"Return_Data_Over_JE\n")
+            command = self._authorise_payload(connection, command_string)
+            if command is _AUTH_FAILED:
                 return
-
-            command = payload
-            if isinstance(payload, dict) and ("token" in payload or "command" in payload):
-                if not self._check_token(payload.get("token")):
-                    self._send_frame(connection, b"Error: unauthorised\n")
-                    return
-                command = payload.get("command")
-                if payload.get("op") == "quit":
-                    self.close_flag = True
-                    self._send_frame(connection, b"Server shutting down\n")
-                    return
-            elif self.token is not None:
-                self._send_frame(connection, b"Error: token required\n")
-                return
-
             if command is None:
-                self._send_frame(connection, b"Return_Data_Over_JE\n")
+                self._send_frame(connection, _RESPONSE_TERMINATOR)
                 return
 
-            try:
-                for execute_return in execute_action(command).values():
-                    self._send_frame(connection, f"{execute_return}\n".encode("utf-8"))
-                self._send_frame(connection, b"Return_Data_Over_JE\n")
-            except Exception as error:
-                self._send_frame(connection, f"Error: {error}\n".encode("utf-8"))
-                self._send_frame(connection, b"Return_Data_Over_JE\n")
+            self._dispatch_command(connection, command)
         finally:
             connection.close()
+
+    def _handle_legacy_quit(self, connection) -> None:
+        if self.token is not None:
+            self._send_frame(connection, b"Error: token required\n")
+            return
+        self.close_flag = True
+        self._send_frame(connection, b"Server shutting down\n")
+        print("Now quit server", flush=True)
+
+    def _authorise_payload(self, connection, command_string: str):
+        """
+        Decode the JSON envelope, enforce the token, and return the
+        actual command to execute. Returns ``_AUTH_FAILED`` when the
+        client has already been answered (bad JSON, missing/bad token,
+        or a quit op was honoured).
+        """
+        try:
+            payload = json.loads(command_string)
+        except json.JSONDecodeError as error:
+            self._send_frame(connection, f"Error: {error}\n".encode("utf-8"))
+            self._send_frame(connection, _RESPONSE_TERMINATOR)
+            return _AUTH_FAILED
+
+        if isinstance(payload, dict) and ("token" in payload or "command" in payload):
+            if not self._check_token(payload.get("token")):
+                self._send_frame(connection, b"Error: unauthorised\n")
+                return _AUTH_FAILED
+            if payload.get("op") == "quit":
+                self.close_flag = True
+                self._send_frame(connection, b"Server shutting down\n")
+                return _AUTH_FAILED
+            return payload.get("command")
+
+        if self.token is not None:
+            self._send_frame(connection, b"Error: token required\n")
+            return _AUTH_FAILED
+
+        return payload
+
+    def _dispatch_command(self, connection, command) -> None:
+        try:
+            for execute_return in execute_action(command).values():
+                self._send_frame(connection, f"{execute_return}\n".encode("utf-8"))
+        except Exception as error:
+            self._send_frame(connection, f"Error: {error}\n".encode("utf-8"))
+        self._send_frame(connection, _RESPONSE_TERMINATOR)
 
 
 def start_load_density_socket_server(
