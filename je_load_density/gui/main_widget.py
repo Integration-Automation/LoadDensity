@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
 from je_load_density.gui.load_density_gui_thread import LoadDensityGUIThread
 from je_load_density.gui.language_wrapper.multi_language_wrapper import language_wrapper
 from je_load_density.gui.log_to_ui_filter import InterceptAllFilter, log_message_queue
+from je_load_density.gui.stats_panel import StatsPanel
 
 
 class LoadDensityWidget(QWidget):
@@ -72,10 +73,14 @@ class LoadDensityWidget(QWidget):
         self.log_panel = QTextEdit()
         self.log_panel.setReadOnly(True)
 
+        # === 即時統計面板 (Live stats panel) ===
+        self.stats_panel = StatsPanel()
+
         # === 主版面配置 (Main layout) ===
         main_layout = QVBoxLayout()
         main_layout.addLayout(form_layout)
         main_layout.addWidget(self.start_button)
+        main_layout.addWidget(self.stats_panel)
         main_layout.addWidget(QLabel(language_wrapper.language_word_dict.get("log")))
         main_layout.addWidget(self.log_panel)
 

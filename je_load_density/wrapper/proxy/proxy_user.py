@@ -1,6 +1,10 @@
 from typing import Dict, Any
 from je_load_density.wrapper.proxy.user.fast_http_user_proxy import ProxyFastHTTPUser
 from je_load_density.wrapper.proxy.user.http_user_proxy import ProxyHTTPUser
+from je_load_density.wrapper.proxy.user.grpc_user_proxy import ProxyGrpcUser
+from je_load_density.wrapper.proxy.user.mqtt_user_proxy import ProxyMqttUser
+from je_load_density.wrapper.proxy.user.socket_user_proxy import ProxySocketUser
+from je_load_density.wrapper.proxy.user.websocket_user_proxy import ProxyWebSocketUser
 
 
 class LocustUserProxy:
@@ -17,6 +21,10 @@ class LocustUserProxy:
         self.user_dict: Dict[str, Any] = {
             "fast_http_user": ProxyFastHTTPUser(),
             "http_user": ProxyHTTPUser(),
+            "websocket_user": ProxyWebSocketUser(),
+            "grpc_user": ProxyGrpcUser(),
+            "mqtt_user": ProxyMqttUser(),
+            "socket_user": ProxySocketUser(),
         }
 
     def get_user(self, user_type: str) -> Any:

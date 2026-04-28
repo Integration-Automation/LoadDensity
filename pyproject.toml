@@ -40,6 +40,35 @@ find = { namespaces = false }
 
 [project.optional-dependencies]
 gui = ["PySide6==6.11.0", "qt-material"]
+websocket = ["websocket-client>=1.6"]
+grpc = ["grpcio>=1.60", "protobuf>=4.25"]
+mqtt = ["paho-mqtt>=2.0"]
+prometheus = ["prometheus-client>=0.19"]
+opentelemetry = [
+    "opentelemetry-api>=1.24",
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+]
+metrics = [
+    "prometheus-client>=0.19",
+    "opentelemetry-api>=1.24",
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+]
+faker = ["faker>=24.0"]
+mcp = ["mcp>=1.0"]
+all = [
+    "PySide6==6.11.0", "qt-material",
+    "websocket-client>=1.6",
+    "grpcio>=1.60", "protobuf>=4.25",
+    "paho-mqtt>=2.0",
+    "prometheus-client>=0.19",
+    "opentelemetry-api>=1.24",
+    "opentelemetry-sdk>=1.24",
+    "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+    "faker>=24.0",
+    "mcp>=1.0",
+]
 
 [tool.bandit]
 exclude_dirs = ["test", "tests", ".venv", "build", "dist"]

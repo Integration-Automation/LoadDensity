@@ -1,13 +1,10 @@
 from typing import Any, Dict, Optional
 
 
-class ProxyFastHTTPUser:
+class ProxyGrpcUser:
     """
-    代理使用者類別
-    Proxy Fast HTTP User class
-
-    用來保存使用者細節與任務設定。
-    Used to store user details and tasks configuration.
+    代理 gRPC 使用者類別
+    Proxy gRPC User class
     """
 
     def __init__(self) -> None:
@@ -23,10 +20,6 @@ class ProxyFastHTTPUser:
         host: Optional[str] = None,
         **kwargs: Any,
     ) -> None:
-        """
-        設定使用者細節與任務
-        Configure user details and tasks
-        """
         self.user_detail_dict = user_detail_dict
         self.tasks = tasks
         self.host = host

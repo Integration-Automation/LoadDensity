@@ -17,4 +17,11 @@ english_word_dict = {
     "delete": "DELETE",
     "head": "HEAD",
     "options": "OPTIONS",
+    # Stats panel
+    "stats_panel": "Live Stats",
+    "stats_total": "Total",
+    "stats_rate": "Rate",
+    "stats_avg_ms": "Avg",
+    "stats_p95_ms": "p95",
+    "stats_failures": "Failures",
 }
