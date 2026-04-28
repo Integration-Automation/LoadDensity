@@ -107,31 +107,35 @@ pip install -r requirements.txt
 
 ## 架構
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ CLI / MCP / GUI / 控制 Socket                                   │
-└──────────────────┬──────────────────────────────────────────────┘
-                   │ 動作 JSON
-┌──────────────────▼──────────────────────────────────────────────┐
-│ 動作 Executor（LD_* 派發 + 安全 builtin）                        │
-└──────────────────┬──────────────────────────────────────────────┘
-                   │ start_test
-┌──────────────────▼──────────────────────────────────────────────┐
-│ locust_wrapper_proxy（每協定 task store）                       │
-└──────────────────┬──────────────────────────────────────────────┘
-                   │
-   ┌───────────────┴───────────────┬──────────────┬──────────────┐
-   ▼                               ▼              ▼              ▼
-HTTP / FastHttp  WebSocket  gRPC  MQTT  原生 TCP / UDP
-   │                               │              │              │
-   └───────────────┬───────────────┴──────────────┴──────────────┘
-                   │ Locust 事件
-   ┌───────────────┴───────────────┐
-   ▼                               ▼
-test_record_instance         Prometheus / InfluxDB / OTel
-   │
-   ├── HTML / JSON / XML / CSV / JUnit / Summary 報告
-   └── SQLite 持久化（跨次比對）
+```mermaid
+flowchart TD
+    subgraph Entry["入口介面"]
+        CLI[CLI]
+        MCP[MCP Server]
+        GUI[GUI]
+        SOCK[控制 Socket]
+    end
+
+    Entry -- "動作 JSON" --> EXEC["動作 Executor<br/>(LD_* 派發 + 安全 builtin)"]
+    EXEC -- "start_test" --> WRAPPER["locust_wrapper_proxy<br/>(每協定 task store)"]
+
+    WRAPPER --> HTTP["HTTP / FastHttp"]
+    WRAPPER --> WS["WebSocket"]
+    WRAPPER --> GRPC["gRPC"]
+    WRAPPER --> MQTT["MQTT"]
+    WRAPPER --> RAW["原生 TCP / UDP"]
+
+    HTTP -- "Locust 事件" --> BUS([Locust Event Bus])
+    WS --> BUS
+    GRPC --> BUS
+    MQTT --> BUS
+    RAW --> BUS
+
+    BUS --> REC["test_record_instance"]
+    BUS --> METRICS["Prometheus / InfluxDB / OTel"]
+
+    REC --> REPORTS["HTML / JSON / XML / CSV / JUnit / Summary 報告"]
+    REC --> SQLITE[("SQLite 持久化<br/>(跨次比對)")]
 ```
 
 依賴方向永遠是動作層 → Locust。

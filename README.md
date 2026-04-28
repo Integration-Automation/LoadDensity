@@ -112,31 +112,35 @@ pip install -r requirements.txt
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│ CLI / MCP / GUI / Control Socket                                │
-└──────────────────┬──────────────────────────────────────────────┘
-                   │ action JSON
-┌──────────────────▼──────────────────────────────────────────────┐
-│ Action Executor (LD_* dispatch + safe builtins)                 │
-└──────────────────┬──────────────────────────────────────────────┘
-                   │ start_test
-┌──────────────────▼──────────────────────────────────────────────┐
-│ locust_wrapper_proxy (per-protocol task store)                  │
-└──────────────────┬──────────────────────────────────────────────┘
-                   │
-   ┌───────────────┴───────────────┬──────────────┬──────────────┐
-   ▼                               ▼              ▼              ▼
-HTTP / FastHttp  WebSocket  gRPC  MQTT  Raw TCP / UDP
-   │                               │              │              │
-   └───────────────┬───────────────┴──────────────┴──────────────┘
-                   │ Locust events
-   ┌───────────────┴───────────────┐
-   ▼                               ▼
-test_record_instance         Prometheus / InfluxDB / OTel
-   │
-   ├── HTML / JSON / XML / CSV / JUnit / Summary reports
-   └── SQLite persistence (cross-run comparison)
+```mermaid
+flowchart TD
+    subgraph Entry["Entry Surfaces"]
+        CLI[CLI]
+        MCP[MCP Server]
+        GUI[GUI]
+        SOCK[Control Socket]
+    end
+
+    Entry -- "action JSON" --> EXEC["Action Executor<br/>(LD_* dispatch + safe builtins)"]
+    EXEC -- "start_test" --> WRAPPER["locust_wrapper_proxy<br/>(per-protocol task store)"]
+
+    WRAPPER --> HTTP["HTTP / FastHttp"]
+    WRAPPER --> WS["WebSocket"]
+    WRAPPER --> GRPC["gRPC"]
+    WRAPPER --> MQTT["MQTT"]
+    WRAPPER --> RAW["Raw TCP / UDP"]
+
+    HTTP -- "Locust events" --> BUS([Locust Event Bus])
+    WS --> BUS
+    GRPC --> BUS
+    MQTT --> BUS
+    RAW --> BUS
+
+    BUS --> REC["test_record_instance"]
+    BUS --> METRICS["Prometheus / InfluxDB / OTel"]
+
+    REC --> REPORTS["HTML / JSON / XML / CSV / JUnit / Summary reports"]
+    REC --> SQLITE[("SQLite persistence<br/>(cross-run comparison)")]
 ```
 
 The dependency direction always points from the action layer down to Locust, never the other way around.
