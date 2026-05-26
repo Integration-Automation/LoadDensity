@@ -1,8 +1,9 @@
 LoadDensity Core API
 ====================
 
-The core API provides the main entry points for starting load tests, creating Locust
-environments, and accessing test records.
+The core API provides the entry points for starting load tests,
+building Locust environments, accessing the in-memory test record
+store, and the proxy used to inject tasks into user templates.
 
 start_test()
 ------------
@@ -17,14 +18,20 @@ The primary function for running a load test.
         spawn_rate: int = 10,
         test_time: Optional[int] = 60,
         web_ui_dict: Optional[Dict[str, Any]] = None,
-        **kwargs
+        runner_mode: str = "local",
+        master_bind_host: str = "*",
+        master_bind_port: int = 5557,
+        master_host: str = "127.0.0.1",
+        master_port: int = 5557,
+        expected_workers: int = 0,
+        **kwargs,
     ) -> Dict[str, Any]
 
 **Parameters:**
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 10 55
+   :widths: 25 20 15 40
 
    * - Parameter
      - Type
@@ -33,29 +40,48 @@ The primary function for running a load test.
    * - ``user_detail_dict``
      - ``Dict[str, Any]``
      - (required)
-     - User type configuration. ``{"user": "fast_http_user"}`` or ``{"user": "http_user"}``
+     - User template selector. ``{"user": "fast_http_user"}`` /
+       ``"http_user"`` / ``"websocket_user"`` / ``"grpc_user"`` /
+       ``"mqtt_user"`` / ``"socket_user"``.
    * - ``user_count``
      - ``int``
      - ``50``
-     - Total number of simulated users to spawn
+     - Total number of simulated users to spawn.
    * - ``spawn_rate``
      - ``int``
      - ``10``
-     - Number of users spawned per second
+     - Users spawned per second.
    * - ``test_time``
      - ``Optional[int]``
      - ``60``
-     - Test duration in seconds. Pass ``None`` for unlimited duration
+     - Test duration in seconds; ``None`` runs until interrupted.
    * - ``web_ui_dict``
      - ``Optional[Dict]``
      - ``None``
-     - Enable Locust Web UI. e.g. ``{"host": "127.0.0.1", "port": 8089}``
+     - Enable Locust Web UI, e.g. ``{"host": "127.0.0.1", "port": 8089}``.
+   * - ``runner_mode``
+     - ``str``
+     - ``"local"``
+     - ``"local"``, ``"master"``, or ``"worker"``.
+   * - ``master_bind_host`` / ``master_bind_port``
+     - ``str`` / ``int``
+     - ``"*"`` / ``5557``
+     - Used by master to bind its control plane.
+   * - ``master_host`` / ``master_port``
+     - ``str`` / ``int``
+     - ``"127.0.0.1"`` / ``5557``
+     - Used by workers to connect to the master.
+   * - ``expected_workers``
+     - ``int``
+     - ``0``
+     - Master waits up to 60 s for this many workers before ramping.
    * - ``**kwargs``
      - —
      - —
-     - Additional parameters passed to user initialization
+     - Forwarded to the user template (e.g. ``tasks``, ``variables``,
+       ``csv_sources``, protocol-specific fields).
 
-**Returns:** ``Dict[str, Any]`` — Summary dictionary of the test configuration.
+**Returns:** ``Dict[str, Any]`` — Summary of the test configuration.
 
 **Raises:** ``ValueError`` — If an unsupported user type is specified.
 
@@ -65,97 +91,58 @@ The primary function for running a load test.
 
     from je_load_density import start_test
 
-    result = start_test(
+    start_test(
         user_detail_dict={"user": "fast_http_user"},
         user_count=50,
         spawn_rate=10,
-        test_time=10,
-        tasks={
-            "get": {"request_url": "http://httpbin.org/get"},
-        }
+        test_time=30,
+        variables={"base": "https://httpbin.org"},
+        tasks=[
+            {"method": "get", "request_url": "${var.base}/get"},
+            {"method": "post", "request_url": "${var.base}/post",
+             "json": {"hello": "world"}},
+        ],
     )
 
 prepare_env()
 -------------
 
-Create a Locust environment, start the runner, and block until the test completes.
+Lower-level helper behind ``start_test``: builds a Locust
+``Environment`` in the requested mode and starts the runner.
 
 .. code-block:: python
 
     def prepare_env(
-        user_class: List[User],
+        user_class,
         user_count: int = 50,
         spawn_rate: int = 10,
         test_time: int = 60,
         web_ui_dict: dict = None,
-        **kwargs
+        runner_mode: str = "local",
+        master_bind_host: str = "*",
+        master_bind_port: int = 5557,
+        master_host: str = "127.0.0.1",
+        master_port: int = 5557,
+        expected_workers: int = 0,
+        **kwargs,
     ) -> None
-
-**Parameters:**
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 15 10 55
-
-   * - Parameter
-     - Type
-     - Default
-     - Description
-   * - ``user_class``
-     - ``List[User]``
-     - (required)
-     - Locust user class to run
-   * - ``user_count``
-     - ``int``
-     - ``50``
-     - Number of users to spawn
-   * - ``spawn_rate``
-     - ``int``
-     - ``10``
-     - Users spawned per second
-   * - ``test_time``
-     - ``int``
-     - ``60``
-     - Test duration in seconds
-   * - ``web_ui_dict``
-     - ``dict``
-     - ``None``
-     - Web UI configuration ``{"host": str, "port": int}``
 
 create_env()
 ------------
 
-Create a Locust ``Environment`` with a local runner and stats collection greenlets.
+Build a Locust ``Environment`` with a local runner and the stats
+greenlets attached. Useful for embedding LoadDensity inside another
+process.
 
 .. code-block:: python
 
-    def create_env(
-        user_class: List[User],
-        another_event: events = events
-    ) -> Environment
-
-**Parameters:**
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 20 60
-
-   * - Parameter
-     - Type
-     - Description
-   * - ``user_class``
-     - ``List[User]``
-     - Locust user class
-   * - ``another_event``
-     - ``events``
-     - Custom Locust event instance (default: ``locust.events``)
-
-**Returns:** ``locust.env.Environment`` — Configured Locust environment with local runner.
+    def create_env(user_class, another_event=events) -> Environment
 
 TestRecord
 ----------
 
-Stores success and failure test records collected by the request hook.
+Stores success and failure records collected by the Locust request
+hook (registered automatically on import).
 
 .. code-block:: python
 
@@ -171,63 +158,33 @@ Stores success and failure test records collected by the request hook.
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 65
+   :widths: 25 20 55
 
    * - Field
      - Type
      - Description
    * - ``Method``
      - ``str``
-     - HTTP method (GET, POST, etc.)
-   * - ``test_url``
+     - HTTP method or protocol verb.
+   * - ``test_url`` / ``name``
      - ``str``
-     - Request URL
-   * - ``name``
-     - ``str``
-     - Request name (Locust grouping name)
+     - Target URL and Locust event name (defaults to URL).
    * - ``status_code``
      - ``str``
-     - HTTP status code
-   * - ``text``
-     - ``str``
-     - Response body text
-   * - ``content``
-     - ``str``
-     - Response body content (bytes as string)
-   * - ``headers``
-     - ``str``
-     - Response headers
+     - HTTP status code or protocol equivalent.
+   * - ``response_time_ms``
+     - ``int``
+     - Wall-clock latency in milliseconds.
+   * - ``response_length``
+     - ``int``
+     - Response body length in bytes.
    * - ``error``
      - ``None``
-     - Always ``None`` for success records
+     - Always ``None`` for success records.
 
-**Failure record fields:**
-
-.. list-table::
-   :header-rows: 1
-   :widths: 20 20 60
-
-   * - Field
-     - Type
-     - Description
-   * - ``Method``
-     - ``str``
-     - HTTP method
-   * - ``test_url``
-     - ``str``
-     - Request URL
-   * - ``name``
-     - ``str``
-     - Request name
-   * - ``status_code``
-     - ``str`` or ``None``
-     - HTTP status code (if available)
-   * - ``text``
-     - ``str`` or ``None``
-     - Response body text (if available)
-   * - ``error``
-     - ``str``
-     - Exception message
+**Failure record fields** mirror the success shape but ``error``
+carries the exception message and ``status_code`` may be ``None``
+when the request never received a response.
 
 **Example:**
 
@@ -243,11 +200,23 @@ Stores success and failure test records collected by the request hook.
 
     test_record_instance.clear_records()
 
+locust_wrapper_proxy
+--------------------
+
+The per-protocol task store referenced by every user template. The
+``set_wrapper_*_user`` helpers (one per template) push the configured
+tasks into this proxy before ``prepare_env`` boots Locust.
+
+.. code-block:: python
+
+    from je_load_density import locust_wrapper_proxy
+
+    # Inspect the active task list for the current user type
+    print(locust_wrapper_proxy.tasks_dict)
+
 request_hook
 ------------
 
-A Locust event listener that automatically records all requests during test execution.
-Registered via ``@events.request.add_listener``.
-
-This hook is loaded automatically when importing ``je_load_density`` and requires no
-manual configuration.
+A Locust event listener that wires each completed (or failed) request
+to ``test_record_instance``. Registered on package import; no manual
+setup required.

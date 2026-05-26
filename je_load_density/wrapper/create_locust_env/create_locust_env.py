@@ -18,25 +18,35 @@ def prepare_env(
     test_time: Optional[int] = 60,
     web_ui_dict: Optional[Dict[str, Any]] = None,
     runner_mode: str = "local",
-    master_bind_host: str = "*",
-    master_bind_port: int = 5557,
-    master_host: str = "127.0.0.1",
-    master_port: int = 5557,
-    expected_workers: int = 0,
+    load_shape: Optional[str] = None,
+    shape_config: Optional[Dict[str, Any]] = None,
     **kwargs,
 ):
     """
     啟動 Locust 環境，支援 local / master / worker 三種模式。
     Prepare a Locust environment in local, master, or worker mode.
+
+    Distributed-mode fields (``master_bind_host`` / ``master_bind_port`` /
+    ``master_host`` / ``master_port`` / ``expected_workers``) are read
+    from ``**kwargs`` so the signature stays within the project's
+    public-API parameter budget.
     """
+    master_bind_host = kwargs.pop("master_bind_host", "*")
+    master_bind_port = kwargs.pop("master_bind_port", 5557)
+    master_host = kwargs.pop("master_host", "127.0.0.1")
+    master_port = kwargs.pop("master_port", 5557)
+    expected_workers = kwargs.pop("expected_workers", 0)
+
     load_density_logger.info(
         f"prepare_env mode={runner_mode}, user_class={user_class}, user_count={user_count}, "
-        f"spawn_rate={spawn_rate}, test_time={test_time}, web_ui_dict={web_ui_dict}"
+        f"spawn_rate={spawn_rate}, test_time={test_time}, web_ui_dict={web_ui_dict}, "
+        f"load_shape={load_shape}"
     )
 
     env = create_env(user_class, runner_mode=runner_mode,
                      master_bind_host=master_bind_host, master_bind_port=master_bind_port,
-                     master_host=master_host, master_port=master_port)
+                     master_host=master_host, master_port=master_port,
+                     load_shape=load_shape, shape_config=shape_config)
 
     if runner_mode == "worker":
         env.runner.greenlet.join()
@@ -69,6 +79,8 @@ def create_env(
     master_bind_port: int = 5557,
     master_host: str = "127.0.0.1",
     master_port: int = 5557,
+    load_shape: Optional[str] = None,
+    shape_config: Optional[Dict[str, Any]] = None,
 ):
     """
     建立 Locust Environment 並依模式建立 runner。
@@ -77,7 +89,9 @@ def create_env(
     load_density_logger.info(
         f"create_env mode={runner_mode}, user_class={user_class}, another_event={another_event}"
     )
-    env = Environment(user_classes=[user_class], events=another_event)
+    shape_class = _resolve_shape(load_shape, shape_config)
+    env = Environment(user_classes=[user_class], events=another_event,
+                      shape_class=shape_class)
 
     if runner_mode == "master":
         env.create_master_runner(master_bind_host=master_bind_host, master_bind_port=master_bind_port)
@@ -90,6 +104,13 @@ def create_env(
         gevent.spawn(stats_printer(env.stats))
         gevent.spawn(stats_history, env.runner)
     return env
+
+
+def _resolve_shape(load_shape: Optional[str], shape_config: Optional[Dict[str, Any]]):
+    if not load_shape:
+        return None
+    from je_load_density.utils.load_shapes.shapes import build_load_shape
+    return build_load_shape(load_shape, shape_config or {})
 
 
 def _wait_for_workers(env, expected_workers: int, timeout: float = 60.0) -> None:

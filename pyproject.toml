@@ -43,6 +43,11 @@ gui = ["PySide6==6.11.0", "qt-material"]
 websocket = ["websocket-client>=1.6"]
 grpc = ["grpcio>=1.60", "protobuf>=4.25"]
 mqtt = ["paho-mqtt>=2.0"]
+redis = ["redis>=5.0"]
+kafka = ["kafka-python>=2.0"]
+sql = ["sqlalchemy>=2.0"]
+mongo = ["pymongo>=4.6"]
+http2 = ["httpx[http2]>=0.27"]
 prometheus = ["prometheus-client>=0.19"]
 opentelemetry = [
     "opentelemetry-api>=1.24",
@@ -55,6 +60,10 @@ metrics = [
     "opentelemetry-sdk>=1.24",
     "opentelemetry-exporter-otlp-proto-grpc>=1.24",
 ]
+charts = ["matplotlib>=3.8"]
+yaml = ["pyyaml>=6.0"]
+auth = ["cryptography>=42.0"]
+reliability = ["psutil>=5.9"]
 faker = ["faker>=24.0"]
 mcp = ["mcp>=1.0"]
 all = [
@@ -62,13 +71,27 @@ all = [
     "websocket-client>=1.6",
     "grpcio>=1.60", "protobuf>=4.25",
     "paho-mqtt>=2.0",
+    "redis>=5.0",
+    "kafka-python>=2.0",
+    "sqlalchemy>=2.0",
+    "pymongo>=4.6",
+    "httpx[http2]>=0.27",
     "prometheus-client>=0.19",
     "opentelemetry-api>=1.24",
     "opentelemetry-sdk>=1.24",
     "opentelemetry-exporter-otlp-proto-grpc>=1.24",
+    "matplotlib>=3.8",
+    "pyyaml>=6.0",
+    "cryptography>=42.0",
+    "psutil>=5.9",
     "faker>=24.0",
     "mcp>=1.0",
 ]
+
+[project.scripts]
+loaddensity = "je_load_density.__main__:main"
+loaddensity-mcp = "je_load_density.mcp_server.__main__:main"
+loaddensity-lsp = "je_load_density.action_lsp.__main__:main"
 
 [tool.bandit]
 exclude_dirs = ["test", "tests", ".venv", "build", "dist"]

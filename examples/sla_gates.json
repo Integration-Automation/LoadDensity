@@ -1,0 +1,15 @@
+{"load_density": [
+  ["LD_register_variables", {"variables": {"base": "https://httpbin.org"}}],
+  ["LD_start_test", {
+    "user_detail_dict": {"user": "fast_http_user"},
+    "user_count": 10, "spawn_rate": 5, "test_time": 20,
+    "tasks": [{"method": "get", "request_url": "${var.base}/get",
+               "name": "browse"}]
+  }],
+  ["LD_generate_summary_report", {"report_name": "sla_run"}],
+  ["LD_assert_sla", {"rules": [
+    {"type": "failure_rate", "value": 0.02},
+    {"type": "latency_p95", "value": 800},
+    {"type": "latency_p95", "name": "browse", "value": 1000}
+  ]}]
+]}

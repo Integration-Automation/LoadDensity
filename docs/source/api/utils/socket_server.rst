@@ -1,60 +1,31 @@
 Socket Server API
 =================
 
-A TCP server based on ``gevent`` for remote test execution via JSON commands.
-
-TCPServer Class
----------------
-
-.. code-block:: python
-
-    class TCPServer:
-        close_flag: bool
-        server: socket.socket
-
-        def socket_server(self, host: str, port: int) -> None: ...
-        def handle(self, connection: socket.socket) -> None: ...
-
-socket_server()
-~~~~~~~~~~~~~~~
-
-Start the TCP server. This is a blocking call.
-
-**Parameters:**
-
-* ``host`` — Server bind address
-* ``port`` — Server bind port
-
-The server listens for connections and spawns a ``gevent`` greenlet for each client.
-
-handle()
-~~~~~~~~
-
-Handle a single client connection.
-
-* Receives up to 8192 bytes
-* Parses the received data as JSON
-* Executes the actions via ``execute_action()``
-* Sends results back line by line, terminated by ``Return_Data_Over_JE\n``
-* Special command ``"quit_server"`` shuts down the server
+A gevent-based TCP listener that runs LoadDensity action JSON over the
+wire. The hardened protocol adds 4-byte big-endian length-prefix
+framing (1 MiB cap), optional TLS, and a shared-secret token; the
+legacy unauthenticated mode is preserved for downstream tools such as
+PyBreeze.
 
 start_load_density_socket_server()
 ----------------------------------
-
-Convenience function to start the LoadDensity TCP server.
 
 .. code-block:: python
 
     def start_load_density_socket_server(
         host: str = "localhost",
-        port: int = 9940
-    ) -> TCPServer
+        port: int = 9940,
+        framed: bool = False,
+        token: Optional[str] = None,
+        certfile: Optional[str] = None,
+        keyfile: Optional[str] = None,
+    ) -> "TCPServer"
 
 **Parameters:**
 
 .. list-table::
    :header-rows: 1
-   :widths: 20 15 15 50
+   :widths: 22 18 15 45
 
    * - Parameter
      - Type
@@ -63,15 +34,75 @@ Convenience function to start the LoadDensity TCP server.
    * - ``host``
      - ``str``
      - ``"localhost"``
-     - Server bind address
+     - Bind address.
    * - ``port``
      - ``int``
      - ``9940``
-     - Server bind port
+     - Bind port.
+   * - ``framed``
+     - ``bool``
+     - ``False``
+     - Enable length-prefix framing (1 MiB cap). Required for
+       authenticated mode.
+   * - ``token``
+     - ``Optional[str]``
+     - env / ``None``
+     - Shared secret compared with ``hmac.compare_digest``. Also reads
+       from the ``LOAD_DENSITY_SOCKET_TOKEN`` env var.
+   * - ``certfile`` / ``keyfile``
+     - ``Optional[str]``
+     - ``None``
+     - PEM cert and key on disk. Both must be set to enable TLS
+       (``ssl.create_default_context``, TLS 1.2+ minimum).
 
-**Returns:** ``TCPServer`` instance.
+**Returns:** ``TCPServer`` — running server instance.
 
-.. note::
+Modes
+-----
 
-    This function calls ``gevent.monkey.patch_all()`` before starting the server,
-    which patches standard library modules for gevent compatibility.
+.. list-table::
+   :header-rows: 1
+   :widths: 25 75
+
+   * - Mode
+     - Notes
+   * - ``legacy``
+     - Single ``recv(8192)``, raw JSON, no auth. Default to keep older
+       clients working.
+   * - ``framed``
+     - 4-byte big-endian length prefix + JSON body. Safer against
+       partial reads and oversized payloads (1 MiB cap).
+   * - ``framed + token``
+     - Each payload must use
+       ``{"token": "...", "command": [...action JSON...]}`` and may set
+       ``"op": "quit"`` to shut down.
+   * - ``framed + token + TLS``
+     - Adds an ``ssl.create_default_context`` wrap over the listener.
+
+Sending commands (framed mode)
+------------------------------
+
+.. code-block:: python
+
+    import json, socket, struct
+
+    payload = json.dumps({
+        "token": "ROTATE_ME",
+        "command": {"load_density": [["LD_summary", {}]]}
+    }).encode("utf-8")
+
+    sock = socket.create_connection(("127.0.0.1", 9940))
+    sock.sendall(struct.pack("!I", len(payload)) + payload)
+
+Shutdown
+--------
+
+* Legacy mode: send the literal string ``quit_server``.
+* Framed mode with token: send ``{"token": "...", "op": "quit"}``.
+
+Notes
+-----
+
+* ``gevent.monkey.patch_all()`` is invoked on start-up.
+* The token may be read from ``LOAD_DENSITY_SOCKET_TOKEN`` so CI
+  secrets stay out of process arguments.

@@ -1,0 +1,13 @@
+{"load_density": [
+  ["LD_start_test", {
+    "user_detail_dict": {"user": "redis_user"},
+    "user_count": 20, "spawn_rate": 10, "test_time": 30,
+    "connection": {"url": "redis://127.0.0.1:6379/0"},
+    "tasks": [
+      {"method": "set",  "key": "session:${uuid()}", "value": "x", "name": "set"},
+      {"method": "incr", "key": "counter", "name": "incr"},
+      {"method": "get",  "key": "counter", "name": "get"}
+    ]
+  }],
+  ["LD_generate_summary_report", {"report_name": "redis_load"}]
+]}

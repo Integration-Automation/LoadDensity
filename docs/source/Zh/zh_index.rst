@@ -2,7 +2,8 @@
 LoadDensity 繁體中文手冊
 ====================================
 
-繁體中文手冊依照讀者使用順序分為十章：安裝 → 執行壓測 → 撰寫動作腳本 → 擴展 → 整合。可使用左側目次，或直接跳到下方章節。
+繁中手冊依照讀者使用順序分為十二章:安裝 → 執行壓測 → 撰寫動作腳本 →
+韌性強化 → 擴展 → 整合。可使用左側目次,或直接跳到下方章節。
 
 .. contents:: 本頁目次
    :local:
@@ -15,7 +16,7 @@ LoadDensity 繁體中文手冊
 第 1 章 — 入門
 ==============
 
-安裝 LoadDensity、執行第一次壓測，並建立專案骨架。
+安裝 LoadDensity、執行第一次壓測,並建立專案骨架。
 
 .. toctree::
     :maxdepth: 2
@@ -30,7 +31,7 @@ LoadDensity 繁體中文手冊
 第 2 章 — 核心 API
 ==================
 
-面向 Locust 的封裝：環境、Runner、使用者代理。讀過這章後，整個框架就不再神秘。
+面向 Locust 的封裝:環境、Runner、使用者代理。
 
 .. toctree::
     :maxdepth: 2
@@ -45,7 +46,7 @@ LoadDensity 繁體中文手冊
 第 3 章 — 動作撰寫與執行
 ========================
 
-組合 JSON 動作腳本、參數化資料、建立情境流程，串接測試後 callback。
+組合 JSON 動作腳本、參數化資料、建立情境流程,串接測試後 callback。
 
 .. toctree::
     :maxdepth: 2
@@ -63,7 +64,8 @@ LoadDensity 繁體中文手冊
 第 4 章 — 使用者模板
 ====================
 
-協定驅動程式：HTTP、FastHttp、WebSocket、gRPC、MQTT，以及原生 TCP/UDP。每個模板皆以 Locust 使用者註冊，採用相同的 task 契約。
+協定驅動程式:HTTP、FastHttp、Async HTTP/2、WebSocket、SSE、gRPC
+(unary + 串流)、MQTT、原生 TCP/UDP、SQL、Redis、Kafka、MongoDB。
 
 .. toctree::
     :maxdepth: 2
@@ -80,7 +82,9 @@ LoadDensity 繁體中文手冊
 第 5 章 — 報告與可觀測性
 ========================
 
-產生 HTML / JSON / XML / CSV / JUnit / 百分位摘要報告，將指標送至 Prometheus、InfluxDB，或任何 OTLP 後端。
+產生 HTML / JSON / XML / CSV / JUnit / 百分位摘要 / chart 報告,將
+指標送至 Prometheus、InfluxDB、OTLP 或 Datadog DogStatsD,並把即時
+進度推送到瀏覽器。
 
 .. toctree::
     :maxdepth: 2
@@ -89,13 +93,16 @@ LoadDensity 繁體中文手冊
     doc/generate_report/generate_report_doc
     doc/metrics/metrics_doc
     doc/test_record/test_record_doc
+    doc/live_dashboard/live_dashboard_doc
+    doc/notifiers/notifiers_doc
 
 .. _zh-orchestration:
 
 第 6 章 — 編排與擴展
 ====================
 
-執行分散式 master/worker 群集、透過參數解析器共享狀態、依擷取變數控制執行流程。
+執行分散式 master/worker 群集、透過參數解析器共享狀態、依擷取變數
+控制執行流程,並以內建 load shape 引導 ramp。
 
 .. toctree::
     :maxdepth: 2
@@ -103,26 +110,58 @@ LoadDensity 繁體中文手冊
 
     doc/distributed/distributed_doc
 
-.. _zh-recording-data:
+.. _zh-reliability:
 
-第 7 章 — 錄製與資料
-====================
+第 7 章 — 可靠度
+================
 
-將真實瀏覽流量（HAR）轉換為可執行的動作 JSON，將測試紀錄持久化到 SQLite，並比對歷次執行結果。
+自適應重試、失敗預算 / circuit breaker、網路條件、process supervisor —
+讓 CI 無人值守也能安全執行。
 
 .. toctree::
     :maxdepth: 2
-    :caption: 錄製與資料
+    :caption: 可靠度
+
+    doc/reliability/reliability_doc
+
+.. _zh-recording-data:
+
+第 8 章 — 錄製、資料與匯入器
+============================
+
+將 HAR、Postman v2.1、OpenAPI 3.x、cURL、k6、JMeter JMX 轉成可執行
+動作 JSON,將測試紀錄持久化到 SQLite,並比對歷次執行結果。
+
+.. toctree::
+    :maxdepth: 2
+    :caption: 錄製、資料與匯入器
 
     doc/har_import/har_import_doc
+    doc/importers/importers_doc
     doc/sqlite_persistence/sqlite_persistence_doc
+
+.. _zh-auth:
+
+第 9 章 — Auth
+==============
+
+含 cache 的 OAuth2 token helper、JWT 簽發(HS / RS)、AWS Signature
+v4,以及所有 HTTP user template 都支援的 mTLS client-cert。
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Auth
+
+    doc/auth/auth_doc
 
 .. _zh-tooling:
 
-第 8 章 — 工具、CLI 與診斷
-==========================
+第 10 章 — 工具、CLI 與診斷
+===========================
 
-命令列子指令、硬化的控制 socket server，以及 traceback 中可能出現的例外階層。
+命令列子指令、硬化的控制 socket server、traceback 中可能出現的例外
+階層,以及編輯器 / CI 整合:linter、schema、LSP、VS Code 擴充套件、
+GitHub Action、pre-commit。
 
 .. toctree::
     :maxdepth: 2
@@ -131,13 +170,14 @@ LoadDensity 繁體中文手冊
     doc/cli/cli_doc
     doc/socket_server/socket_server_doc
     doc/exception/exception_doc
+    doc/editor_integration/editor_integration_doc
 
 .. _zh-integrations:
 
-第 9 章 — 整合
-==============
+第 11 章 — 整合
+===============
 
-選用的 GUI、可讓 Claude 驅動 LoadDensity 的 **Model Context Protocol (MCP)** server，以及下游 PyBreeze IDE 整合。
+選用的 GUI、可讓 Claude 驅動 LoadDensity 的 **MCP** server。
 
 .. toctree::
     :maxdepth: 2
@@ -148,7 +188,7 @@ LoadDensity 繁體中文手冊
 
 .. _zh-reference:
 
-第 10 章 — API Reference
+第 12 章 — API Reference
 ========================
 
 自動產生的 Python API reference。

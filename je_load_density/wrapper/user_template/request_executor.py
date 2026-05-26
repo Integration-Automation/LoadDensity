@@ -7,6 +7,7 @@ from je_load_density.utils.parameterization import parameter_resolver
 _REQUEST_KW = (
     "params", "headers", "cookies", "json", "data",
     "timeout", "allow_redirects", "verify", "files",
+    "cert",
 )
 
 
@@ -15,6 +16,10 @@ def _build_kwargs(task: Dict[str, Any]) -> Dict[str, Any]:
     for key in _REQUEST_KW:
         if key in task and task[key] is not None:
             kwargs[key] = task[key]
+
+    client_cert = task.get("client_cert")
+    if client_cert is not None and "cert" not in kwargs:
+        kwargs["cert"] = client_cert
 
     auth = task.get("auth")
     if isinstance(auth, dict):

@@ -1,103 +1,136 @@
 Report Generation API
 =====================
 
-Functions for generating test reports in HTML, JSON, and XML formats.
+Six report formats render from ``test_record_instance``: HTML, JSON
+(split by outcome), XML (split by outcome), CSV, JUnit XML, and a
+percentile-summary JSON.
 
-HTML Report
------------
+.. note::
+
+    Every generator raises if the record store is empty. Catch
+    ``LoadDensityHTMLException`` (HTML), ``LoadDensityGenerateJsonReportException``
+    (JSON / summary / CSV / JUnit), or ``XMLException`` (XML).
+
+HTML
+----
 
 generate_html()
 ~~~~~~~~~~~~~~~
-
-Generate HTML fragments for success and failure records.
 
 .. code-block:: python
 
     def generate_html() -> Tuple[List[str], List[str]]
 
-**Returns:** ``(success_list, failure_list)`` — Lists of HTML table strings.
-
-**Raises:** ``LoadDensityHTMLException`` — If no test records exist.
+Returns ``(success_list, failure_list)`` — HTML table fragments for
+each outcome.
 
 generate_html_report()
 ~~~~~~~~~~~~~~~~~~~~~~
-
-Generate a complete HTML report file.
 
 .. code-block:: python
 
     def generate_html_report(html_name: str = "default_name") -> str
 
-**Parameters:**
+Writes ``{html_name}.html``; returns the file path.
 
-* ``html_name`` — Output file name (without extension). Creates ``{html_name}.html``.
-
-**Returns:** File path of the generated HTML report.
-
-JSON Report
------------
+JSON (split by outcome)
+-----------------------
 
 generate_json()
 ~~~~~~~~~~~~~~~
-
-Generate JSON data structures for success and failure records.
 
 .. code-block:: python
 
     def generate_json() -> Tuple[Dict[str, dict], Dict[str, dict]]
 
-**Returns:** ``(success_dict, failure_dict)``
-
-* ``success_dict`` — Keys like ``"Success_Test1"``, values contain Method, test_url, name,
-  status_code, text, content, headers
-* ``failure_dict`` — Keys like ``"Failure_Test1"``, values contain Method, test_url, name,
-  status_code, error
-
-**Raises:** ``LoadDensityGenerateJsonReportException`` — If no test records exist.
+Returns ``(success_dict, failure_dict)``.
 
 generate_json_report()
 ~~~~~~~~~~~~~~~~~~~~~~
-
-Generate JSON report files.
 
 .. code-block:: python
 
     def generate_json_report(json_file_name: str = "default_name") -> Tuple[str, str]
 
-**Parameters:**
+Writes ``{name}_success.json`` + ``{name}_failure.json``; returns
+``(success_path, failure_path)``.
 
-* ``json_file_name`` — Output file name prefix. Creates ``{name}_success.json`` and
-  ``{name}_failure.json``.
-
-**Returns:** ``(success_path, failure_path)``
-
-XML Report
-----------
+XML (split by outcome)
+----------------------
 
 generate_xml()
 ~~~~~~~~~~~~~~
-
-Generate XML strings for success and failure records.
 
 .. code-block:: python
 
     def generate_xml() -> Tuple[str, str]
 
-**Returns:** ``(success_xml_str, failure_xml_str)`` — XML strings wrapped under
-``<xml_data>`` root element.
+Returns ``(success_xml_str, failure_xml_str)``; both wrapped under an
+``<xml_data>`` root.
 
 generate_xml_report()
 ~~~~~~~~~~~~~~~~~~~~~
-
-Generate pretty-printed XML report files.
 
 .. code-block:: python
 
     def generate_xml_report(xml_file_name: str = "default_name") -> Tuple[str, str]
 
-**Parameters:**
+Writes ``{name}_success.xml`` + ``{name}_failure.xml`` (pretty
+printed).
 
-* ``xml_file_name`` — Output file name prefix. Creates ``{name}_success.xml`` and
-  ``{name}_failure.xml``.
+CSV (one row per request)
+-------------------------
 
-**Returns:** ``(success_path, failure_path)``
+.. code-block:: python
+
+    def generate_csv_report(csv_name: str = "default_name") -> str
+
+Writes ``{csv_name}.csv``. Columns: ``outcome, Method, test_url, name,
+status_code, response_time_ms, response_length, error``.
+
+JUnit XML (CI-friendly)
+-----------------------
+
+.. code-block:: python
+
+    def generate_junit_report(report_name: str = "default_name-junit") -> str
+
+Writes ``{report_name}.xml``. Each request becomes a ``<testcase>``;
+failures attach ``<failure>`` nodes carrying the error message.
+
+Summary (percentiles)
+---------------------
+
+.. code-block:: python
+
+    def build_summary() -> dict
+    def generate_summary_report(report_name: str = "default_name-summary") -> str
+
+``build_summary`` returns the in-memory dict; ``generate_summary_report``
+writes ``{report_name}.json``. The dict contains totals, failure rate,
+per-name counts, min / max / mean, and percentile (p50 / p90 / p95 /
+p99) latencies. Useful for charting and regression checks.
+
+Action-JSON commands
+--------------------
+
+.. list-table::
+   :header-rows: 1
+   :widths: 45 55
+
+   * - Command
+     - Writes
+   * - ``LD_generate_html_report``
+     - ``<base>.html``
+   * - ``LD_generate_json_report``
+     - ``<base>_success.json`` + ``<base>_failure.json``
+   * - ``LD_generate_xml_report``
+     - ``<base>_success.xml`` + ``<base>_failure.xml``
+   * - ``LD_generate_csv_report``
+     - ``<base>.csv``
+   * - ``LD_generate_junit_report``
+     - ``<base>.xml``
+   * - ``LD_generate_summary_report``
+     - ``<base>.json`` (per-name percentiles)
+   * - ``LD_summary``
+     - Returns the summary dict in memory.
