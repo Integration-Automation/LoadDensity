@@ -2,14 +2,14 @@
 LoadDensity
 ==================
 
-**A multi-protocol load and stress automation framework built on Locust**
+**A multi-protocol load & stress automation framework built on Locust**
 
 LoadDensity (``je_load_density``) wraps Locust with a JSON-driven action
-executor and adds first-class support for HTTP, WebSocket, gRPC, MQTT,
-and raw TCP/UDP user templates. Every executor command has a
-deterministic name (``LD_*``) and a single dispatch point, so an action
-JSON can mix protocols, parameterised data, scenario flow, reports, and
-metrics exporters in the same script.
+executor and adds first-class support for HTTP, FastHttp, WebSocket,
+gRPC, MQTT, and raw TCP/UDP user templates. Every executor command has
+a deterministic name (``LD_*``) and a single dispatch point, so an
+action JSON can mix protocols, parameterised data, scenario flow,
+reports, and metrics exporters in the same script.
 
 * **PyPI**: https://pypi.org/project/je_load_density/
 * **GitHub**: https://github.com/Integration-Automation/LoadDensity

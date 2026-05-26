@@ -3,9 +3,9 @@ LoadDensity English Documentation
 ====================================
 
 The English manual is split into chapters that follow a typical reader
-journey: install → run a load test → author actions → scale → integrate.
-Use the table of contents on the left, or jump straight to a chapter
-below.
+journey: install → run a load test → author actions → harden → scale →
+integrate. Use the table of contents on the left, or jump straight to
+a chapter below.
 
 .. contents:: On this page
    :local:
@@ -68,8 +68,9 @@ and chain post-test callbacks.
 Chapter 4 — User Templates
 ==========================
 
-The protocol drivers: HTTP, FastHttp, WebSocket, gRPC, MQTT, and raw
-TCP/UDP. Each template registers as a Locust user with the same task
+The protocol drivers: HTTP, FastHttp, Async HTTP/2, WebSocket, SSE,
+gRPC (unary + streaming), MQTT, raw TCP/UDP, SQL, Redis, Kafka, and
+MongoDB. Each template registers as a Locust user with the same task
 contract.
 
 .. toctree::
@@ -87,8 +88,9 @@ contract.
 Chapter 5 — Reporting & Observability
 =====================================
 
-Generate HTML / JSON / XML / CSV / JUnit / percentile-summary reports,
-ship metrics to Prometheus, InfluxDB, or any OTLP backend.
+Generate HTML / JSON / XML / CSV / JUnit / percentile-summary / chart
+reports, ship metrics to Prometheus, InfluxDB, OTLP, or Datadog
+DogStatsD, and stream live progress to a browser.
 
 .. toctree::
     :maxdepth: 2
@@ -97,6 +99,8 @@ ship metrics to Prometheus, InfluxDB, or any OTLP backend.
     doc/generate_report/generate_report_doc
     doc/metrics/metrics_doc
     doc/test_record/test_record_doc
+    doc/live_dashboard/live_dashboard_doc
+    doc/notifiers/notifiers_doc
 
 .. _en-orchestration:
 
@@ -104,7 +108,8 @@ Chapter 6 — Orchestration & Scale
 =================================
 
 Run distributed master/worker fleets, share state through the parameter
-resolver, and gate execution on extracted variables.
+resolver, gate execution on extracted variables, and steer ramps with
+built-in load shapes.
 
 .. toctree::
     :maxdepth: 2
@@ -112,28 +117,61 @@ resolver, and gate execution on extracted variables.
 
     doc/distributed/distributed_doc
 
-.. _en-recording-data:
+.. _en-reliability:
 
-Chapter 7 — Recording & Data
-============================
+Chapter 7 — Reliability
+=======================
 
-Convert real browser traffic (HAR) into runnable action JSON, persist
-test records to SQLite, and compare runs over time.
+Adaptive retry, failure budget / circuit breaker, network conditioner,
+and process supervisor — the controls that make unattended CI runs
+safe.
 
 .. toctree::
     :maxdepth: 2
-    :caption: Recording & Data
+    :caption: Reliability
+
+    doc/reliability/reliability_doc
+
+.. _en-recording-data:
+
+Chapter 8 — Recording, Data & Importers
+=======================================
+
+Convert real browser traffic (HAR), Postman v2.1 collections, OpenAPI
+3.x specs, standalone cURL commands, k6 scripts, and JMeter JMX plans
+into runnable action JSON. Persist test records to SQLite, compare
+runs over time.
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Recording, Data & Importers
 
     doc/har_import/har_import_doc
+    doc/importers/importers_doc
     doc/sqlite_persistence/sqlite_persistence_doc
+
+.. _en-auth:
+
+Chapter 9 — Auth
+================
+
+OAuth2 token helpers with cache, JWT signing (HS / RS), AWS Signature
+v4, and mTLS client-cert support on every HTTP user template.
+
+.. toctree::
+    :maxdepth: 2
+    :caption: Auth
+
+    doc/auth/auth_doc
 
 .. _en-tooling:
 
-Chapter 8 — Tooling, CLI & Diagnostics
-======================================
+Chapter 10 — Tooling, CLI & Diagnostics
+=======================================
 
-Command-line subcommands, the hardened control socket server, and the
-exception hierarchy you will see in tracebacks.
+Command-line subcommands, the hardened control socket server,
+exception hierarchy, plus the editor & CI integrations: linter,
+schema, LSP, VS Code extension, GitHub Action, and pre-commit.
 
 .. toctree::
     :maxdepth: 2
@@ -142,14 +180,15 @@ exception hierarchy you will see in tracebacks.
     doc/cli/cli_doc
     doc/socket_server/socket_server_doc
     doc/exception/exception_doc
+    doc/editor_integration/editor_integration_doc
 
 .. _en-integrations:
 
-Chapter 9 — Integrations
-========================
+Chapter 11 — Integrations
+=========================
 
-The optional GUI, the **Model Context Protocol (MCP)** server that lets
-Claude drive LoadDensity, and the downstream PyBreeze IDE integration.
+The optional GUI and the **Model Context Protocol (MCP)** server that
+lets Claude drive LoadDensity.
 
 .. toctree::
     :maxdepth: 2
@@ -160,7 +199,7 @@ Claude drive LoadDensity, and the downstream PyBreeze IDE integration.
 
 .. _en-reference:
 
-Chapter 10 — API Reference
+Chapter 12 — API Reference
 ==========================
 
 Auto-generated Python API reference.
