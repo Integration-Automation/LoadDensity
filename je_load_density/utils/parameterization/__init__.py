@@ -3,6 +3,8 @@ from je_load_density.utils.parameterization.parameter_resolver import (
     parameter_resolver,
     register_csv_source,
     register_csv_sources,
+    register_db_source,
+    register_db_sources,
     register_variable,
     register_variables,
     resolve,
@@ -14,6 +16,8 @@ __all__ = [
     "resolve",
     "register_csv_source",
     "register_csv_sources",
+    "register_db_source",
+    "register_db_sources",
     "register_variable",
     "register_variables",
 ]

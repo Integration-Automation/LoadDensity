@@ -1,0 +1,19 @@
+{"load_density": [
+  ["LD_register_variables", {"variables": {"base": "https://httpbin.org"}}],
+  ["LD_start_test", {
+    "user_detail_dict": {"user": "fast_http_user"},
+    "user_count": 30,
+    "spawn_rate": 10,
+    "test_time": 30,
+    "tasks": {
+      "mode": "weighted",
+      "tasks": [
+        {"method": "get", "request_url": "${var.base}/get",   "weight": 7,
+         "name": "browse"},
+        {"method": "get", "request_url": "${var.base}/delay/1", "weight": 1,
+         "name": "expensive"}
+      ]
+    }
+  }],
+  ["LD_generate_summary_report", {"report_name": "weighted_mix"}]
+]}

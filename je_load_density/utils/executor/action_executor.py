@@ -24,6 +24,9 @@ from je_load_density.utils.generate_report.generate_summary_report import (
     build_summary,
     generate_summary_report,
 )
+from je_load_density.utils.generate_report.generate_chart_report import (
+    generate_chart_report,
+)
 from je_load_density.utils.generate_report.generate_xml_report import (
     generate_xml,
     generate_xml_report,
@@ -42,18 +45,64 @@ from je_load_density.utils.metrics.prometheus_exporter import (
     stop_prometheus_exporter,
 )
 from je_load_density.utils.package_manager.package_manager_class import package_manager
+from je_load_density.utils.ci_annotations.github_actions import emit_github_annotations
+from je_load_density.utils.linter.action_linter import lint_action, lint_action_file
 from je_load_density.utils.parameterization import (
     parameter_resolver,
     register_csv_source,
     register_csv_sources,
+    register_db_source,
+    register_db_sources,
     register_variable,
     register_variables,
 )
+from je_load_density.utils.regression.diff import diff_runs
+from je_load_density.utils.schema.action_schema import export_schema
+from je_load_density.utils.sla.sla_gates import assert_sla, evaluate_sla
+from je_load_density.utils.recording.curl_importer import curl_to_task
 from je_load_density.utils.recording.har_importer import (
     har_to_action_json,
     har_to_tasks,
     load_har,
 )
+from je_load_density.utils.recording.jmeter_importer import (
+    jmeter_to_action_json,
+    jmeter_to_tasks,
+    load_jmeter_jmx,
+)
+from je_load_density.utils.recording.k6_importer import (
+    k6_script_to_action_json,
+    k6_script_to_tasks,
+    load_k6_script,
+)
+from je_load_density.utils.recording.openapi_importer import (
+    load_openapi,
+    openapi_to_action_json,
+    openapi_to_tasks,
+)
+from je_load_density.utils.recording.postman_importer import (
+    load_postman_collection,
+    postman_to_action_json,
+    postman_to_tasks,
+)
+from je_load_density.utils.reliability.failure_budget import (
+    install_failure_budget,
+    uninstall_failure_budget,
+)
+from je_load_density.utils.reliability.network_conditioner import (
+    install_network_conditioner,
+    uninstall_network_conditioner,
+)
+from je_load_density.utils.dashboard.live_dashboard import (
+    start_dashboard,
+    stop_dashboard,
+)
+from je_load_density.utils.metrics.statsd_sink import (
+    start_statsd_sink,
+    stop_statsd_sink,
+)
+from je_load_density.utils.notifier.slack import post_slack_summary
+from je_load_density.utils.notifier.teams import post_teams_summary
 from je_load_density.utils.test_record.sqlite_persistence import (
     fetch_run_records,
     list_runs,
@@ -109,6 +158,7 @@ class Executor:
             "LD_generate_csv_report": generate_csv_report,
             "LD_generate_junit_report": generate_junit_report,
             "LD_generate_summary_report": generate_summary_report,
+            "LD_generate_chart_report": generate_chart_report,
             "LD_summary": build_summary,
 
             # Test record persistence
@@ -128,6 +178,48 @@ class Executor:
             "LD_load_har": load_har,
             "LD_har_to_tasks": har_to_tasks,
             "LD_har_to_action_json": har_to_action_json,
+            "LD_load_postman_collection": load_postman_collection,
+            "LD_postman_to_tasks": postman_to_tasks,
+            "LD_postman_to_action_json": postman_to_action_json,
+            "LD_load_openapi": load_openapi,
+            "LD_openapi_to_tasks": openapi_to_tasks,
+            "LD_openapi_to_action_json": openapi_to_action_json,
+            "LD_curl_to_task": curl_to_task,
+            "LD_load_k6_script": load_k6_script,
+            "LD_k6_script_to_tasks": k6_script_to_tasks,
+            "LD_k6_script_to_action_json": k6_script_to_action_json,
+            "LD_load_jmeter_jmx": load_jmeter_jmx,
+            "LD_jmeter_to_tasks": jmeter_to_tasks,
+            "LD_jmeter_to_action_json": jmeter_to_action_json,
+
+            # Reliability
+            "LD_install_failure_budget": install_failure_budget,
+            "LD_uninstall_failure_budget": uninstall_failure_budget,
+            "LD_install_network_conditioner": install_network_conditioner,
+            "LD_uninstall_network_conditioner": uninstall_network_conditioner,
+
+            # Glue
+            "LD_start_dashboard": start_dashboard,
+            "LD_stop_dashboard": stop_dashboard,
+            "LD_start_statsd_sink": start_statsd_sink,
+            "LD_stop_statsd_sink": stop_statsd_sink,
+            "LD_post_slack_summary": post_slack_summary,
+            "LD_post_teams_summary": post_teams_summary,
+
+            # Quality / DX
+            "LD_lint_action": lint_action,
+            "LD_lint_action_file": lint_action_file,
+            "LD_export_schema": export_schema,
+            "LD_emit_github_annotations": emit_github_annotations,
+
+            # SLA / regression
+            "LD_evaluate_sla": evaluate_sla,
+            "LD_assert_sla": assert_sla,
+            "LD_diff_runs": diff_runs,
+
+            # Parameter resolver (DB extension)
+            "LD_register_db_source": register_db_source,
+            "LD_register_db_sources": register_db_sources,
 
             # Metrics exporters
             "LD_start_prometheus_exporter": start_prometheus_exporter,

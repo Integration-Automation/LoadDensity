@@ -1,12 +1,53 @@
 import secrets
+import time
 from typing import Any, Dict, List, Optional
 
 from je_load_density.utils.logging.loggin_instance import load_density_logger
 from je_load_density.utils.parameterization import parameter_resolver
+from je_load_density.utils.throttle.rps_throttle import get_throttle
 from je_load_density.wrapper.user_template.request_executor import (
     _normalise_tasks,
     execute_task,
 )
+
+
+def _think_time_seconds(value: Any) -> float:
+    if isinstance(value, (int, float)):
+        return max(0.0, float(value))
+    if isinstance(value, dict):
+        low = float(value.get("min", 0))
+        high = float(value.get("max", low))
+        if high <= low:
+            return max(0.0, low)
+        # cryptographically-strong random in [low, high)
+        span_ms = int((high - low) * 1000)
+        if span_ms <= 0:
+            return max(0.0, low)
+        return low + secrets.randbelow(span_ms) / 1000.0
+    return 0.0
+
+
+def _apply_throttle(task: Dict[str, Any]) -> None:
+    throttle = task.get("throttle")
+    if not isinstance(throttle, dict):
+        return
+    rps = throttle.get("rps")
+    if rps is None:
+        return
+    try:
+        rps_value = float(rps)
+    except (TypeError, ValueError):
+        return
+    key = str(throttle.get("key") or task.get("name") or "default")
+    burst = throttle.get("burst")
+    burst_value = int(burst) if burst is not None else None
+    get_throttle(key, rps_value, burst=burst_value).acquire()
+
+
+def _apply_think_time(task: Dict[str, Any]) -> None:
+    seconds = _think_time_seconds(task.get("think_time"))
+    if seconds > 0:
+        time.sleep(seconds)
 
 
 def _coerce_tasks_payload(raw_tasks: Any) -> Dict[str, Any]:
@@ -101,8 +142,41 @@ def run_scenario(method_map: Dict[str, Any], raw_tasks: Any) -> None:
         _safe_execute(method_map, task)
 
 
-def _safe_execute(method_map: Dict[str, Any], task: Dict[str, Any]) -> None:
-    try:
+def _apply_network_conditioner(task: Dict[str, Any]) -> None:
+    from je_load_density.utils.reliability.network_conditioner import (
+        current_conditioner,
+    )
+    conditioner = current_conditioner()
+    if conditioner is not None:
+        conditioner.apply(task)
+
+
+def _execute_with_optional_retry(method_map: Dict[str, Any], task: Dict[str, Any]) -> None:
+    policy_config = task.get("retry")
+    if not isinstance(policy_config, dict):
         execute_task(method_map, task)
+        return
+    from je_load_density.utils.reliability.adaptive_retry import (
+        AdaptiveRetryPolicy,
+        run_with_retry,
+    )
+    policy = AdaptiveRetryPolicy(
+        transient_budget=int(policy_config.get("transient", 5)),
+        flaky_budget=int(policy_config.get("flaky", 2)),
+        permanent_budget=int(policy_config.get("permanent", 0)),
+        base_delay=float(policy_config.get("base_delay", 0.1)),
+        max_delay=float(policy_config.get("max_delay", 5.0)),
+        backoff_factor=float(policy_config.get("backoff_factor", 2.0)),
+        jitter=float(policy_config.get("jitter", 0.25)),
+    )
+    run_with_retry(lambda: execute_task(method_map, task), policy=policy)
+
+
+def _safe_execute(method_map: Dict[str, Any], task: Dict[str, Any]) -> None:
+    _apply_throttle(task)
+    try:
+        _apply_network_conditioner(task)
+        _execute_with_optional_retry(method_map, task)
     except Exception as error:
         load_density_logger.error(f"scenario step failed: {error!r}")
+    _apply_think_time(task)

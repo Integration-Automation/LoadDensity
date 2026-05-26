@@ -1,9 +1,15 @@
 from typing import Dict, Any
+from je_load_density.wrapper.proxy.user.async_http_user_proxy import ProxyAsyncHttpUser
 from je_load_density.wrapper.proxy.user.fast_http_user_proxy import ProxyFastHTTPUser
 from je_load_density.wrapper.proxy.user.http_user_proxy import ProxyHTTPUser
 from je_load_density.wrapper.proxy.user.grpc_user_proxy import ProxyGrpcUser
+from je_load_density.wrapper.proxy.user.kafka_user_proxy import ProxyKafkaUser
+from je_load_density.wrapper.proxy.user.mongo_user_proxy import ProxyMongoUser
 from je_load_density.wrapper.proxy.user.mqtt_user_proxy import ProxyMqttUser
+from je_load_density.wrapper.proxy.user.redis_user_proxy import ProxyRedisUser
 from je_load_density.wrapper.proxy.user.socket_user_proxy import ProxySocketUser
+from je_load_density.wrapper.proxy.user.sql_user_proxy import ProxySqlUser
+from je_load_density.wrapper.proxy.user.sse_user_proxy import ProxySseUser
 from je_load_density.wrapper.proxy.user.websocket_user_proxy import ProxyWebSocketUser
 
 
@@ -21,10 +27,16 @@ class LocustUserProxy:
         self.user_dict: Dict[str, Any] = {
             "fast_http_user": ProxyFastHTTPUser(),
             "http_user": ProxyHTTPUser(),
+            "async_http_user": ProxyAsyncHttpUser(),
             "websocket_user": ProxyWebSocketUser(),
+            "sse_user": ProxySseUser(),
             "grpc_user": ProxyGrpcUser(),
             "mqtt_user": ProxyMqttUser(),
             "socket_user": ProxySocketUser(),
+            "sql_user": ProxySqlUser(),
+            "redis_user": ProxyRedisUser(),
+            "kafka_user": ProxyKafkaUser(),
+            "mongo_user": ProxyMongoUser(),
         }
 
     def get_user(self, user_type: str) -> Any:

@@ -119,6 +119,7 @@ class GrpcUserWrapper(User):
         metadata = _coerce_metadata(step.get("metadata"))
         timeout = float(step.get("timeout", 10))
         name = step.get("name") or f"{stub_path}.{method_name}"
+        rpc_kind = str(step.get("rpc", "unary")).lower()
 
         start = time.monotonic()
         try:
@@ -126,11 +127,9 @@ class GrpcUserWrapper(User):
             stub_cls = _import_dotted(stub_path)
             request_cls = _import_dotted(request_path)
             stub = stub_cls(channel)
-            method = getattr(stub, method_name)
+            rpc = getattr(stub, method_name)
 
-            request = request_cls(**payload) if isinstance(payload, dict) else request_cls()
-            response = method(request, timeout=timeout, metadata=metadata)
-            length = response.ByteSize() if hasattr(response, "ByteSize") else 0
+            length = _invoke_rpc(rpc, request_cls, payload, metadata, timeout, rpc_kind)
             self._fire(name, target, start, length)
         except Exception as error:
             self._fire(name, target, start, 0, error)
@@ -163,3 +162,53 @@ def _coerce_metadata(metadata: Any) -> Tuple[Tuple[str, str], ...]:
                 result.append((str(item[0]), str(item[1])))
         return tuple(result)
     return ()
+
+
+def _build_request(request_cls, payload):
+    if isinstance(payload, dict):
+        return request_cls(**payload)
+    return request_cls()
+
+
+def _build_request_iter(request_cls, payload):
+    if not isinstance(payload, list):
+        yield _build_request(request_cls, payload)
+        return
+    for item in payload:
+        yield _build_request(request_cls, item)
+
+
+def _response_bytes(response: Any) -> int:
+    if response is None:
+        return 0
+    if hasattr(response, "ByteSize"):
+        try:
+            return int(response.ByteSize())
+        except Exception:
+            return 0
+    return 0
+
+
+def _drain_stream(iterator) -> int:
+    total = 0
+    for item in iterator:
+        total += _response_bytes(item)
+    return total
+
+
+def _invoke_rpc(rpc, request_cls, payload, metadata, timeout: float, rpc_kind: str) -> int:
+    if rpc_kind == "server_stream":
+        request = _build_request(request_cls, payload)
+        return _drain_stream(rpc(request, timeout=timeout, metadata=metadata))
+    if rpc_kind == "client_stream":
+        response = rpc(_build_request_iter(request_cls, payload),
+                        timeout=timeout, metadata=metadata)
+        return _response_bytes(response)
+    if rpc_kind in {"bidi", "bidirectional", "bidi_stream"}:
+        return _drain_stream(
+            rpc(_build_request_iter(request_cls, payload),
+                 timeout=timeout, metadata=metadata)
+        )
+    request = _build_request(request_cls, payload)
+    response = rpc(request, timeout=timeout, metadata=metadata)
+    return _response_bytes(response)

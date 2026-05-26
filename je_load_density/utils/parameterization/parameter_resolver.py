@@ -27,6 +27,7 @@ class ParameterResolver:
     def __init__(self) -> None:
         self._variables: Dict[str, Any] = {}
         self._csv_sources: Dict[str, Iterator[Dict[str, str]]] = {}
+        self._db_sources: Dict[str, Iterator[Dict[str, Any]]] = {}
         self._lock = threading.Lock()
         self._faker = None
 
@@ -39,6 +40,32 @@ class ParameterResolver:
         with self._lock:
             self._csv_sources[name] = itertools.cycle(rows) if cycle else iter(rows)
 
+    def register_db_source(self, name: str, connection_string: str,
+                           query: str, cycle: bool = True) -> None:
+        """
+        Register a parameter source backed by a SQL query.
+
+        Each ``${db.NAME.column}`` placeholder pulls the next row from
+        the cached result set. SQLAlchemy is a soft dependency.
+        """
+        rows = self._read_db(connection_string, query)
+        with self._lock:
+            self._db_sources[name] = itertools.cycle(rows) if cycle else iter(rows)
+
+    @staticmethod
+    def _read_db(connection_string: str, query: str) -> List[Dict[str, Any]]:
+        try:
+            from sqlalchemy import create_engine, text
+        except ImportError as error:
+            raise RuntimeError(
+                "SQLAlchemy is required for ${db.*}; install with: pip install sqlalchemy"
+            ) from error
+        engine = create_engine(connection_string, future=True)
+        with engine.connect() as connection:
+            result = connection.execute(text(query))
+            keys = list(result.keys())
+            return [dict(zip(keys, row)) for row in result.fetchall()]
+
     @staticmethod
     def _read_csv(file_path: str) -> List[Dict[str, str]]:
         with open(file_path, "r", encoding="utf-8", newline="") as fh:
@@ -48,6 +75,16 @@ class ParameterResolver:
     def _next_csv_row(self, name: str) -> Optional[Dict[str, str]]:
         with self._lock:
             source = self._csv_sources.get(name)
+            if source is None:
+                return None
+            try:
+                return next(source)
+            except StopIteration:
+                return None
+
+    def _next_db_row(self, name: str) -> Optional[Dict[str, Any]]:
+        with self._lock:
+            source = self._db_sources.get(name)
             if source is None:
                 return None
             try:
@@ -82,6 +119,13 @@ class ParameterResolver:
             if row is None:
                 return None
             return row.get(column)
+        if prefix == "db":
+            source_name, _, column = rest.partition(".")
+            row = self._next_db_row(source_name)
+            if row is None:
+                return None
+            value = row.get(column)
+            return None if value is None else str(value)
         if prefix == "faker":
             return self._resolve_faker(rest)
         return None
@@ -142,6 +186,7 @@ class ParameterResolver:
         with self._lock:
             self._variables.clear()
             self._csv_sources.clear()
+            self._db_sources.clear()
 
 
 parameter_resolver = ParameterResolver()
@@ -171,3 +216,18 @@ def register_csv_sources(sources: Iterable[Dict[str, Any]]) -> None:
         cycle = source.get("cycle", True)
         if name and file_path:
             parameter_resolver.register_csv_source(name, file_path, cycle)
+
+
+def register_db_source(name: str, connection_string: str,
+                       query: str, cycle: bool = True) -> None:
+    parameter_resolver.register_db_source(name, connection_string, query, cycle)
+
+
+def register_db_sources(sources: Iterable[Dict[str, Any]]) -> None:
+    for source in sources:
+        name = source.get("name")
+        connection_string = source.get("connection_string")
+        query = source.get("query")
+        cycle = source.get("cycle", True)
+        if name and connection_string and query:
+            parameter_resolver.register_db_source(name, connection_string, query, cycle)

@@ -1,0 +1,13 @@
+{"load_density": [
+  ["LD_start_test", {
+    "user_detail_dict": {"user": "fast_http_user"},
+    "user_count": 200, "spawn_rate": 50, "test_time": 90,
+    "load_shape": "spike",
+    "shape_config": {
+      "baseline_users": 20, "spike_users": 200, "spawn_rate": 50,
+      "pre_seconds": 30, "spike_seconds": 30, "post_seconds": 30
+    },
+    "tasks": [{"method": "get", "request_url": "https://httpbin.org/get"}]
+  }],
+  ["LD_generate_summary_report", {"report_name": "spike"}]
+]}

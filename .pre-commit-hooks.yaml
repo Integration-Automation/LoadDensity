@@ -1,0 +1,8 @@
+- id: loaddensity-lint
+  name: LoadDensity action JSON linter
+  description: "Lint LoadDensity action JSON files with LD_lint_action_file"
+  entry: python -m je_load_density.tools.lint_files
+  language: python
+  files: '\.(json|action\.json)$'
+  pass_filenames: true
+  require_serial: false

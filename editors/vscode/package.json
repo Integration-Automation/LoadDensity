@@ -1,0 +1,56 @@
+{
+  "name": "loaddensity",
+  "displayName": "LoadDensity Action JSON",
+  "description": "Completion + lint diagnostics for LoadDensity action JSON files",
+  "version": "0.1.0",
+  "publisher": "loaddensity",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Programming Languages", "Linters", "Testing"],
+  "keywords": ["loaddensity", "locust", "load testing", "action json"],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onLanguage:json",
+    "workspaceContains:**/*.action.json"
+  ],
+  "contributes": {
+    "languages": [
+      {
+        "id": "loaddensity-action",
+        "aliases": ["LoadDensity Action"],
+        "extensions": [".action.json"],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "jsonValidation": [
+      {
+        "fileMatch": "*.action.json",
+        "url": "./schemas/loaddensity-action-schema.json"
+      }
+    ],
+    "configuration": {
+      "title": "LoadDensity",
+      "properties": {
+        "loaddensity.python": {
+          "type": "string",
+          "default": "python",
+          "description": "Python interpreter used to launch the LoadDensity LSP server"
+        },
+        "loaddensity.lspArgs": {
+          "type": "array",
+          "default": ["-m", "je_load_density.action_lsp"],
+          "description": "Args passed to the Python interpreter to spawn the LSP"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "package": "vsce package"
+  },
+  "dependencies": {
+    "vscode-languageclient": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.24.0"
+  }
+}
