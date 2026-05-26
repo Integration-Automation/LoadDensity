@@ -30,8 +30,7 @@ Poster = Callable[[str, bytes, Dict[str, str], float], Dict[str, Any]]
 def _default_poster(url: str, body: bytes, headers: Dict[str, str], timeout: float) -> Dict[str, Any]:
     _require_http_scheme(url)
     request = urllib.request.Request(url, data=body, headers=headers, method="POST")
-    # nosec B310 — scheme is validated above; injection vectors blocked.
-    with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+    with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310  # nosec B310
         return json.loads(response.read())
 
 

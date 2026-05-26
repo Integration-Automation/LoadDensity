@@ -61,6 +61,7 @@ def _attach_body(task: Dict[str, Any], data_parts: List[str]) -> None:
 _DATA_FLAGS = frozenset({
     "-d", "--data", "--data-raw", "--data-binary", "--data-urlencode",
 })
+_FLAG_IGNORE = frozenset({"--compressed"})
 
 
 def _consume_method(task: Dict[str, Any], iterator: Iterator[str]) -> None:
@@ -118,7 +119,7 @@ def _dispatch_flag(token: str, iterator: Iterator[str], task: Dict[str, Any],
     if skip is not None:
         task[skip[0]] = skip[1]
         return
-    if token == "--compressed":
+    if token in _FLAG_IGNORE:
         return
     # Long opt with attached value uses "="; bare long opt consumes the next token.
     if "=" not in token:

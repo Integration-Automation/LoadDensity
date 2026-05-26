@@ -134,6 +134,7 @@ class LiveDashboardServer:
 def _build_handler(refresh_seconds: float, window_seconds: float):
 
     class _Handler(BaseHTTPRequestHandler):
+        # pylint: disable=redefined-builtin
         def log_message(self, format, *args):  # noqa: A002 — match stdlib signature
             # Silence stdlib request-log chatter; the dashboard already
             # surfaces stats through SSE.

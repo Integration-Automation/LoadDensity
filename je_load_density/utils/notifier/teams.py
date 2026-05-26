@@ -44,8 +44,7 @@ def _default_poster(url: str, body: bytes, timeout: float) -> int:
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    # nosec B310 — scheme is validated above; injection vectors blocked.
-    with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
+    with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310  # nosec B310
         return response.status
 
 
