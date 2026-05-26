@@ -29,7 +29,7 @@ def test_snapshot_metrics_returns_zero_when_empty():
     test_record_instance.error_record_list.clear()
     snapshot = snapshot_metrics()
     assert snapshot["totals"]["requests"] == 0
-    assert snapshot["rps"] == 0.0
+    assert snapshot["rps"] == pytest.approx(0.0)
 
 
 def test_snapshot_metrics_computes_rps_and_avg():
@@ -42,7 +42,7 @@ def test_snapshot_metrics_computes_rps_and_avg():
 
 def test_dashboard_serves_html_and_snapshot():
     _populate([5.0, 15.0])
-    server = start_dashboard(host="127.0.0.1", port=8763)
+    start_dashboard(host="127.0.0.1", port=8763)
     try:
         time.sleep(0.05)
         with urllib.request.urlopen("http://127.0.0.1:8763/", timeout=2) as response:

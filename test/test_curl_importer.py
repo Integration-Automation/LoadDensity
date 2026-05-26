@@ -14,7 +14,7 @@ def test_curl_post_with_json_body_promotes_method_and_parses_json():
     task = curl_to_task(cmd)
     assert task["method"] == "post"
     assert task["headers"]["Content-Type"] == "application/json"
-    assert task["json"] == {"email": "u@x", "password": "s"}
+    assert task["json"] == {"email": "u@x", "password": "s"}  # NOSONAR test fixture, not a credential
 
 
 def test_curl_post_with_form_body():
@@ -25,7 +25,7 @@ def test_curl_post_with_form_body():
 
 def test_curl_basic_auth():
     task = curl_to_task("curl -u admin:rotate-me https://api/x")
-    assert task["auth"] == {"type": "basic", "username": "admin", "password": "rotate-me"}
+    assert task["auth"] == {"type": "basic", "username": "admin", "password": "rotate-me"}  # NOSONAR test fixture
 
 
 def test_curl_multiple_data_flags_join_with_amp():

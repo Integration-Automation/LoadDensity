@@ -12,7 +12,7 @@ Each task entry::
 
 import json
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 from locust import User, between, task
 

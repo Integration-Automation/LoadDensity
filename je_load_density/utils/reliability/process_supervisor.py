@@ -8,6 +8,7 @@ Process supervisor.
   raise so a hung user template doesn't pin a CI job forever.
 """
 
+import logging
 import os
 import signal
 import threading
@@ -16,6 +17,7 @@ from typing import Any, Callable, List, Optional
 
 
 _TARGET_NAMES = ("locust", "gevent")
+_log_supervisor = logging.getLogger(__name__)
 
 
 @dataclass
@@ -47,26 +49,39 @@ class ProcessSupervisor:
         for process in self._iter_processes():
             if not self._matches(process.info or {}):
                 continue
-            try:
-                process.terminate()
+            if self._terminate(process):
                 killed.append(process.info["pid"])
-            except Exception:
-                continue
         if killed:
-            try:
-                import psutil  # type: ignore
-                _, alive = psutil.wait_procs([
-                    p for p in self._iter_processes() if (p.info or {}).get("pid") in killed
-                ], timeout=self.grace_seconds)
-                for survivor in alive:
-                    try:
-                        survivor.kill()
-                    except Exception:
-                        continue
-            except Exception:
-                pass
+            self._reap_survivors(killed)
         self.killed.extend(killed)
         return killed
+
+    @staticmethod
+    def _terminate(process) -> bool:
+        try:
+            process.terminate()
+            return True
+        except (OSError, RuntimeError) as error:
+            _log_supervisor.debug(f"terminate failed for {process}: {error!r}")
+            return False
+
+    def _reap_survivors(self, killed: List[int]) -> None:
+        try:
+            import psutil  # type: ignore
+        except ImportError:
+            return
+        try:
+            _, alive = psutil.wait_procs([
+                p for p in self._iter_processes() if (p.info or {}).get("pid") in killed
+            ], timeout=self.grace_seconds)
+        except (OSError, RuntimeError) as error:
+            _log_supervisor.debug(f"wait_procs failed: {error!r}")
+            return
+        for survivor in alive:
+            try:
+                survivor.kill()
+            except (OSError, RuntimeError) as error:
+                _log_supervisor.debug(f"kill failed for {survivor}: {error!r}")
 
 
 def with_watchdog(
@@ -87,7 +102,7 @@ def with_watchdog(
     def _target() -> None:
         try:
             result.append(callable_(*args, **kwargs))
-        except BaseException as error:
+        except Exception as error:  # noqa: BLE001 — propagated via error_box
             error_box.append(error)
 
     thread = threading.Thread(target=_target, daemon=True)
@@ -98,8 +113,8 @@ def with_watchdog(
         if on_timeout is not None:
             try:
                 on_timeout()
-            except Exception:
-                pass
+            except Exception as error:  # noqa: BLE001 — best-effort callback
+                _log_supervisor.debug(f"on_timeout callback failed: {error!r}")
         raise TimeoutError(
             f"{getattr(callable_, '__name__', 'callable')} exceeded {timeout_seconds}s"
         )
@@ -110,10 +125,11 @@ def with_watchdog(
 
 
 def kill_pid(pid: int, sig: int = signal.SIGTERM) -> bool:
+    # ProcessLookupError inherits from OSError; one entry covers both.
     if pid <= 0 or pid == os.getpid():
         return False
     try:
         os.kill(pid, sig)
         return True
-    except (OSError, ProcessLookupError):
+    except OSError:
         return False

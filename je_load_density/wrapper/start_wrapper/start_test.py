@@ -68,6 +68,24 @@ _USER_REGISTRY: Dict[str, Dict[str, Any]] = {
 }
 
 
+def _pop_distributed_config(kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Extract Locust distributed-runner fields from ``**kwargs``.
+
+    Keeping these in kwargs (rather than as positional parameters) lets
+    callers stay backwards-compatible while satisfying the public-API
+    parameter budget. Returns a dict of the relevant fields, with
+    defaults filled in.
+    """
+    return {
+        "master_bind_host": kwargs.pop("master_bind_host", "*"),
+        "master_bind_port": kwargs.pop("master_bind_port", 5557),
+        "master_host": kwargs.pop("master_host", "127.0.0.1"),
+        "master_port": kwargs.pop("master_port", 5557),
+        "expected_workers": kwargs.pop("expected_workers", 0),
+    }
+
+
 def start_test(
     user_detail_dict: Dict[str, Any],
     user_count: int = 50,
@@ -75,11 +93,6 @@ def start_test(
     test_time: Optional[int] = 60,
     web_ui_dict: Optional[Dict[str, Any]] = None,
     runner_mode: str = "local",
-    master_bind_host: str = "*",
-    master_bind_port: int = 5557,
-    master_host: str = "127.0.0.1",
-    master_port: int = 5557,
-    expected_workers: int = 0,
     load_shape: Optional[str] = None,
     shape_config: Optional[Dict[str, Any]] = None,
     **kwargs,
@@ -87,12 +100,17 @@ def start_test(
     """
     啟動壓力測試。Start load test.
 
-    runner_mode: local | master | worker
+    ``runner_mode`` is ``"local"`` | ``"master"`` | ``"worker"``.
+    Distributed-mode fields (``master_bind_host`` / ``master_bind_port`` /
+    ``master_host`` / ``master_port`` / ``expected_workers``) are
+    accepted via ``**kwargs`` so the signature stays under the public
+    API parameter budget.
     """
+    distributed = _pop_distributed_config(kwargs)
     load_density_logger.info(
         f"start_test, user_detail_dict={user_detail_dict}, user_count={user_count}, "
         f"spawn_rate={spawn_rate}, test_time={test_time}, web_ui_dict={web_ui_dict}, "
-        f"runner_mode={runner_mode}, params={kwargs}"
+        f"runner_mode={runner_mode}, distributed={distributed}, params={kwargs}"
     )
 
     user_type = user_detail_dict.get("user", "fast_http_user")
@@ -112,13 +130,9 @@ def start_test(
         test_time=test_time,
         web_ui_dict=web_ui_dict,
         runner_mode=runner_mode,
-        master_bind_host=master_bind_host,
-        master_bind_port=master_bind_port,
-        master_host=master_host,
-        master_port=master_port,
-        expected_workers=expected_workers,
         load_shape=load_shape,
         shape_config=shape_config,
+        **distributed,
         **kwargs,
     )
 

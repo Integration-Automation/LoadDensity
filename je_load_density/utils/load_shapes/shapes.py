@@ -83,19 +83,19 @@ def _make_shape_class(name: str, tick_func):
     return _Shape
 
 
-def StagesShape(stages: List[Dict[str, Any]]):
+def StagesShape(stages: List[Dict[str, Any]]):  # NOSONAR factory returning a class
     cls = _make_shape_class("StagesShape", lambda cfg, t: _stages_tick(cfg["stages"], t))
     cls.config = {"stages": list(stages)}
     return cls
 
 
-def SpikeShape(**config):
+def SpikeShape(**config):  # NOSONAR factory returning a class
     cls = _make_shape_class("SpikeShape", _spike_tick)
     cls.config = dict(config)
     return cls
 
 
-def SoakShape(**config):
+def SoakShape(**config):  # NOSONAR factory returning a class
     cls = _make_shape_class("SoakShape", _soak_tick)
     cls.config = dict(config)
     return cls

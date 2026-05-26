@@ -19,7 +19,7 @@ SUMMARY = {
 def test_evaluate_sla_passes_overall_p95():
     results = evaluate_sla([{"type": "latency_p95", "value": 200}], summary=SUMMARY)
     assert results[0]["passed"] is True
-    assert results[0]["actual"] == 180.0
+    assert results[0]["actual"] == pytest.approx(180.0)
 
 
 def test_evaluate_sla_fails_overall_p95():
@@ -34,7 +34,7 @@ def test_evaluate_sla_per_name_metric():
         summary=SUMMARY,
     )
     assert results[0]["passed"] is True
-    assert results[0]["actual"] == 220.0
+    assert results[0]["actual"] == pytest.approx(220.0)
 
 
 def test_evaluate_sla_supports_failure_rate():

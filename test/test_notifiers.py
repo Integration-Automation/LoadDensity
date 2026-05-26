@@ -1,5 +1,7 @@
 import json
 
+import pytest
+
 from je_load_density.utils.notifier.slack import (
     build_slack_summary,
     post_slack_summary,
@@ -42,7 +44,7 @@ def test_post_slack_uses_supplied_poster_and_returns_status():
                                  timeout=1.0, poster=poster)
     assert status == 200
     assert seen["url"] == "https://hook/x"
-    assert seen["timeout"] == 1.0
+    assert seen["timeout"] == pytest.approx(1.0)
     body = json.loads(seen["body"])
     assert "blocks" in body
 

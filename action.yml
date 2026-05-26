@@ -36,32 +36,50 @@ runs:
 
     - name: Install LoadDensity
       shell: bash
+      env:
+        LD_EXTRAS: ${{ inputs.extras }}
+        LD_PIP_EXTRA: ${{ inputs.pip-install-extra }}
       run: |
         python -m pip install --upgrade pip
-        if [ -n "${{ inputs.extras }}" ]; then
-          pip install "je_load_density[${{ inputs.extras }}]"
+        if [ -n "$LD_EXTRAS" ]; then
+          pip install "je_load_density[${LD_EXTRAS}]"
         else
           pip install je_load_density
         fi
-        if [ -n "${{ inputs.pip-install-extra }}" ]; then
-          pip install ${{ inputs.pip-install-extra }}
+        if [ -n "$LD_PIP_EXTRA" ]; then
+          pip install $LD_PIP_EXTRA
         fi
 
     - name: Lint action JSON
       shell: bash
+      env:
+        LD_ACTION_FILE: ${{ inputs.action-file }}
       run: |
-        python -c "from je_load_density import lint_action_file; import json, sys; \
-          findings = lint_action_file('${{ inputs.action-file }}'); \
-          [print('::%s file=${{ inputs.action-file }}::%s' % (f['severity'], f['message'])) for f in findings]; \
-          sys.exit(1 if any(f['severity']=='error' for f in findings) else 0)"
+        python - <<'PY'
+        import os, sys
+        from je_load_density import lint_action_file
+        path = os.environ["LD_ACTION_FILE"]
+        findings = lint_action_file(path)
+        for finding in findings:
+            print(f"::{finding['severity']} file={path}::{finding['message']}")
+        sys.exit(1 if any(f["severity"] == "error" for f in findings) else 0)
+        PY
 
     - name: Run LoadDensity
       shell: bash
-      run: python -m je_load_density run "${{ inputs.action-file }}"
+      env:
+        LD_ACTION_FILE: ${{ inputs.action-file }}
+      run: python -m je_load_density run "$LD_ACTION_FILE"
 
     - name: Emit GitHub annotations
       shell: bash
+      env:
+        LD_FAIL_ON_ERROR: ${{ inputs.fail-on-error }}
       run: |
-        python -c "from je_load_density import emit_github_annotations, test_record_instance; \
-          count = emit_github_annotations(title='LoadDensity'); \
-          import sys; sys.exit(1 if (count > 0 and '${{ inputs.fail-on-error }}'=='true') else 0)"
+        python - <<'PY'
+        import os, sys
+        from je_load_density import emit_github_annotations
+        count = emit_github_annotations(title="LoadDensity")
+        fail = os.environ.get("LD_FAIL_ON_ERROR", "true") == "true"
+        sys.exit(1 if (count > 0 and fail) else 0)
+        PY

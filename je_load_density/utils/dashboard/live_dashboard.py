@@ -134,8 +134,10 @@ class LiveDashboardServer:
 def _build_handler(refresh_seconds: float, window_seconds: float):
 
     class _Handler(BaseHTTPRequestHandler):
-        def log_message(self, _format, *_args):  # silence stdlib chatter
-            return
+        def log_message(self, format, *args):  # noqa: A002 — match stdlib signature
+            # Silence stdlib request-log chatter; the dashboard already
+            # surfaces stats through SSE.
+            del format, args
 
         def _write(self, status: int, body: bytes, content_type: str,
                    extra_headers: Optional[Dict[str, str]] = None) -> None:

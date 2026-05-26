@@ -77,9 +77,9 @@ class ActionLspServer:
             message = _read_message(reader)
             if message is None:
                 return
-            self._dispatch(reader, writer, message)
+            self._dispatch(writer, message)
 
-    def _dispatch(self, reader, writer, message: Dict[str, Any]) -> None:
+    def _dispatch(self, writer, message: Dict[str, Any]) -> None:
         method = message.get("method")
         handler = self._handlers.get(method)
         if handler is None:
@@ -143,9 +143,9 @@ class ActionLspServer:
         self._shutdown = True
         return None
 
-    def _on_exit(self, _params: Dict[str, Any]) -> None:
-        self._shutdown = True
-        return None
+    # ``exit`` and ``shutdown`` share semantics in this server: both flip
+    # ``_shutdown`` and let the attach loop fall out.
+    _on_exit = _on_shutdown
 
     # -------------------------------------------------------- diagnostics
     def _publish_diagnostics(self, uri: str, text: str) -> None:

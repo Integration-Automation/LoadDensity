@@ -35,8 +35,8 @@ class NetworkConditioner:
     def _should_drop(self) -> bool:
         if self.loss_rate <= 0:
             return False
-        if self.loss_rate >= 1:
-            return True
+        # When loss_rate >= 1.0 the comparison below is always true,
+        # so we fall through to the same return path.
         ratio = secrets.randbelow(10_000) / 10_000.0
         return ratio < self.loss_rate
 

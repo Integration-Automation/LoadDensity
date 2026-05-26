@@ -10,7 +10,7 @@ class _FakeRequest:
     def __init__(self, **fields):
         self.fields = fields
 
-    def ByteSize(self) -> int:  # noqa: N802
+    def ByteSize(self) -> int:  # NOSONAR mirror protobuf method name
         return 8
 
 

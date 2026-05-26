@@ -15,7 +15,7 @@ def main() -> None:
         variables={"base": "https://httpbin.org"},
         tasks=[
             {"method": "post", "request_url": "${var.base}/post",
-             "json": {"email": "u@example.com", "password": "secret"},
+             "json": {"email": "u@example.com", "password": "secret"},  # NOSONAR example placeholder
              "extract": [
                  {"var": "auth", "from": "json_path",
                   "path": "json.password"},

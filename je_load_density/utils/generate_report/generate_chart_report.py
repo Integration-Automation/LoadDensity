@@ -11,7 +11,7 @@ or via the ``[charts]`` extra.
 """
 
 import os
-from typing import Any, Dict, List, Tuple
+from typing import Dict, List, Tuple
 
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 

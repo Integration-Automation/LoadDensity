@@ -18,7 +18,7 @@ Supported flags:
 
 import json
 import shlex
-from typing import Any, Dict, Iterable, List, Optional, Tuple
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple
 
 
 def _tokens(command: str) -> List[str]:
@@ -36,8 +36,8 @@ def _split_header(value: str) -> Optional[Tuple[str, str]]:
 
 
 def _parse_basic_auth(value: str) -> Dict[str, str]:
-    user, _, password = value.partition(":")
-    return {"type": "basic", "username": user, "password": password}
+    user, _, secret = value.partition(":")
+    return {"type": "basic", "username": user, "password": secret}
 
 
 def _try_json_body(text: str) -> Tuple[bool, Any]:
@@ -45,6 +45,84 @@ def _try_json_body(text: str) -> Tuple[bool, Any]:
         return True, json.loads(text)
     except (TypeError, ValueError):
         return False, text
+
+
+def _attach_body(task: Dict[str, Any], data_parts: List[str]) -> None:
+    if not data_parts:
+        return
+    joined = "&".join(data_parts) if len(data_parts) > 1 else data_parts[0]
+    is_json, parsed = _try_json_body(joined)
+    if is_json:
+        task["json"] = parsed
+    else:
+        task["data"] = joined
+
+
+_DATA_FLAGS = frozenset({
+    "-d", "--data", "--data-raw", "--data-binary", "--data-urlencode",
+})
+
+
+def _consume_method(task: Dict[str, Any], iterator: Iterator[str]) -> None:
+    task["method"] = next(iterator, "get").lower()
+
+
+def _consume_header(headers: Dict[str, str], iterator: Iterator[str]) -> None:
+    parsed = _split_header(next(iterator, ""))
+    if parsed:
+        headers[parsed[0]] = parsed[1]
+
+
+def _consume_data(task: Dict[str, Any], data_parts: List[str],
+                  iterator: Iterator[str]) -> None:
+    data_parts.append(next(iterator, ""))
+    if task["method"] == "get":
+        task["method"] = "post"
+
+
+def _consume_user(task: Dict[str, Any], iterator: Iterator[str]) -> None:
+    task["auth"] = _parse_basic_auth(next(iterator, ""))
+
+
+def _consume_cookie(task: Dict[str, Any], iterator: Iterator[str]) -> None:
+    task["cookies"] = next(iterator, "")
+
+
+def _is_skip_only_flag(token: str) -> Optional[Tuple[str, Any]]:
+    """Return (task-key, value) for flags that are pure on/off."""
+    if token in {"-k", "--insecure"}:
+        return ("verify", False)
+    if token in {"-L", "--location"}:
+        return ("allow_redirects", True)
+    return None
+
+
+def _dispatch_flag(token: str, iterator: Iterator[str], task: Dict[str, Any],
+                   headers: Dict[str, str], data_parts: List[str]) -> None:
+    if token in {"-X", "--request"}:
+        _consume_method(task, iterator)
+        return
+    if token in {"-H", "--header"}:
+        _consume_header(headers, iterator)
+        return
+    if token in _DATA_FLAGS:
+        _consume_data(task, data_parts, iterator)
+        return
+    if token in {"-u", "--user"}:
+        _consume_user(task, iterator)
+        return
+    if token in {"-b", "--cookie"}:
+        _consume_cookie(task, iterator)
+        return
+    skip = _is_skip_only_flag(token)
+    if skip is not None:
+        task[skip[0]] = skip[1]
+        return
+    if token == "--compressed":
+        return
+    # Long opt with attached value uses "="; bare long opt consumes the next token.
+    if "=" not in token:
+        next(iterator, None)
 
 
 def _consume(tokens: Iterable[str]) -> Dict[str, Any]:
@@ -55,47 +133,17 @@ def _consume(tokens: Iterable[str]) -> Dict[str, Any]:
     url: Optional[str] = None
 
     for token in iterator:
-        if token in {"-X", "--request"}:
-            task["method"] = next(iterator, "get").lower()
-        elif token in {"-H", "--header"}:
-            header = _split_header(next(iterator, ""))
-            if header:
-                headers[header[0]] = header[1]
-        elif token in {"-d", "--data", "--data-raw", "--data-binary", "--data-urlencode"}:
-            data_parts.append(next(iterator, ""))
-            if task["method"] == "get":
-                task["method"] = "post"
-        elif token in {"-u", "--user"}:
-            task["auth"] = _parse_basic_auth(next(iterator, ""))
-        elif token in {"-b", "--cookie"}:
-            task["cookies"] = next(iterator, "")
-        elif token == "-k" or token == "--insecure":
-            task["verify"] = False
-        elif token in {"-L", "--location"}:
-            task["allow_redirects"] = True
-        elif token == "--compressed":
+        if token.startswith("-"):
+            _dispatch_flag(token, iterator, task, headers, data_parts)
             continue
-        elif token.startswith("-"):
-            # consume the value if it looks like a long opt with a value
-            if "=" not in token:
-                next(iterator, None)
-        else:
-            if url is None:
-                url = token
+        if url is None:
+            url = token
 
     if headers:
         task["headers"] = headers
-    if data_parts:
-        joined = "&".join(data_parts) if len(data_parts) > 1 else data_parts[0]
-        is_json, parsed = _try_json_body(joined)
-        if is_json:
-            task["json"] = parsed
-        else:
-            task["data"] = joined
-
+    _attach_body(task, data_parts)
     if url:
         task["request_url"] = url
-
     return task
 
 

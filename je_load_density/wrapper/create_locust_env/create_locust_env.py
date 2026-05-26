@@ -18,11 +18,6 @@ def prepare_env(
     test_time: Optional[int] = 60,
     web_ui_dict: Optional[Dict[str, Any]] = None,
     runner_mode: str = "local",
-    master_bind_host: str = "*",
-    master_bind_port: int = 5557,
-    master_host: str = "127.0.0.1",
-    master_port: int = 5557,
-    expected_workers: int = 0,
     load_shape: Optional[str] = None,
     shape_config: Optional[Dict[str, Any]] = None,
     **kwargs,
@@ -30,7 +25,18 @@ def prepare_env(
     """
     啟動 Locust 環境，支援 local / master / worker 三種模式。
     Prepare a Locust environment in local, master, or worker mode.
+
+    Distributed-mode fields (``master_bind_host`` / ``master_bind_port`` /
+    ``master_host`` / ``master_port`` / ``expected_workers``) are read
+    from ``**kwargs`` so the signature stays within the project's
+    public-API parameter budget.
     """
+    master_bind_host = kwargs.pop("master_bind_host", "*")
+    master_bind_port = kwargs.pop("master_bind_port", 5557)
+    master_host = kwargs.pop("master_host", "127.0.0.1")
+    master_port = kwargs.pop("master_port", 5557)
+    expected_workers = kwargs.pop("expected_workers", 0)
+
     load_density_logger.info(
         f"prepare_env mode={runner_mode}, user_class={user_class}, user_count={user_count}, "
         f"spawn_rate={spawn_rate}, test_time={test_time}, web_ui_dict={web_ui_dict}, "

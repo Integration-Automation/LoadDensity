@@ -74,7 +74,7 @@ def test_failure_budget_records_and_evicts():
     budget.record(failed=False, now=0)
     budget.record(failed=True, now=1)
     assert budget.sample_count() == 2
-    assert budget.failure_rate(now=1) == 0.5
+    assert budget.failure_rate(now=1) == pytest.approx(0.5)
 
     budget.record(failed=False, now=100)
     # earlier samples evicted

@@ -9,6 +9,10 @@ _PLACEHOLDER_PATTERN = re.compile(r"\$\{([^}]+)\}")
 _FUNCTION_PATTERN = re.compile(r"^([a-zA-Z_]\w*)\((.*)\)$")
 
 
+def _stringify(value: Any) -> Optional[str]:
+    return None if value is None else str(value)
+
+
 class ParameterResolver:
     """
     參數解析器
@@ -102,33 +106,35 @@ class ParameterResolver:
             return self._resolve_function(function_match.group(1), function_match.group(2))
 
         if "." not in token:
-            value = self._variables.get(token)
-            return None if value is None else str(value)
+            return _stringify(self._variables.get(token))
 
         prefix, _, rest = token.partition(".")
-        prefix = prefix.lower()
+        return self._resolve_prefixed(prefix.lower(), rest)
 
+    def _resolve_prefixed(self, prefix: str, rest: str) -> Optional[str]:
         if prefix == "env":
             return os.environ.get(rest)
         if prefix == "var":
-            value = self._variables.get(rest)
-            return None if value is None else str(value)
+            return _stringify(self._variables.get(rest))
         if prefix == "csv":
-            source_name, _, column = rest.partition(".")
-            row = self._next_csv_row(source_name)
-            if row is None:
-                return None
-            return row.get(column)
+            return self._resolve_csv(rest)
         if prefix == "db":
-            source_name, _, column = rest.partition(".")
-            row = self._next_db_row(source_name)
-            if row is None:
-                return None
-            value = row.get(column)
-            return None if value is None else str(value)
+            return self._resolve_db(rest)
         if prefix == "faker":
             return self._resolve_faker(rest)
         return None
+
+    def _resolve_csv(self, rest: str) -> Optional[str]:
+        source_name, _, column = rest.partition(".")
+        row = self._next_csv_row(source_name)
+        return None if row is None else row.get(column)
+
+    def _resolve_db(self, rest: str) -> Optional[str]:
+        source_name, _, column = rest.partition(".")
+        row = self._next_db_row(source_name)
+        if row is None:
+            return None
+        return _stringify(row.get(column))
 
     def _resolve_function(self, name: str, raw_args: str) -> Optional[str]:
         name = name.lower()

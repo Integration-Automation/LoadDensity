@@ -33,8 +33,8 @@ def test_collect_points_skips_records_without_latency():
 def test_bucket_rps_returns_counts_per_bucket():
     xs, counts = _bucket_rps([0.0, 0.5, 1.5, 2.1], bucket_size=1.0)
     assert counts == [2, 1, 1]
-    assert xs[0] == 0.0
-    assert xs[1] == 1.0
+    assert xs[0] == pytest.approx(0.0)
+    assert xs[1] == pytest.approx(1.0)
 
 
 def test_bucket_rps_empty():

@@ -14,7 +14,7 @@ def test_k6_imports_post_with_json_body():
         'http.post("https://api/login", { "email": "u@x", "password": "s" });'
     )
     assert tasks[0]["method"] == "post"
-    assert tasks[0]["json"] == {"email": "u@x", "password": "s"}
+    assert tasks[0]["json"] == {"email": "u@x", "password": "s"}  # NOSONAR test fixture, not a credential
 
 
 def test_k6_normalises_del_to_delete():

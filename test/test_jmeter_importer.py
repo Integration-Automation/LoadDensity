@@ -69,7 +69,7 @@ def test_jmeter_inherits_sibling_headers():
 def test_jmeter_form_arguments_become_data_dict():
     root = ET.fromstring(JMX)
     tasks = jmeter_to_tasks(root)
-    assert tasks[1]["data"] == {"email": "u@x", "password": "s"}
+    assert tasks[1]["data"] == {"email": "u@x", "password": "s"}  # NOSONAR test fixture, not a credential
 
 
 def test_jmeter_to_action_json_wraps_correctly():

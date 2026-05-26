@@ -7,8 +7,15 @@ parameter so tests don't hit the network.
 """
 
 import json
+import urllib.parse
 import urllib.request
 from typing import Any, Callable, Dict, Optional
+
+
+def _require_http_scheme(url: str) -> None:
+    scheme = urllib.parse.urlparse(url).scheme.lower()
+    if scheme not in {"http", "https"}:
+        raise ValueError(f"unsupported webhook scheme: {scheme!r}")
 
 
 def build_slack_summary(summary: Dict[str, Any], title: str = "LoadDensity run") -> Dict[str, Any]:
@@ -32,12 +39,14 @@ def build_slack_summary(summary: Dict[str, Any], title: str = "LoadDensity run")
 
 
 def _default_poster(url: str, body: bytes, timeout: float) -> int:
+    _require_http_scheme(url)
     request = urllib.request.Request(
         url,
         data=body,
         headers={"Content-Type": "application/json"},
         method="POST",
     )
+    # nosec B310 — scheme is validated above; injection vectors blocked.
     with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310
         return response.status
 

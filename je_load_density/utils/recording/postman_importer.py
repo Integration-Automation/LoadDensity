@@ -25,19 +25,17 @@ def _iter_items(node: Dict[str, Any]) -> Iterator[Dict[str, Any]]:
 def _normalise_url(url: Any) -> str:
     if isinstance(url, str):
         return url
-    if isinstance(url, dict):
-        raw = url.get("raw")
-        if isinstance(raw, str) and raw:
-            return raw
-        host = url.get("host") or []
-        if isinstance(host, list):
-            host_str = ".".join(host)
-        else:
-            host_str = str(host)
-        path = url.get("path") or []
-        path_str = "/" + "/".join(path) if isinstance(path, list) else f"/{path}"
-        return f"{host_str}{path_str}"
-    return ""
+    if not isinstance(url, dict):
+        return ""
+    raw = url.get("raw")
+    if isinstance(raw, str) and raw:
+        return raw
+    host = url.get("host") or []
+    host_str = ".".join(host) if isinstance(host, list) else str(host)
+    path = url.get("path") or []
+    path_str = "/" + "/".join(path) if isinstance(path, list) else "/" + str(path)
+    combined = host_str + path_str
+    return combined
 
 
 def _headers_to_dict(headers: Any) -> Dict[str, str]:
@@ -52,37 +50,42 @@ def _headers_to_dict(headers: Any) -> Dict[str, str]:
     return result
 
 
+def _raw_body_to_field(body: Dict[str, Any], task: Dict[str, Any]) -> None:
+    raw = body.get("raw") or ""
+    language = (body.get("options") or {}).get("raw", {}).get("language", "")
+    if language.lower() == "json" or _looks_like_json(raw):
+        try:
+            task["json"] = json.loads(raw)
+            return
+        except json.JSONDecodeError:
+            pass
+    task["data"] = raw
+
+
+def _kv_collection_to_dict(items: Any) -> Dict[str, str]:
+    return {
+        f.get("key"): f.get("value", "")
+        for f in items or []
+        if isinstance(f, dict) and not f.get("disabled") and f.get("key")
+    }
+
+
 def _body_to_fields(body: Any, task: Dict[str, Any]) -> None:
     if not isinstance(body, dict):
         return
     mode = body.get("mode")
     if mode == "raw":
-        raw = body.get("raw") or ""
-        language = (body.get("options") or {}).get("raw", {}).get("language", "")
-        if language.lower() == "json" or _looks_like_json(raw):
-            try:
-                task["json"] = json.loads(raw)
-                return
-            except json.JSONDecodeError:
-                pass
-        task["data"] = raw
-    elif mode == "urlencoded":
-        task["data"] = {
-            f.get("key"): f.get("value", "")
-            for f in body.get("urlencoded", []) or []
-            if isinstance(f, dict) and not f.get("disabled") and f.get("key")
-        }
-    elif mode == "formdata":
-        task["data"] = {
-            f.get("key"): f.get("value", "")
-            for f in body.get("formdata", []) or []
-            if isinstance(f, dict) and not f.get("disabled") and f.get("key")
-        }
+        _raw_body_to_field(body, task)
+        return
+    if mode == "urlencoded":
+        task["data"] = _kv_collection_to_dict(body.get("urlencoded"))
+        return
+    if mode == "formdata":
+        task["data"] = _kv_collection_to_dict(body.get("formdata"))
 
 
 def _looks_like_json(text: str) -> bool:
-    stripped = text.strip()
-    return stripped.startswith("{") or stripped.startswith("[")
+    return text.strip().startswith(("{", "["))
 
 
 def _item_to_task(item: Dict[str, Any]) -> Optional[Dict[str, Any]]:

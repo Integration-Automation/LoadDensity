@@ -86,26 +86,31 @@ def _check_task(ctx: _Context, task: Dict[str, Any], where: str) -> None:
                 where)
 
 
+def _unwrap_task_list(tasks: Any) -> Any:
+    if isinstance(tasks, dict) and "tasks" in tasks:
+        return tasks.get("tasks")
+    return tasks
+
+
+def _check_task_list(ctx: _Context, task_list: Any, where: str) -> None:
+    if isinstance(task_list, list):
+        for index, task in enumerate(task_list):
+            if isinstance(task, dict):
+                _check_task(ctx, task, f"{where}.tasks[{index}]")
+        return
+    if isinstance(task_list, dict):
+        for method, task in task_list.items():
+            if isinstance(task, dict):
+                _check_task(ctx, task, f"{where}.tasks.{method}")
+
+
 def _check_start_test_payload(ctx: _Context, payload: Dict[str, Any], where: str) -> None:
     tasks = payload.get("tasks")
     if tasks is None:
         ctx.add("missing-tasks", "error",
                 "LD_start_test missing 'tasks' key", where)
         return
-
-    if isinstance(tasks, dict) and "tasks" in tasks:
-        task_list = tasks.get("tasks")
-    else:
-        task_list = tasks
-
-    if isinstance(task_list, list):
-        for index, task in enumerate(task_list):
-            if isinstance(task, dict):
-                _check_task(ctx, task, f"{where}.tasks[{index}]")
-    elif isinstance(task_list, dict):
-        for method, task in task_list.items():
-            if isinstance(task, dict):
-                _check_task(ctx, task, f"{where}.tasks.{method}")
+    _check_task_list(ctx, _unwrap_task_list(tasks), where)
 
 
 def _check_action(ctx: _Context, action: Any, index: int) -> None:

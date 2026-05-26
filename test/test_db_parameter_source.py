@@ -14,7 +14,7 @@ def reset_resolver():
 
 
 def test_db_source_cycles_rows(tmp_path, reset_resolver):
-    sqlalchemy = pytest.importorskip("sqlalchemy")
+    pytest.importorskip("sqlalchemy")
     db_path = tmp_path / "users.db"
     from sqlalchemy import create_engine, text
     engine = create_engine(f"sqlite:///{db_path}", future=True)

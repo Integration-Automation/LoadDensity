@@ -28,38 +28,48 @@ def _strip_quotes(value: str) -> str:
     return value
 
 
+_BRACKET_DELTAS = {"(": (0, 1), ")": (0, -1),
+                    "{": (1, 1), "}": (1, -1),
+                    "[": (2, 1), "]": (2, -1)}
+
+
+def _is_string_terminator(buffer: List[str], quote: str, ch: str) -> bool:
+    if ch != quote:
+        return False
+    if len(buffer) < 2:
+        return True
+    return buffer[-2] != "\\"
+
+
+def _update_depths(depths: List[int], ch: str) -> None:
+    delta = _BRACKET_DELTAS.get(ch)
+    if delta is not None:
+        depths[delta[0]] += delta[1]
+
+
 def _split_top_level_args(raw: str) -> List[str]:
     parts: List[str] = []
-    depth_round = depth_curly = depth_square = 0
+    depths = [0, 0, 0]
     buffer: List[str] = []
     in_string: Optional[str] = None
+
     for ch in raw:
-        if in_string:
+        if in_string is not None:
             buffer.append(ch)
-            if ch == in_string and (not buffer or len(buffer) < 2 or buffer[-2] != "\\"):
+            if _is_string_terminator(buffer, in_string, ch):
                 in_string = None
             continue
         if ch in ("'", '"', "`"):
             in_string = ch
             buffer.append(ch)
             continue
-        if ch == "(":
-            depth_round += 1
-        elif ch == ")":
-            depth_round -= 1
-        elif ch == "{":
-            depth_curly += 1
-        elif ch == "}":
-            depth_curly -= 1
-        elif ch == "[":
-            depth_square += 1
-        elif ch == "]":
-            depth_square -= 1
-        if ch == "," and depth_round == 0 and depth_curly == 0 and depth_square == 0:
+        _update_depths(depths, ch)
+        if ch == "," and not any(depths):
             parts.append("".join(buffer).strip())
             buffer = []
             continue
         buffer.append(ch)
+
     if buffer:
         parts.append("".join(buffer).strip())
     return parts

@@ -102,11 +102,7 @@ def _sampler_to_task(sampler, sibling_headers: Dict[str, str]) -> Dict[str, Any]
     if sibling_headers:
         task["headers"] = dict(sibling_headers)
     body = _body_from_arguments(sampler)
-    if body is None:
-        return task
-    if isinstance(body, dict):
-        task["data"] = body
-    else:
+    if body is not None:
         task["data"] = body
     return task
 

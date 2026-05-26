@@ -1,3 +1,5 @@
+import pytest
+
 from je_load_density.utils.regression.diff import diff_runs, summarise_records
 from je_load_density.utils.test_record.sqlite_persistence import persist_records
 from je_load_density.utils.test_record.test_record_class import test_record_instance
@@ -23,8 +25,8 @@ def test_summarise_records_computes_percentiles():
     summary = summarise_records(records)
     assert summary["/x"]["count"] == 3
     assert summary["/x"]["failures"] == 1
-    assert summary["/x"]["failure_rate"] == 1 / 3
-    assert summary["/x"]["p50_ms"] == 20.0
+    assert summary["/x"]["failure_rate"] == pytest.approx(1 / 3)
+    assert summary["/x"]["p50_ms"] == pytest.approx(20.0)
 
 
 def test_summarise_handles_empty():
