@@ -22,7 +22,7 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.user_template._common import fire_request_event
+from je_load_density.wrapper.user_template._common import fire_request_event, payload_bytes
 
 
 def set_wrapper_coap_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -57,14 +57,13 @@ async def _send_coap(step: Dict[str, Any]) -> Tuple[str, int]:
     method_name = _METHOD_CODES.get(str(step.get("method", "")).lower())
     if method_name is None:
         raise ValueError(f"unsupported coap method: {step.get('method')}")
-    payload = step.get("payload", "")
-    payload_bytes = payload.encode("utf-8") if isinstance(payload, str) else bytes(payload)
+    body = payload_bytes(step.get("payload", ""))
     context = await aiocoap.Context.create_client_context()
     try:
         request = aiocoap.Message(
             code=getattr(aiocoap.numbers.codes.Code, method_name),
             uri=step["uri"],
-            payload=payload_bytes,
+            payload=body,
         )
         response = await context.request(request).response
         return str(response.code), len(response.payload)

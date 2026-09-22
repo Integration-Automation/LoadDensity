@@ -6,6 +6,7 @@ template (SMTP, IMAP, FTP, AMQP, NATS, etc.) avoids duplicating the same
 event-dispatch boilerplate.
 """
 
+import json
 import time
 from typing import Any, Optional
 
@@ -30,6 +31,22 @@ def fire_request_event(
         response=None,
         start_time=start,
     )
+
+
+def payload_bytes(value: Any) -> bytes:
+    """Encode a step's payload for sending.
+
+    Text is UTF-8, bytes pass through, ``None`` is empty, dicts and lists become JSON, and any
+    other value is sent as its text form. ``bytes(value)`` is not used: ``bytes(5)`` is five zero
+    bytes, and ``bytes({...})`` raises.
+    """
+    if value is None:
+        return b""
+    if isinstance(value, (bytes, bytearray)):
+        return bytes(value)
+    if isinstance(value, (dict, list)):
+        return json.dumps(value).encode("utf-8")
+    return str(value).encode("utf-8")
 
 
 def coerce_response_length(value: Any) -> int:

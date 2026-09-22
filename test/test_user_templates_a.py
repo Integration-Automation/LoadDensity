@@ -1354,3 +1354,23 @@ def test_grpc_missing_grpcio_reports_runtime_error(monkeypatch, env):
     block_import(monkeypatch, "grpc")
     grpc_t.GrpcUserWrapper(env)._do_step(grpc_step(name="s"))
     assert_failure(env, "GRPC", "s", RuntimeError, "grpcio is required")
+
+
+@pytest.mark.parametrize("value, body", [
+    (5, b"5"),
+    (2.5, b"2.5"),
+    ({"a": 1}, b'{"a": 1}'),
+    (b"\x01raw", b"\x01raw"),
+])
+def test_consul_put_encodes_non_text_values(monkeypatch, env, value, body):
+    calls = patch_urlopen(monkeypatch)
+    consul_t.ConsulUserWrapper(env)._do_step({"method": "put", "key": "k", "value": value})
+    assert_success(env, "CONSUL", "put", len(body))
+    assert calls[0]["request"].data == body
+
+
+@pytest.mark.parametrize("payload, body", [(3, b"3"), ({"on": True}, b'{"on": true}')])
+def test_coap_encodes_non_text_payloads(monkeypatch, env, payload, body):
+    record = install_fake_aiocoap(monkeypatch)
+    coap_t.CoapUserWrapper(env)._do_step({"method": "put", "uri": "coap://d/s", "payload": payload})
+    assert record.messages[0]["payload"] == body

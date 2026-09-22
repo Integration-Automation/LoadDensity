@@ -15,6 +15,7 @@ import urllib.parse
 import urllib.request
 from typing import Any, Callable, Dict, Optional
 
+from je_load_density.wrapper.user_template._common import payload_bytes
 from je_load_density.wrapper.user_template._protocol_base import (
     ProtocolUserBase,
     make_setter,
@@ -43,7 +44,7 @@ class ConsulUserWrapper(ProtocolUserBase):
 
     def _put(self, step: Dict[str, Any]) -> int:
         value = step.get("value", "")
-        body = value.encode("utf-8") if isinstance(value, str) else bytes(value)
+        body = payload_bytes(value)
         _request("PUT", _kv_url(step), body, float(step.get("timeout", 5.0)))
         return len(body)
 
