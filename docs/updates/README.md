@@ -58,6 +58,9 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-20 | 2026-09-23 | cryptography floor 50 | #done #deps #security | [2026-09](2026-09.md) |
+| U-20260923-19 | 2026-09-23 | Nine bugs in the protocol user templates | #bugfix | [2026-09](2026-09.md) |
+| U-20260923-18 | 2026-09-23 | Protocol user templates have real tests | #tests | [2026-09](2026-09.md) |
 | U-20260923-17 | 2026-09-23 | Counts quoted in the docs are checked against the code | #done #docs #tests | [2026-09](2026-09.md) |
 | U-20260923-16 | 2026-09-23 | Five bugs found by those tests | #bugfix #security #performance | [2026-09](2026-09.md) |
 | U-20260923-15 | 2026-09-23 | Real tests for the scenario, data, dx, governance and ai helpers | #tests | [2026-09](2026-09.md) |
@@ -85,4 +88,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 22 |
+| [2026-09.md](2026-09.md) | 2026-09 | 25 |
