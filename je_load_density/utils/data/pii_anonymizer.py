@@ -13,9 +13,8 @@ from typing import Any, Iterable
 # long run with no "@" was rescanned from every position (40 s on 200 000 characters).
 _EMAIL_RE = re.compile(r"(?<![a-zA-Z0-9._%+\-])[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
 # Both number patterns start and end on a digit, so the blank after a number stays in the text, and
-# only a single space or dash may separate digits. That keeps matching linear: the old card pattern
-# "(?:\d[ \-]?){13,19}" could split a digit run many ways and took 44 s on 200 000 digits. Cards are
-# matched first because every card number also looks like a phone number.
+# only a single space or dash may separate digits. Cards are matched first because every card number
+# also looks like a phone number.
 _CREDIT_RE = re.compile(r"(?<![\w+])\d(?:[ \-]?\d){12,18}(?!\w)")
 _PHONE_RE = re.compile(r"(?<![\w+])\+?\d(?:[ \-]?\d){7,}(?!\w)")
 _IPV4_RE = re.compile(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b")
