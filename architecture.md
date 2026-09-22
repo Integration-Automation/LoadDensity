@@ -57,8 +57,10 @@ persistence all read from that record.
     and `--execute_str`;
   - on Windows, `run-str` and `--execute_str` decode a second time when the first decode yields a
     string. Exit codes: `0` success, `2` no command, `1` uncaught error.
-- **MCP**: `loaddensity-mcp` or `python -m je_load_density.mcp_server` (stdio, needs the `mcp` extra).
-  Tools are the `load_density.*` entries in `_TOOLS` (`mcp_server/server.py`).
+- **MCP**: `loaddensity-mcp` or `python -m je_load_density.mcp_server`. `LoadDensityMCPServer`
+  (`mcp_server/server.py`) speaks JSON-RPC 2.0 over stdio itself, without the `mcp` SDK: importing the package
+  imports locust, whose gevent `patch_all()` stalls the SDK's thread-based stdin reader. `run_stdio()` moves
+  everything else written to stdout onto stderr. Tools are the `load_density.*` entries in `_TOOLS`.
 - **LSP**: `loaddensity-lsp` or `python -m je_load_density.action_lsp` (stdio). `editors/vscode/extension.js`
   starts it with `-m je_load_density.action_lsp`.
 - **TCP control server**: `start_load_density_socket_server(host="localhost", port=9940, framed, token, certfile, keyfile)`.

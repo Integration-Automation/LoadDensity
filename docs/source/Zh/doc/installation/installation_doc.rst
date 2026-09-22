@@ -61,8 +61,6 @@ LoadDensity 將每個協定驅動、exporter、錄製器與控制介面都拆成
      - 結合 ``prometheus`` 與 ``opentelemetry``。
    * - ``faker``
      - ``Faker``（驅動 ``${faker.method}`` 占位符）。
-   * - ``mcp``
-     - ``mcp`` SDK（驅動 Claude 用的 MCP server）。
    * - ``all``
      - 上述全部。
 
@@ -71,7 +69,6 @@ LoadDensity 將每個協定驅動、exporter、錄製器與控制介面都拆成
     pip install "je_load_density[gui]"
     pip install "je_load_density[mqtt,grpc,websocket]"
     pip install "je_load_density[metrics]"
-    pip install "je_load_density[mcp]"
     pip install "je_load_density[all]"
 
 開發安裝

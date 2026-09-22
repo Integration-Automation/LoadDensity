@@ -11,7 +11,10 @@ LoadDensity 內含一個 `Model Context Protocol <https://modelcontextprotocol.i
 
 .. code-block:: bash
 
-    pip install "je_load_density[mcp]"
+    pip install je_load_density
+
+server 自己在 stdio 上講 MCP（JSON-RPC 2.0，一行一則訊息），不需要
+``mcp`` SDK。``[mcp]`` extra 是空的，只是讓舊的安裝指令還能用。
 
 啟動
 ----
@@ -64,3 +67,7 @@ Server 透過 stdio 講 MCP。請接到你選用的客戶端（Claude Desktop ``
      - 取出某次 run 的所有紀錄。
    * - ``load_density.clear_records``
      - 開始新一輪前清除記憶體中的紀錄。
+   * - ``load_density.generate_from_openapi``
+     - 從 OpenAPI 規格產生可執行的 action JSON。
+   * - ``load_density.generate_from_curls``
+     - 從一串 cURL 指令產生可執行的 action JSON。

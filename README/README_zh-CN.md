@@ -82,7 +82,7 @@ LoadDensity(`je_load_density`)从 Locust 封装起步,逐步扩展为完整的�
 - **六种导入器。** HAR、Postman v2.1、OpenAPI 3.x、cURL、**k6 脚本**、**JMeter JMX** — 均可转成 action JSON 或单个 task。
 - **Auth 工具。** stdlib OAuth2 client(`client_credentials` / `password` / `refresh` 含 token cache)、JWT 签发(HS256/384/512 + RS256/384/512)、AWS SigV4 签章;所有 HTTP user template 透过 `task["cert"]` 即可走 mTLS。
 - **持久化记录。** 可选 SQLite sink,含 `runs`/`records`/`metadata` schema 并建立索引。
-- **MCP server。** `python -m je_load_density.mcp_server` 对外暴露 11 个工具。
+- **MCP server。** `python -m je_load_density.mcp_server` 对外暴露 13 个工具。
 - **Action JSON 工具链。** linter、JSON Schema 导出、GitHub Actions 注释、stdlib LSP server、composite **GitHub Action** 包装、**pre-commit hook**、**VS Code 扩展** 骨架 — 编辑器 + CI 端到端覆盖。
 - **硬化控制 socket。** 4 字节大端长度前缀 framing(上限 1 MiB)、可选 TLS、共享密钥 token,并保留 legacy 模式。
 - **安全 executor。** `eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 一律封锁。
@@ -119,7 +119,6 @@ pip install je_load_density
 | `charts` | `matplotlib`(chart 报告) |
 | `yaml` | `pyyaml`(OpenAPI YAML) |
 | `faker` | `Faker` |
-| `mcp` | `mcp` SDK |
 | `all` | 上述全部 |
 
 ```bash
@@ -431,11 +430,13 @@ report = diff_runs("loadtests.db", baseline_run_id=42, current_run_id=run_id,
 ## MCP Server(给 Claude)
 
 ```bash
-pip install "je_load_density[mcp]"
+pip install je_load_density
 python -m je_load_density.mcp_server
 ```
 
-对外暴露 11 个工具:`run_test`、`run_action_json`、`create_project`、`list_executor_commands`、`import_har`、`generate_reports`、`summary`、`persist_records`、`list_runs`、`fetch_run`、`clear_records`。
+server 自己在 stdio 上讲 MCP(JSON-RPC 2.0,一行一条消息),不需要 `mcp` SDK;`[mcp]` extra 是空的,只为让旧的安装命令还能用。
+
+对外暴露 13 个工具:`run_test`、`run_action_json`、`create_project`、`list_executor_commands`、`import_har`、`generate_reports`、`summary`、`persist_records`、`list_runs`、`fetch_run`、`clear_records`、`generate_from_openapi`、`generate_from_curls`。
 
 ## 硬化控制 Socket
 

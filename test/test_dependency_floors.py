@@ -1,10 +1,10 @@
-"""Security floors and caps in the optional-dependency extras.
+"""Security floors in the optional-dependency extras, and packages kept out of them.
 
-Each floor below clears an advisory whose vulnerable code LoadDensity can reach;
-the ``mcp`` cap keeps the 1.x server API that ``je_load_density/mcp_server`` is
-written against. mitmproxy must not come back as an extra: it pins
-``cryptography``, ``h2`` and ``msgpack`` below their patched releases (workspace
-item S-11, ``docs/updates`` U-20260923-01).
+Each floor below clears an advisory whose vulnerable code LoadDensity can reach
+(workspace item S-11, ``docs/updates`` U-20260923-01). Two packages must not come
+back as extras: mitmproxy pins ``cryptography``, ``h2`` and ``msgpack`` below
+their patched releases, and the ``mcp`` SDK's stdio transport never answers once
+locust has gevent-patched ``threading`` (U-20260923-02).
 """
 from pathlib import Path
 
@@ -32,7 +32,6 @@ def _requirements(name: str):
 @pytest.mark.parametrize("name, vulnerable, patched", [
     ("kafka-python", "2.3.1", "2.3.2"),
     ("cryptography", "48.0.0", "48.0.1"),
-    ("mcp", "1.28.0", "1.28.1"),
 ])
 def test_floor_excludes_the_vulnerable_release(name, vulnerable, patched):
     found = list(_requirements(name))
@@ -42,10 +41,6 @@ def test_floor_excludes_the_vulnerable_release(name, vulnerable, patched):
         assert requirement.specifier.contains(patched), f"[{extra}] {requirement}"
 
 
-def test_mcp_stays_on_the_1x_api():
-    for extra, requirement in _requirements("mcp"):
-        assert not requirement.specifier.contains("2.0.0"), f"[{extra}] {requirement}"
-
-
-def test_no_extra_installs_mitmproxy():
-    assert not list(_requirements("mitmproxy"))
+@pytest.mark.parametrize("name", ["mitmproxy", "mcp"])
+def test_no_extra_installs(name):
+    assert not list(_requirements(name))

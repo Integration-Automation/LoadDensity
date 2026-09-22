@@ -15,7 +15,11 @@ Install
 
 .. code-block:: bash
 
-    pip install "je_load_density[mcp]"
+    pip install je_load_density
+
+The server speaks MCP (JSON-RPC 2.0, one message per line) over stdio
+itself, so it needs no ``mcp`` SDK. The ``[mcp]`` extra is empty and only
+kept so old install commands still work.
 
 Run the server
 --------------
@@ -70,3 +74,7 @@ Exposed tools
      - Fetch records belonging to a saved run.
    * - ``load_density.clear_records``
      - Drop in-memory records before a new run.
+   * - ``load_density.generate_from_openapi``
+     - Build a runnable action JSON from an OpenAPI spec.
+   * - ``load_density.generate_from_curls``
+     - Build a runnable action JSON from a list of cURL commands.

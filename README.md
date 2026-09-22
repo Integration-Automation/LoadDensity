@@ -91,7 +91,7 @@ LoadDensity (`je_load_density`) started as a Locust wrapper and grew into a full
 - **Six importers.** HAR (browser traffic), Postman v2.1 collections, OpenAPI 3.x specs, standalone cURL commands, **k6 scripts**, and **JMeter JMX** plans — each converts to action JSON or a single task ready for `LD_start_test`.
 - **Auth helpers.** Stdlib OAuth2 client (`client_credentials` / `password` / `refresh` with token cache), JWT signer (HS256/384/512 + RS256/384/512), AWS SigV4 request signer, plus mTLS client-cert support on every HTTP user template via `task["cert"]`.
 - **Persistent records.** Optional SQLite sink with `runs` / `records` / `metadata` schema, indexed for cross-run regression checks; works against an empty file out of the box.
-- **MCP server.** `python -m je_load_density.mcp_server` exposes 11 tools so Claude (Desktop, Code, any MCP client) can run tests, manage projects, and pull reports without leaving chat.
+- **MCP server.** `python -m je_load_density.mcp_server` exposes 13 tools so Claude (Desktop, Code, any MCP client) can run tests, manage projects, and pull reports without leaving chat.
 - **Action JSON tooling.** Built-in linter (`LD_lint_action`), JSON Schema exporter (`LD_export_schema`), GitHub Actions annotation emitter (`LD_emit_github_annotations`), stdlib LSP server (`python -m je_load_density.action_lsp`), composite **GitHub Action** wrapper (`action.yml`), **pre-commit hook**, and **VS Code extension** skeleton — editor + CI integration end-to-end.
 - **Hardened control socket.** 4-byte big-endian length-prefix framing (1 MiB cap), optional TLS via `ssl.create_default_context`, shared-secret token via env var or arg, plus a backwards-compatible legacy mode for downstream tools such as PyBreeze.
 - **Safe executor.** `eval`, `exec`, `compile`, `__import__`, `breakpoint`, `open`, and `input` are explicitly blocked from action JSON — only `LD_*` commands and a curated set of safe builtins (`print`, `len`, `range`, …) are dispatchable.
@@ -132,14 +132,12 @@ Install only the slices you use:
 | `charts` | `matplotlib` (chart-rendering reports) |
 | `yaml` | `pyyaml` (OpenAPI YAML loading) |
 | `faker` | `Faker` (powers `${faker.method}` placeholders) |
-| `mcp` | `mcp` SDK (drives the MCP server) |
 | `all` | Everything above |
 
 ```bash
 pip install "je_load_density[gui]"
 pip install "je_load_density[mqtt,grpc,websocket]"
 pip install "je_load_density[metrics]"
-pip install "je_load_density[mcp]"
 pip install "je_load_density[all]"
 ```
 
@@ -256,7 +254,7 @@ je_load_density/
 │   ├── main_widget.py                # Form-based test configurator
 │   ├── main_window.py                # PySide6 main window shell
 │   └── stats_panel.py                # Live RPS / avg / p95 / failures panel
-├── mcp_server/                       # MCP server (11 tools for Claude)
+├── mcp_server/                       # MCP server (13 tools for Claude)
 │   ├── __main__.py
 │   └── server.py
 ├── utils/
@@ -706,9 +704,11 @@ Schema is created lazily; an empty file is fine. Indexes on `run_id` and `name` 
 ## MCP Server (for Claude)
 
 ```bash
-pip install "je_load_density[mcp]"
+pip install je_load_density
 python -m je_load_density.mcp_server
 ```
+
+The server speaks MCP (JSON-RPC 2.0, one message per line) over stdio itself, so it needs no `mcp` SDK; the `[mcp]` extra is empty and only kept so old install commands still work.
 
 Wire it into Claude Desktop / Code:
 
@@ -723,7 +723,7 @@ Wire it into Claude Desktop / Code:
 }
 ```
 
-Eleven tools are exposed: `run_test`, `run_action_json`, `create_project`, `list_executor_commands`, `import_har`, `generate_reports`, `summary`, `persist_records`, `list_runs`, `fetch_run`, `clear_records`.
+Thirteen tools are exposed: `run_test`, `run_action_json`, `create_project`, `list_executor_commands`, `import_har`, `generate_reports`, `summary`, `persist_records`, `list_runs`, `fetch_run`, `clear_records`, `generate_from_openapi`, `generate_from_curls`.
 
 ## Hardened Control Socket
 

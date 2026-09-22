@@ -124,7 +124,7 @@ User 派發
     ├── __init__.py                       # 公開 API(108 條)
     ├── __main__.py                       # CLI: run / run-dir / run-str / init / serve
     ├── action_lsp/                       # 動作 JSON 的 LSP 伺服器
-    ├── mcp_server/                       # MCP server(11 個給 Claude 的工具)
+    ├── mcp_server/                       # MCP server(13 個給 Claude 的工具)
     ├── tools/                            # CLI 工具(pre-commit linter)
     ├── gui/                              # 選用 PySide6 前端
     ├── utils/
@@ -221,7 +221,7 @@ User 派發
      - ``prepare_env`` / ``create_env``,以 local/master/worker 模式
        建立 Locust 環境(支援 ``load_shape``)。
    * - ``je_load_density.mcp_server``
-     - 對外 11 個工具,讓 Claude 驅動 LoadDensity。
+     - 對外 13 個工具,讓 Claude 驅動 LoadDensity。
    * - ``je_load_density.action_lsp``
      - LSP server(completion + diagnostics)供編輯器整合。
    * - ``je_load_density.gui``

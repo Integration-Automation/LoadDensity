@@ -2,8 +2,14 @@
 LoadDensity MCP server.
 
 Exposes load test execution, report generation, HAR import, and project
-init as MCP tools so Claude can drive LoadDensity. The mcp SDK is
-imported lazily so the dependency stays optional.
+init as MCP tools so Claude can drive LoadDensity.
+
+The protocol is spoken directly -- JSON-RPC 2.0, one message per line on
+stdin/stdout -- instead of through the ``mcp`` SDK. Importing LoadDensity
+imports locust, which gevent-monkey-patches ``threading``; the SDK's stdio
+transport reads stdin from a worker thread, that thread then never runs,
+and the SDK server never answered a single request. Reading stdin on the
+main thread has no such dependency.
 
 Run with:
 
@@ -11,7 +17,10 @@ Run with:
 """
 
 import json
-from typing import Any, Dict, List, Optional
+import os
+import sys
+from importlib import metadata
+from typing import Any, Dict, List, Optional, TextIO
 
 from je_load_density.utils.action_generator.generate import (
     generate_from_curls,
@@ -27,6 +36,7 @@ from je_load_density.utils.generate_report.generate_summary_report import (
     generate_summary_report,
 )
 from je_load_density.utils.generate_report.generate_xml_report import generate_xml_report
+from je_load_density.utils.logging.loggin_instance import load_density_logger
 from je_load_density.utils.project.create_project_structure import create_project_dir
 from je_load_density.utils.recording.har_importer import har_to_action_json, load_har
 from je_load_density.utils.test_record.sqlite_persistence import (
@@ -38,21 +48,37 @@ from je_load_density.utils.test_record.test_record_class import test_record_inst
 from je_load_density.wrapper.start_wrapper.start_test import start_test
 
 
-def _ensure_mcp():
-    try:
-        from mcp.server import Server
-        from mcp.server.stdio import stdio_server
-        from mcp import types as mcp_types
-    except ImportError as error:
-        raise RuntimeError(
-            "mcp package is required. Install with: pip install mcp"
-        ) from error
-    return Server, stdio_server, mcp_types
+_JSONRPC_VERSION = "2.0"
+# Newest first; an ``initialize`` asking for another version gets the newest.
+_PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
+_PARSE_ERROR = -32700
+_INVALID_REQUEST = -32600
+_METHOD_NOT_FOUND = -32601
+_INVALID_PARAMS = -32602
 
 
-def _wrap_text(value: Any, mcp_types) -> List[Any]:
+class _RequestError(Exception):
+    """A request the server answers with a JSON-RPC error object."""
+
+    def __init__(self, code: int, message: str) -> None:
+        super().__init__(message)
+        self.code = code
+
+
+def _error(msg_id: Any, code: int, message: str) -> Dict[str, Any]:
+    return {"jsonrpc": _JSONRPC_VERSION, "id": msg_id, "error": {"code": code, "message": message}}
+
+
+def _text_content(value: Any) -> List[Dict[str, str]]:
     text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False, default=str)
-    return [mcp_types.TextContent(type="text", text=text)]
+    return [{"type": "text", "text": text}]
+
+
+def _package_version() -> str:
+    try:
+        return metadata.version("je_load_density")
+    except metadata.PackageNotFoundError:
+        return "0"
 
 
 def _tool_run_test(payload: Dict[str, Any]) -> Dict[str, Any]:
@@ -311,46 +337,112 @@ _TOOLS: Dict[str, Dict[str, Any]] = {
 }
 
 
-def build_server():
+class LoadDensityMCPServer:
     """
-    Build the MCP Server instance with the LoadDensity tool surface.
+    MCP server for ``_TOOLS``: ``initialize``, ``ping``, ``tools/list`` and
+    ``tools/call`` over newline-delimited JSON-RPC 2.0.
+
+    Notifications (``notifications/initialized``, ``notifications/cancelled``)
+    get no reply. A tool that raises is reported as an ``isError`` result, as
+    MCP asks; an unknown tool or method is a JSON-RPC error.
     """
-    server_cls, _, mcp_types = _ensure_mcp()
-    server = server_cls("loaddensity")
 
-    @server.list_tools()
-    async def _list_tools():
-        return [
-            mcp_types.Tool(
-                name=name,
-                description=meta["description"],
-                inputSchema=meta["input_schema"],
-            )
-            for name, meta in _TOOLS.items()
-        ]
+    def __init__(self, tools: Optional[Dict[str, Dict[str, Any]]] = None) -> None:
+        self.tools = _TOOLS if tools is None else tools
+        self._methods = {
+            "initialize": self._initialize,
+            "ping": lambda _params: {},
+            "tools/list": self._list_tools,
+            "tools/call": self._call_tool,
+        }
 
-    @server.call_tool()
-    async def _call_tool(name: str, arguments: Optional[Dict[str, Any]]):
-        tool = _TOOLS.get(name)
+    def handle_message(self, message: Any) -> Optional[Dict[str, Any]]:
+        """Answer one decoded message; ``None`` when it needs no reply."""
+        if not isinstance(message, dict) or message.get("jsonrpc") != _JSONRPC_VERSION:
+            return _error(None, _INVALID_REQUEST, "expected a JSON-RPC 2.0 object")
+        if "method" not in message or "id" not in message:
+            return None  # a notification, or a response to a request never sent
+        msg_id = message["id"]
+        handler = self._methods.get(message["method"])
+        if handler is None:
+            return _error(msg_id, _METHOD_NOT_FOUND, f"unknown method: {message['method']}")
+        params = message.get("params") or {}
+        if not isinstance(params, dict):
+            return _error(msg_id, _INVALID_PARAMS, "params must be an object")
+        try:
+            result = handler(params)
+        except _RequestError as error:
+            return _error(msg_id, error.code, str(error))
+        return {"jsonrpc": _JSONRPC_VERSION, "id": msg_id, "result": result}
+
+    def serve(self, reader: TextIO, writer: TextIO) -> None:
+        """Answer every line of ``reader`` on ``writer`` until end of input."""
+        for line in reader:
+            line = line.strip()
+            if not line:
+                continue
+            try:
+                message = json.loads(line)
+            except json.JSONDecodeError as error:
+                response = _error(None, _PARSE_ERROR, f"invalid JSON: {error}")
+            else:
+                response = self.handle_message(message)
+            if response is not None:
+                writer.write(json.dumps(response, default=str) + "\n")
+                writer.flush()
+
+    @staticmethod
+    def _initialize(params: Dict[str, Any]) -> Dict[str, Any]:
+        requested = params.get("protocolVersion")
+        return {
+            "protocolVersion": requested if requested in _PROTOCOL_VERSIONS else _PROTOCOL_VERSIONS[0],
+            "capabilities": {"tools": {"listChanged": False}},
+            "serverInfo": {"name": "loaddensity", "version": _package_version()},
+        }
+
+    def _list_tools(self, _params: Dict[str, Any]) -> Dict[str, Any]:
+        return {"tools": [
+            {"name": name, "description": meta["description"], "inputSchema": meta["input_schema"]}
+            for name, meta in self.tools.items()
+        ]}
+
+    def _call_tool(self, params: Dict[str, Any]) -> Dict[str, Any]:
+        name = params.get("name")
+        tool = self.tools.get(name) if isinstance(name, str) else None
         if tool is None:
-            raise ValueError(f"unknown tool: {name}")
-        result = tool["handler"](arguments or {})
-        return _wrap_text(result, mcp_types)
+            raise _RequestError(_INVALID_PARAMS, f"unknown tool: {name}")
+        arguments = params.get("arguments") or {}
+        if not isinstance(arguments, dict):
+            raise _RequestError(_INVALID_PARAMS, "arguments must be an object")
+        try:
+            result = tool["handler"](arguments)
+        # reason: a tool may raise anything; MCP reports that as an isError result, not a protocol error
+        except Exception as error:  # noqa: BLE001  # pylint: disable=broad-except
+            load_density_logger.error(f"mcp tool {name} failed: {error!r}")
+            return {"content": _text_content(f"{type(error).__name__}: {error}"), "isError": True}
+        return {"content": _text_content(result), "isError": False}
 
-    return server
+
+def build_server() -> LoadDensityMCPServer:
+    """
+    Build the MCP server with the LoadDensity tool surface.
+    """
+    return LoadDensityMCPServer()
 
 
 def run_stdio() -> None:
     """
     Run the MCP server over stdio (the standard transport for Claude).
+
+    Side effect: for the rest of the process, anything else written to
+    stdout -- ``print`` actions, locust's console output, child processes --
+    goes to stderr, so only protocol messages reach the client. Both
+    directions are UTF-8 whatever the console code page.
     """
-    _, stdio_server, _ = _ensure_mcp()
-    server = build_server()
-
-    import asyncio
-
-    async def _main() -> None:
-        async with stdio_server() as (read, write):
-            await server.run(read, write, server.create_initialization_options())
-
-    asyncio.run(_main())
+    protocol_out = os.fdopen(os.dup(sys.stdout.fileno()), "w", encoding="utf-8", newline="\n")
+    sys.stdout.flush()
+    os.dup2(sys.stderr.fileno(), sys.stdout.fileno())
+    sys.stdout = sys.stderr
+    reader = open(sys.stdin.fileno(), encoding="utf-8", closefd=False)  # noqa: SIM115 - wraps the process stdin
+    with protocol_out, reader:
+        build_server().serve(reader, protocol_out)
