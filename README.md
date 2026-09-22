@@ -797,6 +797,8 @@ All custom exceptions inherit from `LoadDensityTestException`; catching that one
 
 LoadDensity exposes a single configured logger (`load_density_logger`) under `je_load_density.utils.logging.loggin_instance`. Hook it into your existing log infrastructure with the standard `logging` module APIs.
 
+It writes WARNING+ to stderr and INFO+ to `~/.je_load_density/logs/LoadDensity.log` (set `LOAD_DENSITY_LOG_FILE` to write elsewhere, or to `os.devnull` to turn the file off). The file is opened on the first record, so importing the package writes nothing to the working directory; it is shared and appended to by every process, each line carrying the process id.
+
 ## Supported Platforms
 
 | Platform | Status |
