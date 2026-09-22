@@ -8,7 +8,6 @@ traditional_chinese_word_dict = {
     "spawn_rate": "產生速率: ",
     "test_method": "測試 HTTP 方法: ",
     "start_button": "開始: ",
-    "log": "日誌: ",
     # Test method
     "get": "GET",
     "post": "POST",
@@ -24,4 +23,10 @@ traditional_chinese_word_dict = {
     "stats_avg_ms": "平均",
     "stats_p95_ms": "p95",
     "stats_failures": "失敗",
+    # Tabs and run history
+    "tab_log": "日誌",
+    "tab_chart": "即時圖表",
+    "tab_history": "執行紀錄",
+    "history_open_db": "開啟資料庫…",
+    "history_refresh": "重新整理",
 }

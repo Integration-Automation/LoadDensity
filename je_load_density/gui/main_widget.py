@@ -5,12 +5,14 @@ from PySide6.QtCore import QTimer
 from PySide6.QtGui import QIntValidator
 from PySide6.QtWidgets import (
     QWidget, QFormLayout, QLineEdit, QComboBox,
-    QPushButton, QTextEdit, QVBoxLayout, QLabel, QMessageBox
+    QPushButton, QTextEdit, QVBoxLayout, QMessageBox, QTabWidget
 )
 
+from je_load_density.gui.chart_panel import LiveChartPanel
 from je_load_density.gui.load_density_gui_thread import LoadDensityGUIThread
 from je_load_density.gui.language_wrapper.multi_language_wrapper import language_wrapper
 from je_load_density.gui.log_to_ui_filter import InterceptAllFilter, log_message_queue
+from je_load_density.gui.run_history_panel import RunHistoryPanel
 from je_load_density.gui.stats_panel import StatsPanel
 
 
@@ -76,13 +78,22 @@ class LoadDensityWidget(QWidget):
         # === 即時統計面板 (Live stats panel) ===
         self.stats_panel = StatsPanel()
 
+        # === 即時圖表與執行紀錄 (Live chart and run history) ===
+        self.chart_panel = LiveChartPanel()
+        self.history_panel = RunHistoryPanel()
+
+        # 日誌、圖表、紀錄共用一組分頁 (Log, chart and history share one tab bar)
+        self.tabs = QTabWidget()
+        self.tabs.addTab(self.log_panel, language_wrapper.language_word_dict.get("tab_log"))
+        self.tabs.addTab(self.chart_panel, language_wrapper.language_word_dict.get("tab_chart"))
+        self.tabs.addTab(self.history_panel, language_wrapper.language_word_dict.get("tab_history"))
+
         # === 主版面配置 (Main layout) ===
         main_layout = QVBoxLayout()
         main_layout.addLayout(form_layout)
         main_layout.addWidget(self.start_button)
         main_layout.addWidget(self.stats_panel)
-        main_layout.addWidget(QLabel(language_wrapper.language_word_dict.get("log")))
-        main_layout.addWidget(self.log_panel)
+        main_layout.addWidget(self.tabs)
 
         # === 執行緒與計時器 (Thread & Timer) ===
         self.run_load_density_thread: Optional[LoadDensityGUIThread] = None

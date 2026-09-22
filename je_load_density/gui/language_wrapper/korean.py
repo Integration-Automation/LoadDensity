@@ -8,7 +8,6 @@ korean_word_dict = {
     "spawn_rate": "생성 속도: ",
     "test_method": "HTTP 메서드: ",
     "start_button": "시작: ",
-    "log": "로그: ",
     # Test method
     "get": "GET",
     "post": "POST",
@@ -24,4 +23,10 @@ korean_word_dict = {
     "stats_avg_ms": "평균",
     "stats_p95_ms": "p95",
     "stats_failures": "실패",
+    # Tabs and run history
+    "tab_log": "로그",
+    "tab_chart": "실시간 차트",
+    "tab_history": "실행 기록",
+    "history_open_db": "DB 열기…",
+    "history_refresh": "새로 고침",
 }

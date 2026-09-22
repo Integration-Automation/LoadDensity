@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from je_load_density.gui.language_wrapper.multi_language_wrapper import language_wrapper
 from je_load_density.utils.regression.multi_run_trend import trend_runs
 
 
@@ -41,9 +42,9 @@ class RunHistoryPanel(QWidget):
         self._table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self._table.setEditTriggers(QTableWidget.NoEditTriggers)
 
-        open_button = QPushButton("Open DB...")
+        open_button = QPushButton(language_wrapper.language_word_dict.get("history_open_db"))
         open_button.clicked.connect(self._open_db)
-        refresh_button = QPushButton("Refresh")
+        refresh_button = QPushButton(language_wrapper.language_word_dict.get("history_refresh"))
         refresh_button.clicked.connect(self.refresh)
         controls = QHBoxLayout()
         controls.addWidget(open_button)
