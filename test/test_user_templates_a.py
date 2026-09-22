@@ -1374,3 +1374,19 @@ def test_coap_encodes_non_text_payloads(monkeypatch, env, payload, body):
     record = install_fake_aiocoap(monkeypatch)
     coap_t.CoapUserWrapper(env)._do_step({"method": "put", "uri": "coap://d/s", "payload": payload})
     assert record.messages[0]["payload"] == body
+
+
+def test_apns_rejected_notification_is_a_failure(monkeypatch, env):
+    install_fake_httpx(monkeypatch, response=SimpleNamespace(status_code=403, content=b'{"reason":"BadDeviceToken"}'))
+    apns_t.ApnsUserWrapper(env)._do_step({"method": "send", "device_token": "t"})
+    assert_failure(env, "APNS", "send", RuntimeError, "BadDeviceToken")
+
+
+def test_apns_new_endpoint_gets_a_new_client(monkeypatch, env):
+    record = install_fake_httpx(monkeypatch, response=SimpleNamespace(status_code=200, content=b""))
+    user = apns_t.ApnsUserWrapper(env)
+    user._do_step({"method": "send", "device_token": "t", "endpoint": "https://sandbox"})
+    user._do_step({"method": "send", "device_token": "t", "endpoint": "https://sandbox"})
+    user._do_step({"method": "send", "device_token": "t", "endpoint": "https://production"})
+    assert [kwargs["base_url"] for kwargs in record.client_kwargs] == ["https://sandbox", "https://production"]
+    assert record.closed == 1

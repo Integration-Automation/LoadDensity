@@ -42,14 +42,21 @@ class ApnsUserWrapper(ProtocolUserBase):
     def __init__(self, environment):
         super().__init__(environment)
         self._client = None
+        self._endpoint: Optional[str] = None
 
     def _client_for(self, step: Dict[str, Any]):
+        """The HTTP/2 client for the step's endpoint; a different endpoint gets a new client."""
+        endpoint = step.get("endpoint", self.host)
+        if self._client is not None and endpoint != self._endpoint:
+            self._client.close()
+            self._client = None
         if self._client is None:
             httpx = _import_httpx()
             self._client = httpx.Client(
-                http2=True, base_url=step.get("endpoint", self.host),
+                http2=True, base_url=endpoint,
                 timeout=float(step.get("timeout", 10.0)),
             )
+            self._endpoint = endpoint
         return self._client
 
     def _send(self, step: Dict[str, Any]) -> int:
@@ -64,12 +71,19 @@ class ApnsUserWrapper(ProtocolUserBase):
             headers["authorization"] = f"bearer {jwt}"
         device_token = step["device_token"]
         response = client.post(f"/3/device/{device_token}", content=body, headers=headers)
+        if response.status_code != 200:
+            # APNs answers 200 only on success; anything else carries {"reason": ...} in the body.
+            raise RuntimeError(
+                f"APNs rejected the notification: HTTP {response.status_code} "
+                f"{response.content.decode('utf-8', errors='replace')}"
+            )
         return len(response.content)
 
     def _close(self, _: Dict[str, Any]) -> int:
         if self._client is not None:
             self._client.close()
             self._client = None
+            self._endpoint = None
         return 0
 
     def _command_for(self, method: str) -> Optional[Callable[[Dict[str, Any]], int]]:
