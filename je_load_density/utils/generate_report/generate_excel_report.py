@@ -6,6 +6,7 @@ so the report does NOT require openpyxl. Writes a single "Records"
 sheet containing every test record.
 """
 
+import math
 import os
 import xml.sax.saxutils as xml_escape
 import zipfile
@@ -19,12 +20,19 @@ _COLUMNS = (
 )
 
 
-def _cell(value: Any, column_index: int) -> str:
-    if isinstance(value, (int, float)) and not isinstance(value, bool):
-        return f'<c r="{_column_ref(column_index)}"><v>{value}</v></c>'
-    escaped = xml_escape.escape("" if value is None else str(value))
+# XML 1.0 forbids these control characters even when escaped; one in a cell makes Excel refuse the
+# whole file. Error messages and response text can carry them, so they are dropped.
+_XML_ILLEGAL = dict.fromkeys(i for i in range(0x20) if i not in (0x09, 0x0A, 0x0D))
+
+
+def _cell(value: Any, column_index: int, row_number: int) -> str:
+    ref = f"{_column_ref(column_index)}{row_number}"  # a cell reference needs its row: A1, not A
+    if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value):
+        return f'<c r="{ref}"><v>{value}</v></c>'
+    text = "" if value is None else str(value).translate(_XML_ILLEGAL)
+    escaped = xml_escape.escape(text)
     return (
-        f'<c r="{_column_ref(column_index)}" t="inlineStr">'
+        f'<c r="{ref}" t="inlineStr">'
         f"<is><t>{escaped}</t></is></c>"
     )
 
@@ -42,7 +50,7 @@ def _column_ref(index: int) -> str:
 
 
 def _row(values: List[Any], row_index: int) -> str:
-    cells = "".join(_cell(value, i) for i, value in enumerate(values))
+    cells = "".join(_cell(value, i, row_index + 1) for i, value in enumerate(values))
     return f'<row r="{row_index + 1}">{cells}</row>'
 
 
