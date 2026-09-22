@@ -11,13 +11,21 @@ Load & Stress Automation Framework built on top of Locust.
 
 ## Project Structure
 
+`architecture.md` §2 has one row per directory; this is the short version.
+
 - `je_load_density/` - main package
-  - `gui/` - PySide6 GUI with multi-language support
-  - `utils/` - utilities (executor, file I/O, reports, logging, JSON/XML, socket server, test records)
-  - `wrapper/` - Locust wrappers (env creation, event hooks, proxy users, start/stop)
-- `load_density_driver/` - driver generation
+  - `wrapper/` - Locust wrappers: `start_test`, environment and runner modes, user templates for HTTP and 29 other protocols, per-type proxies, the request hook
+  - `utils/` - executor (`LD_*` commands), test records and SQLite persistence, reports (HTML/JSON/XML/CSV/JUnit/summary/chart plus Allure, SARIF, PDF, …), parameterisation, load shapes, SLA gates, importers (HAR, cURL, Postman, OpenAPI, JMeter, k6), metrics sinks and notifiers, socket server, security probes, chaos, scenario FSM and more
+  - `engine/` - asyncio HTTP engine without Locust and the `bench` CLI
+  - `cloud/` - worker launchers for AWS Fargate/Lambda, Azure ACI and GCP Cloud Run
+  - `mcp_server/` - MCP stdio server (JSON-RPC written out, no SDK)
+  - `action_lsp/` - LSP server for action JSON; `tools/lint_files.py` is the pre-commit entry
+  - `gui/` - optional PySide6 GUI (`gui` extra) with multi-language support
+- `editors/` - VS Code, Chrome and JetBrains extensions
+- `deploy/` - Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates
+- `load_density_driver/` - prebuilt driver
 - `test/` - pytest test suite
-- `docs/` - Sphinx documentation
+- `docs/` - Sphinx documentation (`docs/updates/` is the update log, not built)
 
 ## Development Commands
 
