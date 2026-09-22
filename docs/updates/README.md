@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-09 | 2026-09-23 | Report generators tested; service map follows real request order | #done #bugfix #tests | [2026-09](2026-09.md) |
 | U-20260923-08 | 2026-09-23 | README covers the 2026-05 modules | #done #docs | [2026-09](2026-09.md) |
 | U-20260923-07 | 2026-09-23 | CLAUDE.md project structure matches the package | #docs | [2026-09](2026-09.md) |
 | U-20260923-06 | 2026-09-23 | Live chart and run history reachable from the GUI | #done #gui | [2026-09](2026-09.md) |
@@ -76,4 +77,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 13 |
+| [2026-09.md](2026-09.md) | 2026-09 | 14 |

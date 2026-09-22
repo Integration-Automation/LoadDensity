@@ -16,8 +16,10 @@ from je_load_density.utils.test_record.test_record_class import test_record_inst
 
 
 def _record_to_result(record: Dict[str, Any], outcome: str) -> Dict[str, Any]:
-    now_ms = int(time.time() * 1000)
     duration_ms = int(float(record.get("response_time_ms") or 0))
+    # The request's own start time when the hook recorded it; otherwise "ended now".
+    started = record.get("start_time")
+    now_ms = int(started * 1000) + duration_ms if started else int(time.time() * 1000)
     status = "passed" if outcome == "success" else "failed"
     name = str(record.get("name") or record.get("test_url") or "request")
     test_uuid = str(uuid.uuid4())

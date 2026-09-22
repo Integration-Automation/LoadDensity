@@ -20,6 +20,9 @@ def build_service_map(min_weight: int = 1) -> Dict[str, Any]:
     records = list(test_record_instance.test_record_list) + list(
         test_record_instance.error_record_list
     )
+    # Successes and failures live in separate lists; put them back in request order. Records
+    # without a start time (written by older versions) keep their list order (stable sort).
+    records.sort(key=lambda record: record.get("start_time") or 0.0)
     edges: Dict[tuple, int] = defaultdict(int)
     previous: Optional[str] = None
     nodes: set = set()

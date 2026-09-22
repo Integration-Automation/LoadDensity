@@ -23,6 +23,9 @@ Each entry is a dict with the following keys:
 * ``response_length`` — Response size in bytes.
 * ``error`` — ``None`` for success rows; the exception string for
   failures.
+* ``start_time`` — When Locust started the request (epoch seconds), or
+  ``None``. Successes and failures sit in two lists; reports that need
+  request order (service map, Allure) sort by this.
 * ``text``, ``content``, ``headers`` — Optional, only present on HTTP
   successes.
 

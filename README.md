@@ -775,7 +775,7 @@ Legacy single-flag form (`-e/-d/-c/--execute_str`) is still accepted for backwar
 
 ## Test Record
 
-`test_record_instance.test_record_list` and `error_record_list` collect every request with `Method`, `test_url`, `name`, `status_code`, `response_time_ms`, `response_length`, and (for failures) `error`. Reports and the SQLite sink read directly from these lists.
+`test_record_instance.test_record_list` and `error_record_list` collect every request with `Method`, `test_url`, `name`, `status_code`, `response_time_ms`, `response_length`, `start_time` (epoch seconds, so reports can restore request order across the two lists), and (for failures) `error`. Reports and the SQLite sink read directly from these lists.
 
 ## Exception Handling
 
