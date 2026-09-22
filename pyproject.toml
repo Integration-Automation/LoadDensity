@@ -16,6 +16,7 @@ license-files = ["LICENSE"]
 dependencies = [
     "locust",
     "defusedxml>=0.7.1",
+    "tomli>=2.0; python_version < '3.11'",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.10",

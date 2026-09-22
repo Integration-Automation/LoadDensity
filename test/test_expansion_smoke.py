@@ -182,6 +182,7 @@ def test_stub_server_serves_rule(tmp_path):
 
 
 def test_action_yaml_round_trip(tmp_path):
+    pytest.importorskip("yaml", reason="pyyaml not installed")
     try:
         from je_load_density.utils.json.json_file.yaml_file import (
             read_action_yaml, write_action_yaml,

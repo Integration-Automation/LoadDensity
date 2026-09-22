@@ -2040,6 +2040,7 @@ source = { editable = "." }
 dependencies = [
     { name = "defusedxml" },
     { name = "locust" },
+    { name = "tomli", marker = "python_full_version < '3.11'" },
 ]
 
 [package.optional-dependencies]
@@ -2338,6 +2339,7 @@ requires-dist = [
     { name = "sqlalchemy", marker = "extra == 'sql'", specifier = ">=2.0" },
     { name = "thriftpy2", marker = "extra == 'all'", specifier = ">=0.4" },
     { name = "thriftpy2", marker = "extra == 'thrift'", specifier = ">=0.4" },
+    { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
     { name = "websocket-client", marker = "extra == 'all'", specifier = ">=1.6" },
     { name = "websocket-client", marker = "extra == 'websocket'", specifier = ">=1.6" },
 ]

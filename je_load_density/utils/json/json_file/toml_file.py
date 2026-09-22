@@ -1,12 +1,11 @@
 """
-TOML action-document loader (Python 3.11+ stdlib tomllib for read).
+TOML action-document loader (stdlib ``tomllib`` on 3.11+, the ``tomli`` backport on 3.10).
 
 For writing, a minimal stdlib-based encoder is used to keep dependencies
 tight. Tomllib does not write; we serialise via a small inline encoder
 limited to the simple types LoadDensity action documents use.
 """
 
-import tomllib
 from pathlib import Path
 from threading import Lock
 from typing import Any, Dict, Union
@@ -20,6 +19,24 @@ from je_load_density.utils.exception.exception_tags import (
 _toml_file_lock = Lock()
 
 
+def _toml_reader() -> Any:
+    """``tomllib``, or ``tomli`` on Python 3.10.
+
+    Imported here rather than at module level: a module-level ``import tomllib`` made the whole
+    package fail to import on 3.10, which ``requires-python`` allows.
+    """
+    try:
+        import tomllib
+    except ModuleNotFoundError:
+        try:
+            import tomli as tomllib
+        except ModuleNotFoundError as error:
+            raise LoadDensityTestJsonException(
+                "reading TOML on Python 3.10 needs tomli; install with: pip install tomli"
+            ) from error
+    return tomllib
+
+
 def read_action_toml(toml_file_path: str) -> Union[Dict[str, Any], list]:
     """Read a TOML action document. Returns the parsed dictionary."""
     try:
@@ -28,7 +45,7 @@ def read_action_toml(toml_file_path: str) -> Union[Dict[str, Any], list]:
             if not (file_path.exists() and file_path.is_file()):
                 raise LoadDensityTestJsonException(cant_find_json_error)
             with open(toml_file_path, "rb") as read_file:
-                return tomllib.load(read_file)
+                return _toml_reader().load(read_file)
     except LoadDensityTestJsonException:
         raise
     except Exception as error:
