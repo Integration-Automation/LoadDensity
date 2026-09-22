@@ -9,6 +9,7 @@ Each task entry::
     {"method": "close"}
 """
 
+import inspect
 import time
 from typing import Any, Callable, Dict, Optional
 
@@ -43,6 +44,19 @@ def _import_pymodbus():
     return ModbusTcpClient
 
 
+
+def _unit_kwarg(method: Any, step: Dict[str, Any]) -> Dict[str, int]:
+    """The step's ``unit`` under the keyword this pymodbus accepts.
+
+    pymodbus 3.15 renamed ``slave`` to ``device_id``; passing ``slave`` there raises TypeError.
+    """
+    unit = int(step.get("unit", 1))
+    try:
+        parameters = inspect.signature(method).parameters
+    except (TypeError, ValueError):
+        return {"slave": unit}
+    return {"device_id": unit} if "device_id" in parameters else {"slave": unit}
+
 class ModbusUserWrapper(User):
     """Locust user driving pymodbus TCP calls."""
 
@@ -69,7 +83,7 @@ class ModbusUserWrapper(User):
         response = self._client.read_holding_registers(
             address=int(step.get("address", 0)),
             count=int(step.get("count", 1)),
-            slave=int(step.get("unit", 1)),
+            **_unit_kwarg(self._client.read_holding_registers, step),
         )
         if response.isError():
             raise RuntimeError(str(response))
@@ -81,7 +95,7 @@ class ModbusUserWrapper(User):
         response = self._client.write_register(
             address=int(step.get("address", 0)),
             value=int(step.get("value", 0)),
-            slave=int(step.get("unit", 1)),
+            **_unit_kwarg(self._client.write_register, step),
         )
         if response.isError():
             raise RuntimeError(str(response))

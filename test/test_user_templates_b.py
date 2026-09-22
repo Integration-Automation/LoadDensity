@@ -2031,3 +2031,43 @@ def test_imap_non_ok_status_is_a_failure():
     user._client = Recorder(returns={"select": ("NO", [b"no such mailbox"])})
     user._do_step({"method": "select", "mailbox": "Gone"})
     assert_failure(user, "IMAP", "select", RuntimeError, match="NO")
+
+
+class _Pymodbus35Client:
+    """Signatures of pymodbus 3.5: the unit is ``slave``."""
+
+    def __init__(self):
+        self.units = []
+
+    def read_holding_registers(self, address, count, slave=0, **kwargs):
+        self.units.append(("slave", slave))
+        return FakeModbusResponse([1])
+
+    def write_register(self, address, value, slave=0, **kwargs):
+        self.units.append(("slave", slave))
+        return FakeModbusResponse()
+
+
+class _Pymodbus315Client:
+    """Signatures of pymodbus 3.15: the unit is ``device_id`` and ``slave`` is rejected."""
+
+    def __init__(self):
+        self.units = []
+
+    def read_holding_registers(self, address, count, device_id=1, no_response_expected=False):
+        self.units.append(("device_id", device_id))
+        return FakeModbusResponse([1])
+
+    def write_register(self, address, value, device_id=1, no_response_expected=False):
+        self.units.append(("device_id", device_id))
+        return FakeModbusResponse()
+
+
+@pytest.mark.parametrize("client_cls, keyword", [(_Pymodbus35Client, "slave"), (_Pymodbus315Client, "device_id")])
+def test_modbus_unit_uses_the_keyword_of_the_installed_pymodbus(client_cls, keyword):
+    user = make_user(ModbusUserWrapper)
+    user._client = client_cls()
+    user._do_step({"method": "read_holding", "unit": 7})
+    user._do_step({"method": "write_register", "value": 1, "unit": 7})
+    assert user._client.units == [(keyword, 7), (keyword, 7)]
+    assert all(event["exception"] is None for event in events_of(user))
