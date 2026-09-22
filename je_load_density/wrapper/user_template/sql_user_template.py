@@ -73,8 +73,8 @@ class SqlUserWrapper(User):
         )
 
     def _execute(self, sql: str, params: Optional[Dict[str, Any]]) -> int:
+        engine = self._ensure_engine()  # first, so a missing SQLAlchemy gives its clear error
         from sqlalchemy import text
-        engine = self._ensure_engine()
         with engine.connect() as connection:
             result = connection.execute(text(sql), params or {})
             if result.returns_rows:

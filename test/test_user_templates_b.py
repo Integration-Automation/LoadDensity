@@ -283,6 +283,7 @@ MISSING_LIBRARY = [
     (OpcuaUserWrapper, "asyncua", {"method": "connect"}, "OPC-UA", "asyncua"),
     (PulsarUserWrapper, "pulsar", {"method": "connect"}, "PULSAR", "pulsar-client"),
     (SftpUserWrapper, "paramiko", {"method": "connect"}, "SFTP", "paramiko"),
+    (RedisUserWrapper, "redis", {"method": "get", "key": "k"}, "REDIS", "pip install redis"),
 ]
 
 
@@ -2015,3 +2016,18 @@ def test_sftp_disconnect_without_connection_is_success():
     user = make_user(SftpUserWrapper)
     user._do_step({"method": "disconnect"})
     assert_success(user, "SFTP", "disconnect", length=0)
+
+
+def test_imap_lengths_are_the_payload_sizes(monkeypatch):
+    install_fake_imap(monkeypatch)
+    user = make_user(ImapUserWrapper)
+    for method in ("connect", "search", "fetch"):
+        user._do_step({"method": method})
+    assert [event["response_length"] for event in events_of(user)] == [len(b"noop"), len(b"1 2"), len(b"x")]
+
+
+def test_imap_non_ok_status_is_a_failure():
+    user = make_user(ImapUserWrapper)
+    user._client = Recorder(returns={"select": ("NO", [b"no such mailbox"])})
+    user._do_step({"method": "select", "mailbox": "Gone"})
+    assert_failure(user, "IMAP", "select", RuntimeError, match="NO")

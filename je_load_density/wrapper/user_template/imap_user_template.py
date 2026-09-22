@@ -39,6 +39,27 @@ def set_wrapper_imap_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
     return ImapUserWrapper
 
 
+def _imap_result_length(result: Any) -> int:
+    """Payload size of an imaplib ``(status, data)`` reply; a status other than OK/BYE is an error.
+
+    ``coerce_response_length`` on the tuple itself always gave 2.
+    """
+    if not (isinstance(result, tuple) and len(result) == 2 and isinstance(result[0], str)):
+        return coerce_response_length(result)
+    status, data = result
+    if status not in ("OK", "BYE"):
+        raise RuntimeError(f"imap command failed: {status} {data!r}")
+    return _nested_bytes_length(data)
+
+
+def _nested_bytes_length(data: Any) -> int:
+    if isinstance(data, (bytes, bytearray, str)):
+        return coerce_response_length(data)
+    if isinstance(data, (list, tuple)):
+        return sum(_nested_bytes_length(item) for item in data)
+    return 0
+
+
 class ImapUserWrapper(User):
     """Locust user driving imaplib calls."""
 
@@ -108,7 +129,7 @@ class ImapUserWrapper(User):
         try:
             result = handler(step)
             fire_request_event(
-                self.environment, "IMAP", name, start, coerce_response_length(result),
+                self.environment, "IMAP", name, start, _imap_result_length(result),
             )
         except Exception as error:
             load_density_logger.debug(f"imap step failed: {error!r}")

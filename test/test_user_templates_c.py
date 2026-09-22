@@ -325,7 +325,7 @@ def test_smtp_send_builds_message_and_reports_size(smtp_lib):
     assert message["To"] == "b@y, c@z"
     assert message["Subject"] == "hi"
     assert message.get_content().strip() == "hello"
-    assert_ok(calls, "SMTP", "mail")
+    assert_ok(calls, "SMTP", "mail", length=len(message.as_bytes()))
 
 
 def test_smtp_quit_closes_client_and_is_safe_without_one(smtp_lib):
@@ -1488,3 +1488,10 @@ def test_scenario_network_conditioner_drops_matching_steps(executed, monkeypatch
     monkeypatch.setattr(network_conditioner, "_INSTALLED", conditioner)
     scenario_runner.run_scenario({}, [{"name": "flaky-call"}, {"name": "stable"}])
     assert executed == ["stable"]
+
+
+def test_sql_missing_sqlalchemy_reports_the_clear_error(monkeypatch):
+    monkeypatch.setitem(sys.modules, "sqlalchemy", None)
+    user, calls = make_user(SqlUserWrapper)
+    user._do_step({"sql": "SELECT 1"})
+    assert_failed(calls, "SQL", "sql", RuntimeError, "SQLAlchemy is required")

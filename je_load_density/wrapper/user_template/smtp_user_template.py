@@ -79,12 +79,13 @@ class SmtpUserWrapper(User):
             raise RuntimeError("smtp client not connected")
         return self._client.login(step.get("username", ""), step.get("password", ""))
 
-    def _send(self, step: Dict[str, Any]) -> int:
+    def _send(self, step: Dict[str, Any]) -> bytes:
+        """Send the message and return its bytes, whose length is the step's response length."""
         if self._client is None:
             raise RuntimeError("smtp client not connected")
         message = _build_message(step)
         self._client.send_message(message)
-        return len(message.as_bytes())
+        return message.as_bytes()
 
     def _quit(self, _: Dict[str, Any]) -> Any:
         if self._client is None:
