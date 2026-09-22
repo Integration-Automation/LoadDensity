@@ -121,7 +121,8 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
 - **PyBreeze (subprocess)** runs `python -m je_load_density --execute_str <json>` or `--execute_file <path>`
   (`PyBreeze/pybreeze/extend/process_executor/python_task_process_manager.py`; the package name is in
   `.../process_executor/load_density/load_density_process.py`). The hidden legacy flags and the
-  Windows double-encoded JSON handling in `_cmd_run_str` are a contract.
+  Windows double-encoded JSON handling in `_cmd_run_str` are a contract, guarded by
+  `test/test_legacy_cli_contract.py`.
 - **PyBreeze (in-process)** embeds `je_load_density.gui.main_widget.LoadDensityWidget`
   (`pybreeze/pybreeze_ui/menu/automation_menu/load_density_menu/build_load_density_menu.py`) and
   generates scripts that use `from je_load_density import start_test` (`pybreeze/utils/curl_import/script_templates.py`).
