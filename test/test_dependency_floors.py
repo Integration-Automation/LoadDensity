@@ -31,7 +31,7 @@ def _requirements(name: str):
 
 @pytest.mark.parametrize("name, vulnerable, patched", [
     ("kafka-python", "2.3.1", "2.3.2"),
-    ("cryptography", "48.0.0", "48.0.1"),
+    ("cryptography", "49.0.0", "50.0.0"),  # PYSEC-2026-3552 is fixed in 50.0.0
 ])
 def test_floor_excludes_the_vulnerable_release(name, vulnerable, patched):
     found = list(_requirements(name))
