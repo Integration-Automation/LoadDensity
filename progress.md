@@ -6,9 +6,9 @@ Cross-repo and workspace items live in `D:\Codes\progress.md` (relevant here: S-
 
 ## Open
 
-- **#1** About 162 files of work from 2026-05-25..27 are still uncommitted (29 protocol user templates and proxies, `cloud/`, the asyncio `engine/`, 7 report formats, security / chaos / governance / ai / dx modules, `deploy/`, `editors/`). Only `test_expansion_smoke.py` and `test_expansion2_smoke.py` cover them: add real tests, then commit in stages (workspace S-2).
+- **#1** The 2026-05 expansion modules (29 protocol user types, `cloud/`, `engine/`, the 8 new report formats, security / chaos / scenario / governance / ai / data / dx, `deploy/`, `editors/`; commit list in `docs/updates` U-20260922-05) are covered only by `test/test_expansion_smoke.py` and `test/test_expansion2_smoke.py`: add real tests (workspace S-2).
 - **#2** README and the `CLAUDE.md` project-structure section (≈:12-20) do not describe the new modules from #1.
 - **#3** Remove the stale `.claude/scheduled_tasks.lock`.
 - **#4** The dependabot branch `pyside6-6.10.2` (2026-02-03) is not merged (see workspace X-1).
-- **#5** The modified tracked files (`__init__.py`, `__main__.py`, the executor, `mcp_server/server.py`, `proxy_user.py`, `start_test.py`, `pyproject.toml`) import the untracked modules from #1, so the working tree only works as a whole: commit #1 together with them.
 - **#6** `dev.toml` (the `je_load_density_dev` channel) has no console scripts and only the `gui` extra.
+- **#7** `je_load_density/gui/chart_panel.py` and `je_load_density/gui/run_history_panel.py` are not imported by `gui/main_widget.py` or `gui/main_window.py`: wire them in or drop them.

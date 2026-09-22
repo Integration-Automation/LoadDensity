@@ -14,12 +14,6 @@ persistence all read from that record.
 
 ## 2. Layers and directories
 
-**Working-tree note.** A large uncommitted change set sits on top of HEAD (`git status --short`).
-Areas marked *(uncommitted as of 2026-09-22)* exist only on disk. The modified tracked files
-`__init__.py`, `__main__.py`, `utils/executor/action_executor.py`, `mcp_server/server.py`,
-`wrapper/proxy/proxy_user.py`, `wrapper/start_wrapper/start_test.py` and `pyproject.toml` import them,
-so do not mix committed and on-disk files.
-
 | Path | Responsibility |
 | --- | --- |
 | `je_load_density/__init__.py` | Public facade (`__all__`). It imports `wrapper/event/request_hook.py` for its side effect, which registers the Locust request hook |
@@ -27,23 +21,23 @@ so do not mix committed and on-disk files.
 | `je_load_density/wrapper/start_wrapper/start_test.py` | `start_test()` and `_USER_REGISTRY`, which maps a user type to its Locust user class and `set_wrapper_*` initialiser |
 | `je_load_density/wrapper/create_locust_env/` | `prepare_env` / `create_env`: Locust environment, runner mode (`local`/`master`/`worker`), load shape, web UI |
 | `je_load_density/wrapper/proxy/` | `locust_wrapper_proxy` (`LocustUserProxy.user_dict`) holds each user type's configuration, one `user/<type>_user_proxy.py` per type |
-| `je_load_density/wrapper/user_template/` | Locust user classes (`HttpUserWrapper`, `FastHttpUserWrapper`, …) and the task engine `request_executor.py` / `scenario_runner.py`. `_protocol_base.py`, `_common.py` and the newer protocol templates are *(uncommitted)* |
+| `je_load_density/wrapper/user_template/` | Locust user classes (`HttpUserWrapper`, `FastHttpUserWrapper`, …) and the task engine `request_executor.py` / `scenario_runner.py`. `_protocol_base.py` and `_common.py` are the shared helpers of the protocol templates |
 | `je_load_density/wrapper/event/request_hook.py` | Locust request listener that writes into `test_record_instance` |
 | `je_load_density/utils/executor/` | `Executor.event_dict` (`LD_*` commands plus builtins minus `_UNSAFE_BUILTINS`), `execute_action`, `execute_files`, `add_command_to_executor` |
 | `je_load_density/utils/test_record/` | `test_record_instance` and SQLite run persistence |
-| `je_load_density/utils/generate_report/` | HTML, JSON, XML, CSV, JUnit, summary and chart reports. The Allure, cost, CycloneDX, Excel, histogram, PDF, SARIF and service-map generators are *(uncommitted)* |
+| `je_load_density/utils/generate_report/` | HTML, JSON, XML, CSV, JUnit, summary and chart reports. Also Allure, cost, CycloneDX, Excel, histogram, PDF, SARIF and service-map generators |
 | `je_load_density/utils/{parameterization,load_shapes,throttle,reliability,sla,regression,schema,linter,graphql,auth}/` | Variables and CSV sources, load shapes, RPS throttle, retry / failure budget / network conditioner, SLA gates (`evaluate_sla`, `assert_sla`), run diff, action JSON schema, action linter, GraphQL tasks, SigV4 / JWT / OAuth2 helpers |
-| `je_load_density/utils/{recording,metrics,notifier,ci_annotations,dashboard}/` | HAR/cURL/Postman/OpenAPI/JMeter/k6 importers, Prometheus/OTel/InfluxDB/StatsD sinks, Slack/Teams notifiers, GitHub annotations, live dashboard. Some modules in these packages are *(uncommitted)* |
+| `je_load_density/utils/{recording,metrics,notifier,ci_annotations,dashboard}/` | HAR/cURL/Postman/OpenAPI/JMeter/k6 importers, Prometheus/OTel/InfluxDB/StatsD sinks, Slack/Teams notifiers, GitHub annotations, live dashboard. Also CDP capture and a mitmproxy addon, OTel tracing and Datadog APM exporters, PagerDuty/Opsgenie/GitLab notifiers, canary analysis |
 | `je_load_density/utils/{socket_server,callback,package_manager,project,json,xml,file_process,get_data_structure,logging,exception}/` | TCP control server, callback executor, package loader, project scaffold, I/O and response-data helpers, `load_density_logger`, exceptions |
-| `je_load_density/utils/{action_generator,ai,chaos,data,dx,governance,scenario,security,stub_server}/` | *(uncommitted as of 2026-09-22)* Action generation from OpenAPI or cURL, auto-baseline and tuning helpers, Chaos Mesh / Toxiproxy, data factories, REPL and profiler, audit log and catalog, scenario FSM, security probes, stub server |
-| `je_load_density/engine/` | *(uncommitted as of 2026-09-22)* Asyncio HTTP engine without Locust (`run_async_load`) and the `bench` CLI |
-| `je_load_density/cloud/` | *(uncommitted as of 2026-09-22)* Worker launchers for AWS Fargate and Lambda, Azure ACI and GCP Cloud Run |
+| `je_load_density/utils/{action_generator,ai,chaos,data,dx,governance,scenario,security,stub_server}/` | Action generation from OpenAPI or cURL, auto-baseline and tuning helpers, Chaos Mesh / Toxiproxy, data factories, REPL and profiler, audit log and catalog, scenario FSM, security probes, stub server |
+| `je_load_density/engine/` | Asyncio HTTP engine without Locust (`run_async_load`) and the `bench` CLI |
+| `je_load_density/cloud/` | Worker launchers for AWS Fargate and Lambda, Azure ACI and GCP Cloud Run |
 | `je_load_density/mcp_server/` | MCP stdio server |
 | `je_load_density/action_lsp/` | LSP server for action JSON, standard library only (diagnostics and `LD_*` completion) |
 | `je_load_density/tools/lint_files.py` | Pre-commit entry that lints action JSON files |
-| `je_load_density/gui/` | Optional PySide6 GUI (`gui` extra). `chart_panel.py` and `run_history_panel.py` are *(uncommitted)* |
-| `editors/vscode/` | VS Code extension that starts the LSP. `editors/chrome-extension/` and `editors/jetbrains/` are *(uncommitted as of 2026-09-22)* |
-| `deploy/` | *(uncommitted as of 2026-09-22)* Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates |
+| `je_load_density/gui/` | Optional PySide6 GUI (`gui` extra). `chart_panel.py` and `run_history_panel.py` are not wired into the main window yet |
+| `editors/vscode/` | VS Code extension that starts the LSP. `editors/chrome-extension/` and `editors/jetbrains/` hold the Chrome and JetBrains extensions |
+| `deploy/` | Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates |
 | `docker/`, `action.yml`, `.pre-commit-hooks.yaml`, `examples/` | docker-compose test stack, composite GitHub Action, pre-commit hook, sample actions and scripts |
 | `load_density_driver/` | Prebuilt driver (script plus Windows and Linux binaries) |
 | `test/`, `docs/source/` | pytest suite; Sphinx docs (`En/`, `Zh/`, `api/`) |
@@ -58,7 +52,7 @@ so do not mix committed and on-disk files.
   list of actions or `{"load_density": [...]}`.
 - **CLI** (`python -m je_load_density` or `loaddensity`):
   - subcommands `run`, `run-dir`, `run-str`, `init` and `serve` (`--host --port --framed --token
-    --tls-cert --tls-key`); `bench` and `shell` are *(uncommitted)*;
+    --tls-cert --tls-key`); also `bench` (asyncio HTTP benchmark) and `shell` (REPL);
   - legacy flags, hidden from `--help`: `-e/--execute_file`, `-d/--execute_dir`, `-c/--create_project`
     and `--execute_str`;
   - on Windows, `run-str` and `--execute_str` decode a second time when the first decode yields a
@@ -107,7 +101,7 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
   2. Register it in `LocustUserProxy.user_dict` (`wrapper/proxy/proxy_user.py`).
   3. `wrapper/user_template/<proto>_user_template.py` with `set_wrapper_<proto>_user` and `<Proto>UserWrapper`.
      Import the client library lazily. Fire events through `_common.fire_request_event` or subclass
-     `_protocol_base.ProtocolUserBase` (both *(uncommitted)*).
+     `_protocol_base.ProtocolUserBase`.
   4. Add `"<proto>_user"` to `_USER_REGISTRY` in `wrapper/start_wrapper/start_test.py`.
   5. Add an extra in `pyproject.toml` (and to `all`), then tests (`test/test_new_user_templates.py`,
      `test/test_proxy_user.py`).
@@ -151,7 +145,6 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
 
 ## 8. When to update this file
 
-- The uncommitted areas are committed or dropped. Remove the *(uncommitted)* markers and re-verify.
 - A package under `je_load_density/` or a top-level directory is added, removed or renamed.
 - CLI subcommands, legacy flags, `[project.scripts]` or the MCP/LSP/socket entry points change.
 - The action format (`load_density` key, `LD_` prefix), `_USER_REGISTRY` / `LocustUserProxy` wiring,

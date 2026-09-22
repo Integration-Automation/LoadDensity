@@ -13,6 +13,10 @@ Run with:
 import json
 from typing import Any, Dict, List, Optional
 
+from je_load_density.utils.action_generator.generate import (
+    generate_from_curls,
+    generate_from_openapi,
+)
 from je_load_density.utils.executor.action_executor import execute_action, executor
 from je_load_density.utils.generate_report.generate_csv_report import generate_csv_report
 from je_load_density.utils.generate_report.generate_html_report import generate_html_report
@@ -127,6 +131,30 @@ def _tool_fetch_run(payload: Dict[str, Any]) -> Dict[str, Any]:
 def _tool_clear_records(_: Dict[str, Any]) -> Dict[str, str]:
     test_record_instance.clear_records()
     return {"status": "cleared"}
+
+
+def _tool_generate_from_openapi(payload: Dict[str, Any]) -> Dict[str, Any]:
+    return generate_from_openapi(
+        openapi_path=payload["openapi_path"],
+        user=payload.get("user", "fast_http_user"),
+        user_count=int(payload.get("user_count", 20)),
+        spawn_rate=int(payload.get("spawn_rate", 5)),
+        test_time=int(payload.get("test_time", 60)),
+        variables=payload.get("variables"),
+        base_url=payload.get("base_url"),
+    )
+
+
+def _tool_generate_from_curls(payload: Dict[str, Any]) -> Dict[str, Any]:
+    curls = payload.get("curls") or []
+    return generate_from_curls(
+        curls=list(curls),
+        user=payload.get("user", "fast_http_user"),
+        user_count=int(payload.get("user_count", 20)),
+        spawn_rate=int(payload.get("spawn_rate", 5)),
+        test_time=int(payload.get("test_time", 60)),
+        variables=payload.get("variables"),
+    )
 
 
 _TOOLS: Dict[str, Dict[str, Any]] = {
@@ -246,6 +274,39 @@ _TOOLS: Dict[str, Dict[str, Any]] = {
         "description": "Clear in-memory test records before a new run.",
         "handler": _tool_clear_records,
         "input_schema": {"type": "object", "properties": {}},
+    },
+    "load_density.generate_from_openapi": {
+        "description": "Build a runnable action JSON from an OpenAPI spec.",
+        "handler": _tool_generate_from_openapi,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "openapi_path": {"type": "string"},
+                "user": {"type": "string"},
+                "user_count": {"type": "integer"},
+                "spawn_rate": {"type": "integer"},
+                "test_time": {"type": "integer"},
+                "variables": {"type": "object"},
+                "base_url": {"type": "string"},
+            },
+            "required": ["openapi_path"],
+        },
+    },
+    "load_density.generate_from_curls": {
+        "description": "Build a runnable action JSON from a list of cURL commands.",
+        "handler": _tool_generate_from_curls,
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "curls": {"type": "array", "items": {"type": "string"}},
+                "user": {"type": "string"},
+                "user_count": {"type": "integer"},
+                "spawn_rate": {"type": "integer"},
+                "test_time": {"type": "integer"},
+                "variables": {"type": "object"},
+            },
+            "required": ["curls"],
+        },
     },
 }
 
