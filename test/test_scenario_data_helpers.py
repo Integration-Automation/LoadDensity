@@ -5,6 +5,7 @@ The DB fixtures run against a fake SQLAlchemy (``create_engine`` / ``text``), so
 tests need neither SQLAlchemy nor a database.
 """
 import threading
+import time
 from http.cookiejar import Cookie
 
 import pytest
@@ -244,3 +245,31 @@ def test_missing_sqlalchemy_is_a_clear_error(monkeypatch):
     monkeypatch.setitem(__import__("sys").modules, "sqlalchemy", None)
     with pytest.raises(RuntimeError, match="pip install sqlalchemy"):
         db_fixtures.apply_fixture("sqlite://")
+
+
+@pytest.mark.parametrize("text, kind", [
+    ("card 4111 1111 1111 1111 ok", "card"),
+    ("card 4111-1111-1111-1111 ok", "card"),
+    ("card 4111111111111111 ok", "card"),
+    ("call 0912-345-678 ok", "phone"),
+    ("call +886 912 345 678 ok", "phone"),
+])
+def test_scrub_string_labels_cards_and_phones_and_keeps_the_surrounding_text(text, kind):
+    scrubbed = scrub_string(text)
+    assert scrubbed.split(" ")[0] in ("card", "call")
+    assert scrubbed.split(" ")[1].startswith(f"{kind}_")
+    assert scrubbed.endswith(" ok")
+    assert not any(char.isdigit() for char in scrubbed.split(" ")[0])
+    assert "+" not in scrubbed
+
+
+def test_find_pii_reports_a_card_number_once():
+    assert list(find_pii("card 4111-1111-1111-1111")) == ["4111-1111-1111-1111"]
+
+
+@pytest.mark.parametrize("text", ["1" * 200_000, "1-" * 100_000 + "x", "1 " * 100_000, "a" * 200_000],
+                         ids=["digits", "dashed", "spaced", "letters-without-at"])
+def test_scrub_string_is_linear_on_long_runs(text):
+    start = time.perf_counter()
+    scrub_string(text)
+    assert time.perf_counter() - start < 2.0

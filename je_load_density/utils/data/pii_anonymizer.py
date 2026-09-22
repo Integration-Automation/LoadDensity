@@ -9,9 +9,15 @@ import hashlib
 import re
 from typing import Any, Iterable
 
-_EMAIL_RE = re.compile(r"[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
-_PHONE_RE = re.compile(r"\b\+?\d[\d \-]{7,}\b")
-_CREDIT_RE = re.compile(r"\b(?:\d[ \-]?){13,19}\b")
+# The lookbehind lets a match start only where a run of address characters starts; without it a
+# long run with no "@" was rescanned from every position (40 s on 200 000 characters).
+_EMAIL_RE = re.compile(r"(?<![a-zA-Z0-9._%+\-])[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}")
+# Both number patterns start and end on a digit, so the blank after a number stays in the text, and
+# only a single space or dash may separate digits. That keeps matching linear: the old card pattern
+# "(?:\d[ \-]?){13,19}" could split a digit run many ways and took 44 s on 200 000 digits. Cards are
+# matched first because every card number also looks like a phone number.
+_CREDIT_RE = re.compile(r"(?<![\w+])\d(?:[ \-]?\d){12,18}(?!\w)")
+_PHONE_RE = re.compile(r"(?<![\w+])\+?\d(?:[ \-]?\d){7,}(?!\w)")
 _IPV4_RE = re.compile(r"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b")
 _TOKEN_KEY_RE = re.compile(r"(?i)(token|secret|password|api[_-]?key)")
 
@@ -26,8 +32,8 @@ def scrub_string(text: str) -> str:
     if not text:
         return text
     text = _EMAIL_RE.sub(lambda match: _stable_replace("email", match.group(0)), text)
-    text = _PHONE_RE.sub(lambda match: _stable_replace("phone", match.group(0)), text)
     text = _CREDIT_RE.sub(lambda match: _stable_replace("card", match.group(0)), text)
+    text = _PHONE_RE.sub(lambda match: _stable_replace("phone", match.group(0)), text)
     text = _IPV4_RE.sub(lambda match: _stable_replace("ip", match.group(0)), text)
     return text
 
@@ -51,10 +57,16 @@ def scrub(value: Any) -> Any:
 
 
 def find_pii(text: str) -> Iterable[str]:
-    """Yield PII tokens found in text (useful for spot-checking before scrub)."""
-    for match in _EMAIL_RE.finditer(text or ""):
+    """Yield PII tokens found in text (useful for spot-checking before scrub).
+
+    Emails come first, then card numbers, then phone numbers that are not part of a card number.
+    """
+    text = text or ""
+    for match in _EMAIL_RE.finditer(text):
         yield match.group(0)
-    for match in _PHONE_RE.finditer(text or ""):
+    cards = list(_CREDIT_RE.finditer(text))
+    for match in cards:
         yield match.group(0)
-    for match in _CREDIT_RE.finditer(text or ""):
-        yield match.group(0)
+    for match in _PHONE_RE.finditer(text):
+        if not any(card.start() <= match.start() < card.end() for card in cards):
+            yield match.group(0)
