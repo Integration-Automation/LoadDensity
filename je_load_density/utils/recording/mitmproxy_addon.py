@@ -12,6 +12,12 @@ Then::
 
     from je_load_density import load_har, har_to_action_json
     action = har_to_action_json(load_har("/tmp/capture.har"))
+
+mitmproxy loads this file into its own process and the addon needs only the
+standard library, so install mitmproxy as its own application (the standalone
+binary or ``pipx install mitmproxy``). LoadDensity has no ``mitmproxy`` extra:
+mitmproxy pins ``cryptography``, ``h2`` and ``msgpack`` below their patched
+releases and would drag those versions into the LoadDensity environment.
 """
 
 import base64

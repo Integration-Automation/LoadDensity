@@ -44,7 +44,7 @@ websocket = ["websocket-client>=1.6"]
 grpc = ["grpcio>=1.60", "protobuf>=4.25"]
 mqtt = ["paho-mqtt>=2.0"]
 redis = ["redis>=5.0"]
-kafka = ["kafka-python>=2.0"]
+kafka = ["kafka-python>=2.3.2"]
 sql = ["sqlalchemy>=2.0"]
 mongo = ["pymongo>=4.6"]
 http2 = ["httpx[http2]>=0.27"]
@@ -62,10 +62,10 @@ metrics = [
 ]
 charts = ["matplotlib>=3.8"]
 yaml = ["pyyaml>=6.0"]
-auth = ["cryptography>=42.0"]
+auth = ["cryptography>=48.0.1"]
 reliability = ["psutil>=5.9"]
 faker = ["faker>=24.0"]
-mcp = ["mcp>=1.0"]
+mcp = ["mcp>=1.28.1,<2"]
 http3 = ["aioquic>=0.9"]
 amqp = ["pika>=1.3"]
 nats = ["nats-py>=2.6"]
@@ -88,7 +88,6 @@ neo4j = ["neo4j>=5.15"]
 couchbase = ["couchbase>=4.1"]
 etcd = ["etcd3>=0.12"]
 webpush = ["pywebpush>=1.14"]
-mitmproxy = ["mitmproxy>=10.0"]
 aws = ["boto3>=1.34"]
 gcp = ["google-auth>=2.27"]
 azure = ["azure-identity>=1.15", "azure-mgmt-containerinstance>=10.1"]
@@ -104,7 +103,7 @@ all = [
     "grpcio>=1.60", "protobuf>=4.25",
     "paho-mqtt>=2.0",
     "redis>=5.0",
-    "kafka-python>=2.0",
+    "kafka-python>=2.3.2",
     "sqlalchemy>=2.0",
     "pymongo>=4.6",
     "httpx[http2]>=0.27",
@@ -114,10 +113,10 @@ all = [
     "opentelemetry-exporter-otlp-proto-grpc>=1.24",
     "matplotlib>=3.8",
     "pyyaml>=6.0",
-    "cryptography>=42.0",
+    "cryptography>=48.0.1",
     "psutil>=5.9",
     "faker>=24.0",
-    "mcp>=1.0",
+    "mcp>=1.28.1,<2",
     "aioquic>=0.9",
     "pika>=1.3",
     "nats-py>=2.6",
@@ -141,7 +140,6 @@ all = [
     "couchbase>=4.1",
     "etcd3>=0.12",
     "pywebpush>=1.14",
-    "mitmproxy>=10.0",
     "boto3>=1.34",
     "google-auth>=2.27",
     "azure-identity>=1.15",
