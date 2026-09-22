@@ -19,6 +19,21 @@ def _import_sqlalchemy():
     return create_engine, text
 
 
+def _execute_all(database_url: str, statements: List[str]) -> None:
+    """Run ``statements`` in one transaction, then dispose the engine even if one fails.
+
+    Without the dispose the pool kept its connections open, and a SQLite file stayed locked.
+    """
+    create_engine, text = _import_sqlalchemy()
+    engine = create_engine(database_url, future=True)
+    try:
+        with engine.begin() as connection:
+            for statement in statements:
+                connection.execute(text(statement))
+    finally:
+        engine.dispose()
+
+
 def apply_fixture(
     database_url: str,
     setup_sql: Optional[List[str]] = None,
@@ -39,11 +54,7 @@ def apply_fixture(
         finally:
             run_teardown(fixture)
     """
-    create_engine, text = _import_sqlalchemy()
-    engine = create_engine(database_url, future=True)
-    with engine.begin() as connection:
-        for statement in setup_sql or []:
-            connection.execute(text(statement))
+    _execute_all(database_url, list(setup_sql or []))
     return {
         "database_url": database_url,
         "teardown_sql": list(teardown_sql or []),
@@ -52,11 +63,7 @@ def apply_fixture(
 
 def run_teardown(fixture: Dict[str, Any]) -> None:
     """Execute every teardown statement recorded in ``fixture``."""
-    create_engine, text = _import_sqlalchemy()
     teardown = fixture.get("teardown_sql") or []
     if not teardown:
         return
-    engine = create_engine(fixture["database_url"], future=True)
-    with engine.begin() as connection:
-        for statement in teardown:
-            connection.execute(text(statement))
+    _execute_all(fixture["database_url"], list(teardown))

@@ -273,3 +273,23 @@ def test_scrub_string_is_linear_on_long_runs(text):
     start = time.perf_counter()
     scrub_string(text)
     assert time.perf_counter() - start < 2.0
+
+
+def test_engines_are_disposed_after_setup_and_teardown(fake_sqlalchemy):
+    fixture = db_fixtures.apply_fixture("sqlite://", ["INSERT 1"], ["DELETE 1"])
+    db_fixtures.run_teardown(fixture)
+    assert fake_sqlalchemy.count(("dispose", "sqlite://")) == 2
+
+
+def test_engine_is_disposed_when_a_statement_fails(monkeypatch):
+    log = []
+
+    class _FailingEngine(_FakeEngine):
+        def begin(self):
+            raise RuntimeError("connection refused")
+
+    monkeypatch.setattr(db_fixtures, "_import_sqlalchemy",
+                        lambda: ((lambda url, future: _FailingEngine(url, log)), str))
+    with pytest.raises(RuntimeError, match="connection refused"):
+        db_fixtures.apply_fixture("sqlite://", ["INSERT 1"])
+    assert log == [("dispose", "sqlite://")]
