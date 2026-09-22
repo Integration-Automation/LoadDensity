@@ -232,3 +232,29 @@ def test_find_breaking_point_respects_iteration_cap():
     result = find_breaking_point(probe, max_iterations=3)
     assert probed == [500, 750, 875]
     assert result["safe_users"] == 875
+
+
+def _limit_probe(limit, probed=None):
+    def probe(users):
+        if probed is not None:
+            probed.append(users)
+        return 0.0 if users <= limit else 1.0
+    return probe
+
+
+@pytest.mark.parametrize("min_users, max_users, limit, expected", [
+    (1, 2, 10, 2),  # everything passes: the answer is the upper bound
+    (1, 1000, 1000, 1000),
+    (1, 1000, 600, 600),  # 600 passes, 601 fails
+    (1, 1000, 1, 1),
+])
+def test_find_breaking_point_returns_the_largest_safe_count(min_users, max_users, limit, expected):
+    result = find_breaking_point(_limit_probe(limit), min_users=min_users, max_users=max_users)
+    assert result["safe_users"] == expected
+
+
+def test_find_breaking_point_reports_zero_when_even_the_minimum_fails():
+    probed = []
+    result = find_breaking_point(_limit_probe(0, probed), min_users=1, max_users=10)
+    assert result["safe_users"] == 0
+    assert 1 in probed

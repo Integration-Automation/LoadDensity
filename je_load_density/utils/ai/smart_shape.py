@@ -21,7 +21,9 @@ def find_breaking_point(
     Binary search for the largest user count under ``failure_threshold``.
 
     ``probe(users) -> failure_rate`` (0..1). Returns the largest
-    "safe" user count plus the iteration history.
+    "safe" user count plus the iteration history. ``safe_users`` is 0
+    when no probed count stayed under the threshold, including
+    ``min_users`` itself.
     """
     if min_users <= 0 or max_users <= min_users:
         raise ValueError("invalid user bounds")
@@ -31,9 +33,9 @@ def find_breaking_point(
     history: List[Dict[str, Any]] = []
     lo = min_users
     hi = max_users
-    last_safe = min_users
+    last_safe = 0
     for _ in range(max_iterations):
-        if lo >= hi:
+        if lo > hi:
             break
         mid = (lo + hi) // 2
         failure_rate = float(probe(mid))
