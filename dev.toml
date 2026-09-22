@@ -26,9 +26,9 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/Intergration-Automation-Testing/LoadDensity"
+Homepage = "https://github.com/Integration-Automation/LoadDensity"
 Documentation = "https://loaddensity.readthedocs.io/en/latest/"
-Code = "https://github.com/Intergration-Automation-Testing/LoadDensity"
+Code = "https://github.com/Integration-Automation/LoadDensity"
 
 [project.readme]
 file = "README.md"
