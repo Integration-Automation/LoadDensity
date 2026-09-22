@@ -1495,3 +1495,33 @@ def test_sql_missing_sqlalchemy_reports_the_clear_error(monkeypatch):
     user, calls = make_user(SqlUserWrapper)
     user._do_step({"sql": "SELECT 1"})
     assert_failed(calls, "SQL", "sql", RuntimeError, "SQLAlchemy is required")
+
+
+def test_scenario_zero_weight_is_never_picked(executed, monkeypatch):
+    bounds = []
+
+    def randbelow(total):
+        bounds.append(total)
+        return 0
+
+    monkeypatch.setattr(scenario_runner.secrets, "randbelow", randbelow)
+    tasks = [{"name": "off", "weight": 0}, {"name": "on", "weight": 1}, {"name": "default"}]
+    scenario_runner.run_scenario({}, {"mode": "weighted", "tasks": tasks})
+    assert executed == ["on"]
+    assert bounds == [2]
+
+
+@pytest.mark.parametrize("value", [False, "false", "0", "no", "None", ""])
+def test_scenario_false_like_variables_do_not_pass_run_if(executed, value):
+    parameter_resolver.register_variable("flag", value)
+    scenario_runner.run_scenario({}, [
+        {"name": "string", "run_if": "${var.flag}"},
+        {"name": "truthy", "run_if": {"truthy": "${var.flag}"}},
+        {"name": "negated", "skip_if": "${var.flag}"},
+    ])
+    assert executed == ["negated"]
+
+
+def test_scenario_unset_variable_does_not_pass_run_if(executed):
+    scenario_runner.run_scenario({}, [{"name": "a", "run_if": "${var.never_set}"}, {"name": "b"}])
+    assert executed == ["b"]
