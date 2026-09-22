@@ -15,6 +15,15 @@ def _require_http_scheme(url: str) -> None:
         raise ValueError(f"unsupported toxiproxy scheme: {scheme!r}")
 
 
+def _segment(name: str) -> str:
+    """Quote a proxy or toxic name for use as one URL path segment.
+
+    A name containing ``/``, ``?`` or ``#`` would otherwise address a different Toxiproxy
+    endpoint than the one the caller named.
+    """
+    return urllib.parse.quote(str(name), safe="")
+
+
 def _request(method: str, url: str, body: Optional[bytes], timeout: float) -> bytes:
     _require_http_scheme(url)
     request = urllib.request.Request(
@@ -63,7 +72,7 @@ def add_toxic(
     }
     body = json_module.dumps(payload).encode("utf-8")
     data = _request(
-        "POST", f"{base_url.rstrip('/')}/proxies/{proxy_name}/toxics", body, timeout,
+        "POST", f"{base_url.rstrip('/')}/proxies/{_segment(proxy_name)}/toxics", body, timeout,
     )
     return json_module.loads(data.decode("utf-8") or "{}")
 
@@ -77,7 +86,7 @@ def remove_toxic(
     """Remove a toxic from a proxy."""
     _request(
         "DELETE",
-        f"{base_url.rstrip('/')}/proxies/{proxy_name}/toxics/{toxic_name}",
+        f"{base_url.rstrip('/')}/proxies/{_segment(proxy_name)}/toxics/{_segment(toxic_name)}",
         None,
         timeout,
     )
@@ -130,4 +139,4 @@ def remove_proxies(
 ) -> None:
     """Delete the named proxies."""
     for name in names:
-        _request("DELETE", f"{base_url.rstrip('/')}/proxies/{name}", None, timeout)
+        _request("DELETE", f"{base_url.rstrip('/')}/proxies/{_segment(name)}", None, timeout)
