@@ -1,7 +1,6 @@
 import builtins
 import sys
 import types
-from inspect import getmembers, isbuiltin
 from typing import Any, Union
 
 from je_load_density.utils.exception.exception_tags import (
@@ -239,9 +238,15 @@ from je_load_density.utils.test_record.sqlite_persistence import (
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 from je_load_density.wrapper.start_wrapper.start_test import start_test
 
-_UNSAFE_BUILTINS = frozenset({
-    "eval", "exec", "compile", "__import__",
-    "breakpoint", "open", "input",
+# Allowlist, not a blocklist: registering "everything except the dangerous ones"
+# hands action JSON whatever a future Python adds, and the earlier list still let
+# `getattr` / `setattr` / `vars` / `globals` through, which walk to anything the
+# process can reach. These are the same names MailThunder's executor allows, so an
+# action list behaves the same across the workspace's frameworks (workspace X-12).
+SAFE_BUILTINS = frozenset({
+    "abs", "all", "any", "ascii", "bin", "callable", "chr", "divmod",
+    "format", "hash", "hex", "len", "max", "min", "oct", "ord", "pow",
+    "print", "repr", "round", "sorted", "sum",
 })
 
 
@@ -480,10 +485,8 @@ class Executor:
             "LD_probe_rate_limit": probe_rate_limit,
         }
 
-        for name, func in getmembers(builtins, isbuiltin):
-            if name in _UNSAFE_BUILTINS:
-                continue
-            self.event_dict[name] = func
+        for name in sorted(SAFE_BUILTINS):
+            self.event_dict[name] = getattr(builtins, name)
 
     def _execute_event(self, action: list) -> Any:
         event = self.event_dict.get(action[0])

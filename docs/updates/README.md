@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-03 | 2026-09-23 | Executor builtins become an allowlist | #done #security #executor | [2026-09](2026-09.md) |
 | U-20260923-02 | 2026-09-23 | MCP server answers again: JSON-RPC over stdio without the SDK | #done #mcp #bugfix | [2026-09](2026-09.md) |
 | U-20260923-01 | 2026-09-23 | Clear the Dependabot alerts in uv.lock and the VS Code extension | #done #security #deps | [2026-09](2026-09.md) |
 | U-20260922-05 | 2026-09-22 | Commit the 2026-05 expansion in stages | #done #expansion | [2026-09](2026-09.md) |
@@ -70,4 +71,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 7 |
+| [2026-09.md](2026-09.md) | 2026-09 | 8 |

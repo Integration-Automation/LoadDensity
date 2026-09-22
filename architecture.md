@@ -23,7 +23,7 @@ persistence all read from that record.
 | `je_load_density/wrapper/proxy/` | `locust_wrapper_proxy` (`LocustUserProxy.user_dict`) holds each user type's configuration, one `user/<type>_user_proxy.py` per type |
 | `je_load_density/wrapper/user_template/` | Locust user classes (`HttpUserWrapper`, `FastHttpUserWrapper`, …) and the task engine `request_executor.py` / `scenario_runner.py`. `_protocol_base.py` and `_common.py` are the shared helpers of the protocol templates |
 | `je_load_density/wrapper/event/request_hook.py` | Locust request listener that writes into `test_record_instance` |
-| `je_load_density/utils/executor/` | `Executor.event_dict` (`LD_*` commands plus builtins minus `_UNSAFE_BUILTINS`), `execute_action`, `execute_files`, `add_command_to_executor` |
+| `je_load_density/utils/executor/` | `Executor.event_dict` (`LD_*` commands plus the `SAFE_BUILTINS` allowlist), `execute_action`, `execute_files`, `add_command_to_executor` |
 | `je_load_density/utils/test_record/` | `test_record_instance` and SQLite run persistence |
 | `je_load_density/utils/generate_report/` | HTML, JSON, XML, CSV, JUnit, summary and chart reports. Also Allure, cost, CycloneDX, Excel, histogram, PDF, SARIF and service-map generators |
 | `je_load_density/utils/{parameterization,load_shapes,throttle,reliability,sla,regression,schema,linter,graphql,auth}/` | Variables and CSV sources, load shapes, RPS throttle, retry / failure budget / network conditioner, SLA gates (`evaluate_sla`, `assert_sla`), run diff, action JSON schema, action linter, GraphQL tasks, SigV4 / JWT / OAuth2 helpers |
@@ -127,8 +127,9 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
   spawns `python -m je_load_density --execute_file <script>` (`parallel_run.py`). Anyone embedding
   this package must keep gevent patching in mind; the socket server calls `monkey.patch_all()`.
 - **Sibling executors** share the action-list shape and the `Return_Data_Over_JE` terminator. Builtins
-  policies differ: LoadDensity blacklists `_UNSAFE_BUILTINS` (`eval`, `exec`, `compile`, `__import__`,
-  `breakpoint`, `open`, `input`); APITestka registers none; MailThunder registers all (known gap).
+  policy is now the same allowlist here, in MailThunder and in WebRunner (`SAFE_BUILTINS`, 22 names);
+  APITestka, FileAutomation, AutoControlGUI and TestPioneer register no builtins at all
+  (workspace `progress.md` X-12).
 
 ## 7. Design constraints
 

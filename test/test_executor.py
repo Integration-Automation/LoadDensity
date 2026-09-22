@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from je_load_density.utils.executor.action_executor import Executor, add_command_to_executor
+from je_load_density.utils.executor.action_executor import SAFE_BUILTINS, Executor, add_command_to_executor
 from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
 
 
@@ -97,3 +97,40 @@ class TestAddCommandToExecutor:
     def test_add_non_callable_raises(self):
         with pytest.raises(LoadDensityTestExecuteException):
             add_command_to_executor({"bad": "not_a_function"})
+
+
+class TestBuiltinsAllowlist:
+    """Only the names in ``SAFE_BUILTINS`` reach an action list (workspace item X-12).
+
+    The executor used to register every builtin function except a short blocklist, which left
+    `getattr`, `setattr`, `vars` and `globals` dispatchable from an action JSON file, and handed
+    action lists whatever builtin a future Python adds.
+    """
+
+    def test_registered_builtins_are_exactly_the_allowlist(self):
+        exe = Executor()
+        registered = {name for name in exe.event_dict if not name.startswith("LD_")}
+        assert registered == set(SAFE_BUILTINS)
+
+    @pytest.mark.parametrize("name", [
+        "eval", "exec", "compile", "__import__", "open", "input", "breakpoint",
+        "getattr", "setattr", "delattr", "globals", "locals", "vars", "dir",
+        "isinstance", "issubclass", "iter", "next", "id", "hasattr",
+    ])
+    def test_unsafe_or_unlisted_builtin_is_not_registered(self, name):
+        assert name not in Executor().event_dict
+
+    def test_every_allowlisted_builtin_is_callable(self):
+        exe = Executor()
+        for name in SAFE_BUILTINS:
+            assert callable(exe.event_dict[name])
+
+    def test_an_allowlisted_builtin_still_runs_from_an_action_list(self):
+        result = Executor().execute_action([["len", [[1, 2, 3]]]])
+        assert any(value == 3 for value in result.values())
+
+    def test_a_blocked_builtin_is_rejected_by_dispatch(self):
+        # execute_action records a failed action instead of propagating, so the
+        # rejection is asserted on the dispatch step it comes from.
+        with pytest.raises(LoadDensityTestExecuteException):
+            Executor()._execute_event(["eval", ["1 + 1"]])
