@@ -14,7 +14,7 @@ the dispatch contract identical to the other sync templates.
 import asyncio
 import json as json_module
 import time
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Tuple
 from urllib.parse import urlparse
 
 from locust import User, between, task

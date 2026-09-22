@@ -10,7 +10,6 @@ Each task entry::
     {"method": "services"}
 """
 
-import json
 import urllib.parse
 import urllib.request
 from typing import Any, Callable, Dict, Optional
