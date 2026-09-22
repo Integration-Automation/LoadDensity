@@ -32,12 +32,13 @@ def _run(binary: str, args: List[str], timeout: float) -> str:
     return completed.stdout.decode("utf-8", errors="replace")
 
 
-def apply_manifest(
+def _kubectl_with_manifest(
+    verb_args: List[str],
     manifest: Dict[str, Any],
-    namespace: Optional[str] = None,
-    timeout: float = 30.0,
+    namespace: Optional[str],
+    timeout: float,
 ) -> str:
-    """Apply a Chaos Mesh manifest dict via ``kubectl apply``."""
+    """Write ``manifest`` to a temporary JSON file, run ``kubectl <verb_args> -f <file>``, delete the file."""
     binary = _require_kubectl()
     with tempfile.NamedTemporaryFile(
         "w", encoding="utf-8", suffix=".json", delete=False,
@@ -46,12 +47,21 @@ def apply_manifest(
         manifest_path = handle.name
 
     try:
-        args = ["apply", "-f", manifest_path]
+        args = [verb_args[0], "-f", manifest_path, *verb_args[1:]]
         if namespace:
             args.extend(["-n", namespace])
         return _run(binary, args, timeout)
     finally:
         Path(manifest_path).unlink(missing_ok=True)
+
+
+def apply_manifest(
+    manifest: Dict[str, Any],
+    namespace: Optional[str] = None,
+    timeout: float = 30.0,
+) -> str:
+    """Apply a Chaos Mesh manifest dict via ``kubectl apply``."""
+    return _kubectl_with_manifest(["apply"], manifest, namespace, timeout)
 
 
 def delete_manifest(
@@ -60,20 +70,7 @@ def delete_manifest(
     timeout: float = 30.0,
 ) -> str:
     """Delete a Chaos Mesh manifest dict via ``kubectl delete``."""
-    binary = _require_kubectl()
-    with tempfile.NamedTemporaryFile(
-        "w", encoding="utf-8", suffix=".json", delete=False,
-    ) as handle:
-        json_module.dump(manifest, handle)
-        manifest_path = handle.name
-
-    try:
-        args = ["delete", "-f", manifest_path, "--ignore-not-found"]
-        if namespace:
-            args.extend(["-n", namespace])
-        return _run(binary, args, timeout)
-    finally:
-        Path(manifest_path).unlink(missing_ok=True)
+    return _kubectl_with_manifest(["delete", "--ignore-not-found"], manifest, namespace, timeout)
 
 
 def build_network_delay(
