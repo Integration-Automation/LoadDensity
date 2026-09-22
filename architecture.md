@@ -70,8 +70,8 @@ persistence all read from that record.
   `.pre-commit-hooks.yaml` runs `python -m je_load_density.tools.lint_files`.
 - **GUI**: `je_load_density.gui.main_window.LoadDensityUI` (`python -m je_load_density.gui.main_window`);
   embeddable `je_load_density.gui.main_widget.LoadDensityWidget`.
-- **Packaging gap**: only `pyproject.toml` declares the console scripts and the extras other than
-  `gui`. `dev.toml` declares neither.
+- **Packaging**: `pyproject.toml` (stable) and `dev.toml` (`je_load_density_dev`) differ only in name and
+  version; `test/test_dev_toml_parity.py` keeps the scripts, extras, dependencies and tool settings in step.
 
 ## 4. Main flows
 
