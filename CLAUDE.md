@@ -14,7 +14,7 @@ Load & Stress Automation Framework built on top of Locust.
 `architecture.md` §2 has one row per directory; this is the short version.
 
 - `je_load_density/` - main package
-  - `wrapper/` - Locust wrappers: `start_test`, environment and runner modes, user templates for HTTP and 29 other protocols, per-type proxies, the request hook
+  - `wrapper/` - Locust wrappers: `start_test`, environment and runner modes, user templates for 41 user types (HTTP variants and other protocols), per-type proxies, the request hook
   - `utils/` - executor (`LD_*` commands), test records and SQLite persistence, reports (HTML/JSON/XML/CSV/JUnit/summary/chart plus Allure, SARIF, PDF, …), parameterisation, load shapes, SLA gates, importers (HAR, cURL, Postman, OpenAPI, JMeter, k6), metrics sinks and notifiers, socket server, security probes, chaos, scenario FSM and more
   - `engine/` - asyncio HTTP engine without Locust and the `bench` CLI
   - `cloud/` - worker launchers for AWS Fargate/Lambda, Azure ACI and GCP Cloud Run
@@ -24,7 +24,7 @@ Load & Stress Automation Framework built on top of Locust.
 - `editors/` - VS Code, Chrome and JetBrains extensions
 - `deploy/` - Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates
 - `load_density_driver/` - prebuilt driver
-- `test/` - pytest test suite
+- `test/` - pytest test suite; `test/test_doc_counts.py` fails when a count quoted in `README.md`, `CLAUDE.md` or `architecture.md` no longer matches the code
 - `docs/` - Sphinx documentation (`docs/updates/` is the update log, not built)
 
 ## Development Commands
