@@ -26,6 +26,22 @@ def _walk(directory: str) -> Iterable[str]:
                 yield os.path.join(root, name)
 
 
+def _metadata_of(doc: Any) -> Dict[str, Any]:
+    """The document's ``metadata`` mapping, or ``{}`` when it is missing or not a mapping."""
+    metadata = doc.get("metadata") if isinstance(doc, dict) else None
+    return metadata if isinstance(metadata, dict) else {}
+
+
+def _tags_of(metadata: Dict[str, Any]) -> List[str]:
+    """``tags`` as a list of strings; a single string is one tag, not a list of characters."""
+    tags = metadata.get("tags")
+    if isinstance(tags, str):
+        return [tags]
+    if isinstance(tags, list):
+        return [str(tag) for tag in tags]
+    return []
+
+
 def index_catalog(directories: List[str]) -> List[Dict[str, Any]]:
     """Index every ``*.json`` under each directory. Returns metadata rows."""
     entries: List[Dict[str, Any]] = []
@@ -36,12 +52,12 @@ def index_catalog(directories: List[str]) -> List[Dict[str, Any]]:
             doc = _read_doc(path)
             if doc is None:
                 continue
-            metadata = doc.get("metadata") or {} if isinstance(doc, dict) else {}
+            metadata = _metadata_of(doc)
             entries.append({
                 "path": path,
                 "name": metadata.get("name") or os.path.basename(path),
                 "owner": metadata.get("owner") or "",
-                "tags": list(metadata.get("tags") or []),
+                "tags": _tags_of(metadata),
                 "description": metadata.get("description") or "",
             })
     return entries

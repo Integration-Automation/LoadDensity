@@ -216,3 +216,17 @@ def test_search_catalog_filters_combine_and_empty_filters_return_all(catalog_dir
     entries = test_catalog.index_catalog([str(catalog_dir)])
     assert test_catalog.search_catalog(entries, tag="smoke", owner="bob") == []
     assert test_catalog.search_catalog(entries) == entries
+
+
+def test_index_catalog_reads_a_single_string_tag_as_one_tag(tmp_path):
+    _write_json(tmp_path / "one.json", {"metadata": {"name": "One", "tags": "smoke"}})
+    entries = test_catalog.index_catalog([str(tmp_path)])
+    assert entries[0]["tags"] == ["smoke"]
+    assert test_catalog.search_catalog(entries, tag="smoke") == entries
+
+
+def test_index_catalog_keeps_going_past_malformed_metadata(tmp_path):
+    _write_json(tmp_path / "a_bad.json", {"metadata": "not a mapping"})
+    _write_json(tmp_path / "b_good.json", {"metadata": {"name": "Good"}})
+    names = sorted(entry["name"] for entry in test_catalog.index_catalog([str(tmp_path)]))
+    assert names == ["Good", "a_bad.json"]
