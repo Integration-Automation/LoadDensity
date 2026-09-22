@@ -1,0 +1,18 @@
+{
+  "manifest_version": 3,
+  "name": "LoadDensity Recorder",
+  "description": "Record browser traffic into a LoadDensity action JSON.",
+  "version": "0.1.0",
+  "permissions": ["activeTab", "webRequest", "storage", "downloads"],
+  "host_permissions": ["<all_urls>"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "LoadDensity Recorder"
+  },
+  "icons": {
+    "128": "icon.png"
+  }
+}

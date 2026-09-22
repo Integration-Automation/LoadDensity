@@ -1,0 +1,25 @@
+<idea-plugin>
+  <id>com.loaddensity.intellij</id>
+  <name>LoadDensity</name>
+  <vendor email="jechenmailman@gmail.com">JE-Chen</vendor>
+  <description><![CDATA[
+    Run LoadDensity action JSON files from IntelliJ-family IDEs.
+    Provides "Run LoadDensity action" action on .json files containing a
+    "load_density" key, plus a tool window with the live summary.
+  ]]></description>
+  <depends>com.intellij.modules.platform</depends>
+  <extensions defaultExtensionNs="com.intellij">
+    <toolWindow id="LoadDensity"
+                anchor="right"
+                factoryClass="com.loaddensity.LoadDensityToolWindowFactory"/>
+  </extensions>
+  <actions>
+    <action id="LoadDensity.RunAction"
+            class="com.loaddensity.RunActionFile"
+            text="Run LoadDensity Action"
+            description="Execute the selected action JSON via loaddensity CLI">
+      <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"/>
+    </action>
+  </actions>
+</idea-plugin>
