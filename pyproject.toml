@@ -39,7 +39,7 @@ content-type = "text/markdown"
 find = { namespaces = false }
 
 [project.optional-dependencies]
-gui = ["PySide6==6.11.0", "qt-material"]
+gui = ["PySide6==6.11.2", "qt-material"]
 websocket = ["websocket-client>=1.6"]
 grpc = ["grpcio>=1.60", "protobuf>=4.25"]
 mqtt = ["paho-mqtt>=2.0"]
@@ -99,7 +99,7 @@ cloud = [
     "azure-mgmt-containerinstance>=10.1",
 ]
 all = [
-    "PySide6==6.11.0", "qt-material",
+    "PySide6==6.11.2", "qt-material",
     "websocket-client>=1.6",
     "grpcio>=1.60", "protobuf>=4.25",
     "paho-mqtt>=2.0",
