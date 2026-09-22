@@ -1,0 +1,76 @@
+{
+  "title": "LoadDensity",
+  "uid": "loaddensity",
+  "schemaVersion": 38,
+  "version": 1,
+  "tags": ["loaddensity", "load-testing", "locust"],
+  "timezone": "browser",
+  "time": {"from": "now-15m", "to": "now"},
+  "refresh": "5s",
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Total requests",
+      "gridPos": {"x": 0, "y": 0, "w": 6, "h": 4},
+      "targets": [{
+        "expr": "sum(loaddensity_requests_total)",
+        "legendFormat": "requests"
+      }]
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Failure rate",
+      "gridPos": {"x": 6, "y": 0, "w": 6, "h": 4},
+      "fieldConfig": {"defaults": {"unit": "percentunit"}},
+      "targets": [{
+        "expr": "sum(rate(loaddensity_requests_total{outcome=\"failure\"}[1m])) / sum(rate(loaddensity_requests_total[1m]))",
+        "legendFormat": "failure rate"
+      }]
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Requests / second",
+      "gridPos": {"x": 0, "y": 4, "w": 12, "h": 8},
+      "targets": [{
+        "expr": "sum(rate(loaddensity_requests_total[1m])) by (name)",
+        "legendFormat": "{{name}}"
+      }]
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "p95 latency (ms)",
+      "gridPos": {"x": 12, "y": 0, "w": 12, "h": 12},
+      "targets": [{
+        "expr": "histogram_quantile(0.95, sum(rate(loaddensity_request_latency_ms_bucket[1m])) by (le, name))",
+        "legendFormat": "{{name}} p95"
+      }]
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Response size (bytes / sec)",
+      "gridPos": {"x": 0, "y": 12, "w": 24, "h": 8},
+      "targets": [{
+        "expr": "sum(rate(loaddensity_response_bytes_sum[1m])) by (name)",
+        "legendFormat": "{{name}}"
+      }]
+    }
+  ],
+  "templating": {
+    "list": [
+      {
+        "name": "name",
+        "type": "query",
+        "query": "label_values(loaddensity_requests_total, name)",
+        "refresh": 2,
+        "current": {"value": "$__all", "text": "All"},
+        "multi": true,
+        "includeAll": true
+      }
+    ]
+  }
+}

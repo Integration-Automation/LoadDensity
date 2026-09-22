@@ -1,0 +1,24 @@
+kind: pipeline
+type: docker
+name: loaddensity
+
+steps:
+  - name: loaddensity-run
+    image: ghcr.io/integration-automation/loaddensity:latest
+    commands:
+      - loaddensity run actions/smoke.json
+    when:
+      event:
+        - push
+        - pull_request
+
+  - name: upload-reports
+    image: plugins/s3
+    settings:
+      bucket: loaddensity-reports
+      access_key:
+        from_secret: aws_access_key
+      secret_key:
+        from_secret: aws_secret_key
+      source: "loaddensity-*.html"
+      target: /reports/${DRONE_BUILD_NUMBER}/

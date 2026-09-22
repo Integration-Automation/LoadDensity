@@ -1,0 +1,20 @@
+steps:
+  - label: ":load: LoadDensity smoke"
+    key: loaddensity-smoke
+    command: |
+      pip install --quiet 'je_load_density[metrics,websocket]'
+      loaddensity run actions/smoke.json
+    artifact_paths:
+      - "loaddensity-*.html"
+      - "loaddensity-*.json"
+      - "loaddensity-*-junit.xml"
+    plugins:
+      - artifacts#v1.9.0:
+          upload: "*.{html,json,xml}"
+
+  - label: ":lock: LoadDensity SLA gate"
+    key: loaddensity-sla
+    depends_on: loaddensity-smoke
+    command: |
+      pip install --quiet je_load_density
+      loaddensity run actions/sla-gate.json

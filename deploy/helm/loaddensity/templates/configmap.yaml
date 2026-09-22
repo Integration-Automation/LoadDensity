@@ -1,0 +1,12 @@
+{{- if .Values.actionConfigMap.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Release.Name }}-action
+  labels:
+    app.kubernetes.io/name: loaddensity
+    app.kubernetes.io/instance: {{ .Release.Name }}
+data:
+  action.json: |-
+{{ .Values.actionConfigMap.data | indent 4 }}
+{{- end }}

@@ -1,0 +1,50 @@
+image:
+  repository: ghcr.io/integration-automation/loaddensity
+  tag: latest
+  pullPolicy: IfNotPresent
+
+actionFile: /etc/loaddensity/action.json
+
+workers:
+  replicas: 2
+  resources:
+    limits:
+      cpu: "1"
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+master:
+  service:
+    type: ClusterIP
+    bindPort: 5557
+    webPort: 8089
+  resources:
+    limits:
+      cpu: "1"
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+extras:
+  - metrics
+  - websocket
+  - grpc
+
+actionConfigMap:
+  enabled: true
+  data: |
+    {
+      "load_density": [
+        ["LD_start_test", {
+          "user_detail_dict": {"user": "fast_http_user"},
+          "user_count": 50, "spawn_rate": 10, "test_time": 60,
+          "runner_mode": "master",
+          "master_bind_host": "0.0.0.0",
+          "expected_workers": 2,
+          "tasks": [{"method": "get", "request_url": "https://httpbin.org/get"}]
+        }]
+      ]
+    }

@@ -1,0 +1,38 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-master
+  labels:
+    app.kubernetes.io/name: loaddensity
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    role: master
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loaddensity
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      role: master
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: loaddensity
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        role: master
+    spec:
+      containers:
+        - name: master
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args: ["python", "-m", "je_load_density", "run", "{{ .Values.actionFile }}"]
+          ports:
+            - containerPort: {{ .Values.master.service.bindPort }}
+            - containerPort: {{ .Values.master.service.webPort }}
+          resources: {{- toYaml .Values.master.resources | nindent 12 }}
+          volumeMounts:
+            - name: action
+              mountPath: /etc/loaddensity
+      volumes:
+        - name: action
+          configMap:
+            name: {{ .Release.Name }}-action

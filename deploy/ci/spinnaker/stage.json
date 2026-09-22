@@ -1,0 +1,27 @@
+{
+  "name": "LoadDensity",
+  "type": "runJob",
+  "cloudProvider": "kubernetes",
+  "credentials": "spinnaker-k8s",
+  "manifest": {
+    "apiVersion": "batch/v1",
+    "kind": "Job",
+    "metadata": {
+      "name": "loaddensity-${execution.id}",
+      "namespace": "load-tests"
+    },
+    "spec": {
+      "backoffLimit": 0,
+      "template": {
+        "spec": {
+          "restartPolicy": "Never",
+          "containers": [{
+            "name": "loaddensity",
+            "image": "ghcr.io/integration-automation/loaddensity:latest",
+            "args": ["loaddensity", "run", "/etc/loaddensity/action.json"]
+          }]
+        }
+      }
+    }
+  }
+}

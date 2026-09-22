@@ -1,0 +1,50 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: loadtests.integration.automation
+spec:
+  group: integration.automation
+  scope: Namespaced
+  names:
+    kind: LoadTest
+    plural: loadtests
+    singular: loadtest
+    shortNames: [lt]
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                image:
+                  type: string
+                actionFile:
+                  type: string
+                workers:
+                  type: integer
+                  minimum: 1
+                  default: 1
+                extras:
+                  type: array
+                  items:
+                    type: string
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+      additionalPrinterColumns:
+        - name: Workers
+          type: integer
+          jsonPath: .spec.workers
+        - name: Image
+          type: string
+          jsonPath: .spec.image
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
