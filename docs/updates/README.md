@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-13 | 2026-09-23 | Cloud launchers tested; warm Lambdas report their own run | #done #bugfix #tests | [2026-09](2026-09.md) |
 | U-20260923-12 | 2026-09-23 | Excel output opens again; PDF titles and control characters handled | #done #bugfix #tests | [2026-09](2026-09.md) |
 | U-20260923-11 | 2026-09-23 | Chaos helpers tested; Toxiproxy names are quoted | #done #bugfix #tests | [2026-09](2026-09.md) |
 | U-20260923-10 | 2026-09-23 | Asyncio engine counts 4xx/5xx as failures and times the load, not the setup | #done #bugfix #tests | [2026-09](2026-09.md) |
@@ -80,4 +81,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 17 |
+| [2026-09.md](2026-09.md) | 2026-09 | 18 |

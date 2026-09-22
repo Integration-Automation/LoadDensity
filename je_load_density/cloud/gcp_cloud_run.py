@@ -7,6 +7,7 @@ parallel executions of a pre-deployed Cloud Run Job.
 """
 
 import json
+import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, Optional
 
@@ -41,6 +42,8 @@ def run_cloud_run_job(
 ) -> Dict[str, Any]:
     """Trigger a Cloud Run Job execution. Returns the API response JSON."""
     token = _bearer_token(["https://www.googleapis.com/auth/cloud-platform"])
+    # Each name is one path segment; quoting keeps a stray "/" or "?" from addressing another resource.
+    project, region, job_name = (urllib.parse.quote(str(part), safe="") for part in (project, region, job_name))
     url = (
         f"https://run.googleapis.com/v2/projects/{project}/locations/"
         f"{region}/jobs/{job_name}:run"

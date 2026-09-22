@@ -19,7 +19,7 @@ Usage::
 """
 
 import json
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
 
 
@@ -64,10 +64,11 @@ def invoke_lambda_workers(
         except json.JSONDecodeError:
             return {"raw": body_text}
 
+    # Results come back in worker order (results[i] is worker i), not completion order, so a
+    # caller can tell which slice each summary belongs to.
     with ThreadPoolExecutor(max_workers=max(workers, 1)) as pool:
         futures = [pool.submit(_invoke, i) for i in range(workers)]
-        for future in as_completed(futures):
-            results.append(future.result())
+        results.extend(future.result() for future in futures)
     return results
 
 
@@ -79,7 +80,11 @@ def lambda_worker_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any
     import asyncio
 
     from je_load_density.engine.asyncio_engine import run_async_load
+    from je_load_density.utils.test_record.test_record_class import test_record_instance
 
+    # A warm Lambda reuses the process, and the records are process-global: without this the
+    # summary of every invocation after the first would include the ones before it.
+    test_record_instance.clear_records()
     tasks = event.get("tasks") or [{
         "method": event.get("method", "get"),
         "request_url": event["url"],
