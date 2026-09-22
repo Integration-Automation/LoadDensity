@@ -37,18 +37,27 @@ def _import_httpx():
     return httpx
 
 
-def _record(method: str, url: str, status: int, elapsed_ms: float, length: int) -> None:
-    test_record_instance.test_record_list.append({
+def _record(method: str, url: str, status: int, elapsed_ms: float, length: int, started: float) -> None:
+    """Record one response. A 4xx/5xx is a failure, as Locust's HTTP users count it, so SLA gates
+    and failure-rate reports mean the same thing whichever engine produced the records."""
+    entry = {
         "Method": method.upper(),
         "test_url": url,
         "name": url,
         "status_code": str(status),
         "response_time_ms": elapsed_ms,
         "response_length": length,
-    })
+        "start_time": started,
+    }
+    if status >= 400:
+        entry["error"] = f"HTTP {status}"
+        test_record_instance.error_record_list.append(entry)
+        return
+    entry["error"] = None
+    test_record_instance.test_record_list.append(entry)
 
 
-def _record_error(method: str, url: str, error: str) -> None:
+def _record_error(method: str, url: str, error: str, started: float) -> None:
     test_record_instance.error_record_list.append({
         "Method": method.upper(),
         "test_url": url,
@@ -57,6 +66,7 @@ def _record_error(method: str, url: str, error: str) -> None:
         "response_time_ms": 0.0,
         "response_length": 0,
         "error": error,
+        "start_time": started,
     })
 
 
@@ -66,6 +76,7 @@ async def _send_one(client, raw_task: Dict[str, Any]) -> None:
     url = task["request_url"]
     headers = task.get("headers") or None
     body = task.get("json")
+    started = time.time()
     start = time.monotonic()
     try:
         response = await client.request(
@@ -73,9 +84,9 @@ async def _send_one(client, raw_task: Dict[str, Any]) -> None:
             timeout=float(task.get("timeout", 10.0)),
         )
         elapsed_ms = (time.monotonic() - start) * 1000
-        _record(method, url, response.status_code, elapsed_ms, len(response.content))
+        _record(method, url, response.status_code, elapsed_ms, len(response.content), started)
     except Exception as error:  # noqa: BLE001
-        _record_error(method, url, repr(error))
+        _record_error(method, url, repr(error), started)
 
 
 async def _worker(
@@ -101,9 +112,11 @@ async def run_async_load(
 ) -> Dict[str, Any]:
     """Run a pure-asyncio HTTP load test. Returns a summary dict."""
     httpx = _import_httpx()
-    deadline = time.monotonic() + duration_seconds
     semaphore = asyncio.Semaphore(max_in_flight or max(users, 1))
     async with httpx.AsyncClient(http2=http2) as client:
+        # Start the clock once the client exists, so duration_seconds is time under load and a
+        # slow client setup cannot eat a short run's whole budget.
+        deadline = time.monotonic() + duration_seconds
         workers = [
             asyncio.create_task(_worker(client, tasks, deadline, semaphore))
             for _ in range(users)

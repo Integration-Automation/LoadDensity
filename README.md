@@ -1044,7 +1044,7 @@ the resulting `.vsix`.
 
 Added in the 2026-05 expansion. Each one is imported lazily and needs only its own extra.
 
-- **Asyncio engine.** `je_load_density.engine.asyncio_engine.run_async_load` drives an HTTP target from asyncio without Locust. The `bench` subcommand wraps it:
+- **Asyncio engine.** `je_load_density.engine.asyncio_engine.run_async_load` drives an HTTP target from asyncio without Locust and writes the same records as Locust users do, with a 4xx/5xx counted as a failure. The `bench` subcommand wraps it:
 
   ```bash
   python -m je_load_density bench https://api.example.com/health --users 10 --duration 10
@@ -1053,7 +1053,7 @@ Added in the 2026-05 expansion. Each one is imported lazily and needs only its o
   Options: `--method`, `--body`, `--http2`, `--max-in-flight`.
 - **Cloud workers** (`aws`, `gcp`, `azure` or `cloud` extras): `cloud.aws_fargate.launch_fargate_workers`, `cloud.aws_lambda.invoke_lambda_workers` (with `lambda_worker_handler` as the function entry), `cloud.azure_aci.launch_aci_workers` and `cloud.gcp_cloud_run.run_cloud_run_job` start remote workers for a distributed run.
 - **Chaos helpers**: `utils.chaos.toxiproxy` adds and removes latency or bandwidth toxics on a Toxiproxy instance (`install_latency`, `install_bandwidth`, `reset_all`); `utils.chaos.chaos_mesh` builds and applies Chaos Mesh manifests (`build_network_delay`, `apply_manifest`, `delete_manifest`).
-- **Stub server**: `utils.stub_server.start_stub_server` / `stop_stub_server` serve canned responses so a scenario can run against a fake backend.
+- **Stub server**: `utils.stub_server.start_stub_server` / `stop_stub_server` serve canned responses so a scenario can run against a fake backend. It serves from a thread, which works beside Locust's gevent users; for the asyncio engine start it in a separate process, because a server thread in the engine's own process never gets scheduled.
 - **More report formats** next to the seven above: Allure, cost, CycloneDX, Excel, latency histogram, PDF (`pdf` extra), SARIF and a service map, one `generate_*_report.py` module each under `utils/generate_report/`.
 - **Deployment templates** in `deploy/`: a Helm chart, a Kubernetes operator (`k8s` extra), Terraform, a Grafana dashboard and CI templates.
 
