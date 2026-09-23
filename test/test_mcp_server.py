@@ -10,6 +10,8 @@ import subprocess  # nosec B404 - the server is exercised as a real child proces
 import sys
 from pathlib import Path
 
+import pytest
+
 from je_load_density.mcp_server import build_server
 from je_load_density.mcp_server.server import LoadDensityMCPServer
 
@@ -109,3 +111,26 @@ def test_stdio_round_trip_in_a_child_process(tmp_path):
     assert marker in result.stderr.decode("utf-8", "replace").splitlines()
     assert responses[3]["result"]["isError"] is False
     assert (tmp_path / "項目").is_dir()
+
+
+def test_tool_paths_are_confined_to_the_root(tmp_path, monkeypatch):
+    from je_load_density.mcp_server import server
+
+    root = tmp_path / "root"
+    root.mkdir()
+    monkeypatch.setenv(server.MCP_ROOT_ENV, str(root))
+    assert server._confined("runs.db") == str(root / "runs.db")
+    assert server._confined(str(root / "sub" / "x.json")) == str(root / "sub" / "x.json")
+    for outside in ("../escape.db", str(tmp_path / "other.db"), "sub/../../escape.db"):
+        with pytest.raises(ValueError, match="outside the MCP root"):
+            server._confined(outside)
+
+
+def test_create_project_outside_the_root_is_refused(tmp_path, monkeypatch):
+    from je_load_density.mcp_server import server
+
+    monkeypatch.setenv(server.MCP_ROOT_ENV, str(tmp_path / "root"))
+    (tmp_path / "root").mkdir()
+    with pytest.raises(ValueError):
+        server._tool_create_project({"path": str(tmp_path / "elsewhere")})
+    assert not (tmp_path / "elsewhere").exists()

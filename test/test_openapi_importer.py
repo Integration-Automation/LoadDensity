@@ -80,8 +80,10 @@ def test_generate_from_openapi_base_url_replaces_the_server(tmp_path):
     assert urls and all(url.startswith("http://staging.test/") for url in urls)
 
 
-def test_mcp_generate_from_openapi_tool_runs(tmp_path):
+def test_mcp_generate_from_openapi_tool_runs(tmp_path, monkeypatch):
     from je_load_density.mcp_server import server
+
+    monkeypatch.setenv(server.MCP_ROOT_ENV, str(tmp_path))
 
     document = server._tool_generate_from_openapi({"openapi_path": _spec_file(tmp_path), "base_url": "http://s.test"})
     assert all(url.startswith("http://s.test/") for url in _urls(document))

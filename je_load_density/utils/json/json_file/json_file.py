@@ -22,7 +22,9 @@ def read_action_json(json_file_path: str) -> Union[dict, list]:
         with _json_file_lock:
             file_path = Path(json_file_path)
             if file_path.exists() and file_path.is_file():
-                with open(json_file_path, "r", encoding="utf-8") as read_file:
+                # The CLI and executor read the action file their user names; MCP tool paths are confined
+                # to JE_LOAD_DENSITY_MCP_ROOT in mcp_server/server.py.
+                with open(json_file_path, "r", encoding="utf-8") as read_file:  # NOSONAR S8707 — see above
                     return json.load(read_file)
             else:
                 raise LoadDensityTestJsonException(cant_find_json_error)

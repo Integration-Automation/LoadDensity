@@ -20,6 +20,7 @@ import json
 import os
 import sys
 from importlib import metadata
+from pathlib import Path
 from typing import Any, Dict, List, Optional, TextIO
 
 from je_load_density.utils.action_generator.generate import (
@@ -85,6 +86,25 @@ def _tool_run_test(payload: Dict[str, Any]) -> Dict[str, Any]:
     return start_test(**payload)
 
 
+# Tools take file paths from the client, which here is a language model and may be steered by the
+# content it reads; every path is confined to this root (the working directory unless set).
+MCP_ROOT_ENV = "JE_LOAD_DENSITY_MCP_ROOT"
+
+
+def _confined(value: Any) -> str:
+    """Resolve ``value`` against the MCP root and refuse anything outside it.
+
+    Relative paths are taken from the root; ``..`` and absolute paths are allowed only while the
+    resolved path stays inside it.
+    """
+    root = Path(os.environ.get(MCP_ROOT_ENV) or os.getcwd()).resolve()
+    candidate = Path(str(value))
+    resolved = (candidate if candidate.is_absolute() else root / candidate).resolve()
+    if not resolved.is_relative_to(root):
+        raise ValueError(f"path {value!r} is outside the MCP root {root}; set {MCP_ROOT_ENV} to widen it")
+    return str(resolved)
+
+
 def _tool_run_action_string(payload: Dict[str, Any]) -> Dict[str, Any]:
     actions = payload.get("actions")
     if isinstance(actions, str):
@@ -93,8 +113,9 @@ def _tool_run_action_string(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _tool_create_project(payload: Dict[str, Any]) -> Dict[str, str]:
-    create_project_dir(payload["path"])
-    return {"path": payload["path"], "status": "created"}
+    path = _confined(payload["path"])
+    create_project_dir(path)
+    return {"path": path, "status": "created"}
 
 
 def _tool_list_executor_commands(_: Dict[str, Any]) -> Dict[str, Any]:
@@ -102,7 +123,7 @@ def _tool_list_executor_commands(_: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _tool_import_har(payload: Dict[str, Any]) -> Dict[str, Any]:
-    har = load_har(payload["file_path"])
+    har = load_har(_confined(payload["file_path"]))
     return har_to_action_json(
         har,
         user=payload.get("user", "fast_http_user"),
@@ -115,7 +136,7 @@ def _tool_import_har(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _tool_generate_reports(payload: Dict[str, Any]) -> Dict[str, Optional[str]]:
-    base = payload.get("base_name", "loaddensity")
+    base = _confined(payload.get("base_name", "loaddensity"))
     formats = payload.get("formats") or ["html", "json", "xml", "csv", "junit", "summary"]
     result: Dict[str, Optional[str]] = {}
     if "html" in formats:
@@ -139,7 +160,7 @@ def _tool_summary(_: Dict[str, Any]) -> Dict[str, Any]:
 
 def _tool_persist_records(payload: Dict[str, Any]) -> Dict[str, Any]:
     run_id = persist_records(
-        payload["database_path"],
+        _confined(payload["database_path"]),
         label=payload.get("label"),
         metadata=payload.get("metadata"),
     )
@@ -147,11 +168,11 @@ def _tool_persist_records(payload: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def _tool_list_runs(payload: Dict[str, Any]) -> Dict[str, Any]:
-    return {"runs": list_runs(payload["database_path"], limit=int(payload.get("limit", 20)))}
+    return {"runs": list_runs(_confined(payload["database_path"]), limit=int(payload.get("limit", 20)))}
 
 
 def _tool_fetch_run(payload: Dict[str, Any]) -> Dict[str, Any]:
-    return {"records": list(fetch_run_records(payload["database_path"], int(payload["run_id"])))}
+    return {"records": list(fetch_run_records(_confined(payload["database_path"]), int(payload["run_id"])))}
 
 
 def _tool_clear_records(_: Dict[str, Any]) -> Dict[str, str]:
@@ -161,7 +182,7 @@ def _tool_clear_records(_: Dict[str, Any]) -> Dict[str, str]:
 
 def _tool_generate_from_openapi(payload: Dict[str, Any]) -> Dict[str, Any]:
     return generate_from_openapi(
-        openapi_path=payload["openapi_path"],
+        openapi_path=_confined(payload["openapi_path"]),
         user=payload.get("user", "fast_http_user"),
         user_count=int(payload.get("user_count", 20)),
         spawn_rate=int(payload.get("spawn_rate", 5)),

@@ -726,6 +726,8 @@ Wire it into Claude Desktop / Code:
 
 Thirteen tools are exposed: `run_test`, `run_action_json`, `create_project`, `list_executor_commands`, `import_har`, `generate_reports`, `summary`, `persist_records`, `list_runs`, `fetch_run`, `clear_records`, `generate_from_openapi`, `generate_from_curls`.
 
+Every path a tool takes (`create_project`'s `path`, `import_har`'s `file_path`, the `database_path` of the run tools, `generate_from_openapi`'s `openapi_path`, and `generate_reports`'s `base_name`) must resolve inside the server's root. The root is the working directory unless `JE_LOAD_DENSITY_MCP_ROOT` points elsewhere. A path outside it is refused, so a model steered by content it reads cannot read or write files elsewhere.
+
 ## Hardened Control Socket
 
 ```bash

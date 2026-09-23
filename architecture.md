@@ -57,7 +57,8 @@ persistence all read from that record.
     and `--execute_str`;
   - on Windows, `run-str` and `--execute_str` decode a second time when the first decode yields a
     string. Exit codes: `0` success, `2` no command, `1` uncaught error.
-- **MCP**: `loaddensity-mcp` or `python -m je_load_density.mcp_server`. `LoadDensityMCPServer`
+- **MCP**: `loaddensity-mcp` or `python -m je_load_density.mcp_server`. Tool paths are confined to
+  `JE_LOAD_DENSITY_MCP_ROOT` (default: the working directory). `LoadDensityMCPServer`
   (`mcp_server/server.py`) speaks JSON-RPC 2.0 over stdio itself, without the `mcp` SDK: importing the package
   imports locust, whose gevent `patch_all()` stalls the SDK's thread-based stdin reader. `run_stdio()` moves
   everything else written to stdout onto stderr. Tools are the `load_density.*` entries in `_TOOLS`.
@@ -103,7 +104,9 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
   2. Register it in `LocustUserProxy.user_dict` (`wrapper/proxy/proxy_user.py`).
   3. `wrapper/user_template/<proto>_user_template.py` with `set_wrapper_<proto>_user` and `<Proto>UserWrapper`.
      Import the client library lazily. Fire events through `_common.fire_request_event` or subclass
-     `_protocol_base.ProtocolUserBase`.
+     `_protocol_base.ProtocolUserBase`. `host` and `connection` given to the setter are defaults for
+     the steps, and a value named in the step wins: read them with `_common.default_host` and
+     `_common.with_connection_defaults` (`ProtocolUserBase` already merges `connection`).
   4. Add `"<proto>_user"` to `_USER_REGISTRY` in `wrapper/start_wrapper/start_test.py`.
   5. Add an extra in `pyproject.toml` (and to `all`), then tests (`test/test_new_user_templates.py`,
      `test/test_proxy_user.py`).
