@@ -25,15 +25,16 @@ _BAD_BYTES = (
 
 
 def _mutate_string(seed: str) -> List[str]:
-    return [
+    """The seed first, then distinct mutations of it (duplicates, e.g. for an empty seed, are dropped)."""
+    candidates = [
         seed,
         seed + _BAD_BYTES[secrets.randbelow(len(_BAD_BYTES))],
         seed * 2,
-        seed[::-1] if seed else "",
-        "".join(reversed(seed)) if seed else "",
+        seed[::-1],
         secrets.token_hex(4),
         "",
     ]
+    return list(dict.fromkeys(candidates))
 
 
 def mutate_string(seed: str, count: int = 5) -> List[str]:
@@ -49,7 +50,8 @@ def mutate_json(seed: Dict[str, Any], count: int = 5) -> List[Dict[str, Any]]:
     variants: List[Dict[str, Any]] = []
     keys = list(seed.keys())
     if not keys:
-        return [seed]
+        # Nothing to flip: return unchanged copies so callers still get ``count`` variants.
+        return [dict(seed) for _ in range(count)]
     for _ in range(count):
         copy = dict(seed)
         key = keys[secrets.randbelow(len(keys))]
