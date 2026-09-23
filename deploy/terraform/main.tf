@@ -3,11 +3,11 @@ terraform {
   required_providers {
     helm = {
       source  = "hashicorp/helm"
-      version = ">= 2.12"
+      version = ">= 2.12, < 4.0"
     }
     kubernetes = {
       source  = "hashicorp/kubernetes"
-      version = ">= 2.27"
+      version = ">= 2.27, < 4.0"
     }
   }
 }
@@ -49,26 +49,17 @@ resource "kubernetes_namespace" "loaddensity" {
 }
 
 resource "helm_release" "loaddensity" {
-  name       = "loaddensity"
-  namespace  = kubernetes_namespace.loaddensity.metadata[0].name
-  chart      = "${path.module}/../helm/loaddensity"
+  name      = "loaddensity"
+  namespace = kubernetes_namespace.loaddensity.metadata[0].name
+  chart     = "${path.module}/../helm/loaddensity"
 
-  set {
-    name  = "image.repository"
-    value = var.image_repository
-  }
-  set {
-    name  = "image.tag"
-    value = var.image_tag
-  }
-  set {
-    name  = "workers.replicas"
-    value = var.worker_replicas
-  }
-  set {
-    name  = "actionConfigMap.data"
-    value = var.action_json
-  }
+  # One values document instead of `set` blocks: helm provider 3.x made `set` a list attribute, and
+  # `set` would split the action JSON at its commas the way `helm --set` does.
+  values = [yamlencode({
+    image           = { repository = var.image_repository, tag = var.image_tag }
+    workers         = { replicas = var.worker_replicas }
+    actionConfigMap = { data = var.action_json }
+  })]
 }
 
 output "master_service" {

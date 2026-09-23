@@ -5,7 +5,7 @@ Watches ``LoadTest`` and ``LoadRun`` CRDs and reconciles them into the
 master + worker Pod/Job topology. Designed to be packaged as a
 container::
 
-    docker build -t loaddensity-operator -f deploy/k8s-operator/Dockerfile .
+    docker build -t loaddensity-operator deploy/k8s-operator
     kubectl apply -f deploy/k8s-operator/crd.yaml
     kubectl apply -f deploy/k8s-operator/deployment.yaml
 """

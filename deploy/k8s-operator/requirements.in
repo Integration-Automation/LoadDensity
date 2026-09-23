@@ -1,0 +1,3 @@
+# Direct dependencies of operator.py; requirements.txt is generated from this file.
+kopf>=1.37
+kubernetes>=29
