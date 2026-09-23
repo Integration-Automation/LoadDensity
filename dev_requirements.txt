@@ -5,4 +5,4 @@ twine
 sphinx-rtd-theme
 build
 pytest
-
+aioquic>=1.0

@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-31 | 2026-09-23 | HTTP/3 template sends the request and reads the response | #done #bugfix | [2026-09](2026-09.md) |
 | U-20260923-30 | 2026-09-23 | Fourteen more templates read the setter's connection | #done #bugfix | [2026-09](2026-09.md) |
 | U-20260923-29 | 2026-09-23 | Released as 0.0.73 (PR #110); Dependabot alerts closed | #done #release | [2026-09](2026-09.md) |
 | U-20260923-28 | 2026-09-23 | Codacy findings on PR #110: Chrome recorder, CI template injection, operator pod | #bugfix #security | [2026-09](2026-09.md) |
@@ -98,4 +99,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 35 |
+| [2026-09.md](2026-09.md) | 2026-09 | 36 |

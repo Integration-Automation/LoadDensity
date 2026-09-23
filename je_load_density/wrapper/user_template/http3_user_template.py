@@ -5,7 +5,12 @@ Each task entry::
 
     {"method": "get",  "request_url": "https://example.com/x"}
     {"method": "post", "request_url": "https://example.com/x",
-     "json": {...}, "expect_status": 200}
+     "json": {...}, "expect_status": 201, "timeout": 5}
+
+The step succeeds once the whole response has arrived; its length is the response body's size.
+``expect_status`` fails the step on any other status. ``timeout`` (seconds, default 10) bounds
+the handshake and the exchange together. ``ca_file`` adds a CA bundle to trust, for servers with
+a private certificate.
 
 aioquic is async-only; this template runs an event loop per task to keep
 the dispatch contract identical to the other sync templates.
@@ -15,8 +20,12 @@ A ``connection`` dict given to the setter supplies default step fields; keys in 
 
 import asyncio
 import json as json_module
+import socket
 import time
-from typing import Any, Dict, Tuple
+from contextlib import asynccontextmanager
+from dataclasses import dataclass, field
+from types import SimpleNamespace
+from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
 from locust import User, between, task
@@ -43,17 +52,29 @@ def set_wrapper_http3_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
     return Http3UserWrapper
 
 
-def _import_aioquic():
+DEFAULT_TIMEOUT_SECONDS = 10.0
+
+
+def _import_aioquic() -> SimpleNamespace:
     try:
-        from aioquic.asyncio.client import connect
-        from aioquic.h3.connection import H3_ALPN
+        from aioquic.asyncio.protocol import QuicConnectionProtocol
+        from aioquic.h3.connection import H3_ALPN, H3Connection
         from aioquic.h3.events import DataReceived, HeadersReceived
         from aioquic.quic.configuration import QuicConfiguration
+        from aioquic.quic.connection import QuicConnection
     except ImportError as error:
         raise RuntimeError(
             "aioquic is required for Http3User; install with: pip install aioquic"
         ) from error
-    return connect, H3_ALPN, DataReceived, HeadersReceived, QuicConfiguration
+    return SimpleNamespace(
+        QuicConnection=QuicConnection,
+        QuicConnectionProtocol=QuicConnectionProtocol,
+        H3_ALPN=H3_ALPN,
+        H3Connection=H3Connection,
+        DataReceived=DataReceived,
+        HeadersReceived=HeadersReceived,
+        QuicConfiguration=QuicConfiguration,
+    )
 
 
 def _build_body(step: Dict[str, Any]) -> bytes:
@@ -63,34 +84,138 @@ def _build_body(step: Dict[str, Any]) -> bytes:
     return body.encode("utf-8") if isinstance(body, str) else bytes(body)
 
 
-async def _send_h3_request(step: Dict[str, Any]) -> Tuple[int, int]:
-    connect, h3_alpn, _data_received, _headers_received, configuration = _import_aioquic()
-    from aioquic.h3.connection import H3Connection
+@dataclass
+class _H3Response:
+    """One request's response, filled in by the protocol as HTTP/3 events arrive."""
 
+    done: "asyncio.Future[None]"
+    status: int = 0
+    body: bytearray = field(default_factory=bytearray)
+
+
+def _status_of(headers: List[Tuple[bytes, bytes]]) -> int:
+    for name, value in headers:
+        if name == b":status":
+            return int(value)
+    return 0
+
+
+def _h3_client_protocol(aioquic: SimpleNamespace) -> type:
+    """Build the client protocol class; aioquic is imported lazily, so the class is built lazily too."""
+
+    class H3ClientProtocol(aioquic.QuicConnectionProtocol):
+        def __init__(self, *args, **kwargs) -> None:
+            super().__init__(*args, **kwargs)
+            self._http = aioquic.H3Connection(self._quic)
+            self._responses: Dict[int, _H3Response] = {}
+
+        async def request(self, headers: List[Tuple[bytes, bytes]], body: bytes) -> _H3Response:
+            """Send one request and wait until its response stream ends."""
+            stream_id = self._quic.get_next_available_stream_id()
+            response = _H3Response(done=asyncio.get_running_loop().create_future())
+            self._responses[stream_id] = response
+            self._http.send_headers(stream_id, headers, end_stream=not body)
+            if body:
+                self._http.send_data(stream_id, body, end_stream=True)
+            self.transmit()
+            await response.done
+            return response
+
+        def quic_event_received(self, event: Any) -> None:
+            for h3_event in self._http.handle_event(event):
+                response = self._responses.get(getattr(h3_event, "stream_id", None))
+                if response is None:
+                    continue
+                if isinstance(h3_event, aioquic.HeadersReceived):
+                    response.status = response.status or _status_of(h3_event.headers)
+                elif isinstance(h3_event, aioquic.DataReceived):
+                    response.body.extend(h3_event.data)
+                if getattr(h3_event, "stream_ended", False) and not response.done.done():
+                    response.done.set_result(None)
+
+    return H3ClientProtocol
+
+
+def _request_headers(step: Dict[str, Any], method: str) -> List[Tuple[bytes, bytes]]:
     parsed = urlparse(step["request_url"])
-    host = parsed.hostname
-    port = parsed.port or 443
+    authority = parsed.hostname + (f":{parsed.port}" if parsed.port else "")
+    path = (parsed.path or "/") + (f"?{parsed.query}" if parsed.query else "")
+    headers = [
+        (b":method", method.encode()),
+        (b":scheme", b"https"),
+        (b":authority", authority.encode()),
+        (b":path", path.encode()),
+    ]
+    for key, value in (step.get("headers") or {}).items():
+        headers.append((key.lower().encode(), str(value).encode()))
+    return headers
+
+
+def _resolve(host: str, port: int) -> Tuple[Any, ...]:
+    """Resolve ``host`` to an IPv6 (or IPv4-mapped) UDP address, without the event loop's executor.
+
+    ``loop.getaddrinfo`` runs in a thread pool. Under Locust, gevent turns those threads into
+    greenlets, which never run while the Windows event loop waits, so that lookup never returns.
+    """
+    address = socket.getaddrinfo(host, port, type=socket.SOCK_DGRAM)[0][4]
+    if len(address) == 2:
+        return ("::ffff:" + address[0], address[1], 0, 0)
+    return address
+
+
+@asynccontextmanager
+async def _quic_connect(aioquic: SimpleNamespace, host: str, port: int, configuration: Any):
+    """``aioquic.asyncio.client.connect`` with the address resolved by :func:`_resolve`."""
+    address = _resolve(host, port)
+    if configuration.server_name is None:
+        configuration.server_name = host
+    connection = aioquic.QuicConnection(configuration=configuration)
+    sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
+    try:
+        sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
+        sock.bind(("::", 0, 0, 0))
+    except OSError:
+        sock.close()
+        raise
+    protocol_class = _h3_client_protocol(aioquic)
+    transport, protocol = await asyncio.get_running_loop().create_datagram_endpoint(
+        lambda: protocol_class(connection), sock=sock,
+    )
+    try:
+        protocol.connect(address)
+        await protocol.wait_connected()
+        yield protocol
+    finally:
+        protocol.close()
+        await protocol.wait_closed()
+        transport.close()
+
+
+async def _exchange(aioquic: SimpleNamespace, step: Dict[str, Any]) -> _H3Response:
+    parsed = urlparse(step["request_url"])
     method = step.get("method", "GET").upper()
     body = _build_body(step) if method in {"POST", "PUT", "PATCH"} else b""
-    conf = configuration(alpn_protocols=h3_alpn, is_client=True)
+    conf = aioquic.QuicConfiguration(alpn_protocols=aioquic.H3_ALPN, is_client=True)
     conf.verify_mode = step.get("verify_mode", conf.verify_mode)
+    if step.get("ca_file"):
+        conf.load_verify_locations(cafile=step["ca_file"])
+    async with _quic_connect(aioquic, parsed.hostname, parsed.port or 443, conf) as client:
+        return await client.request(_request_headers(step, method), body)
 
-    async with connect(host, port, configuration=conf) as connection:
-        h3 = H3Connection(connection._quic)
-        stream_id = connection._quic.get_next_available_stream_id()
-        headers = [
-            (b":method", method.encode()),
-            (b":scheme", b"https"),
-            (b":authority", host.encode()),
-            (b":path", (parsed.path or "/").encode()),
-        ]
-        for key, value in (step.get("headers") or {}).items():
-            headers.append((key.lower().encode(), str(value).encode()))
-        h3.send_headers(stream_id, headers, end_stream=not body)
-        if body:
-            h3.send_data(stream_id, body, end_stream=True)
-        await connection.wait_closed()
-    return 200, len(body)
+
+async def _send_h3_request(step: Dict[str, Any]) -> Tuple[int, int]:
+    """Send the step's request and return ``(status, response body length)``.
+
+    Raises ``AssertionError`` when ``expect_status`` is given and the status differs, and
+    ``TimeoutError`` when the handshake and exchange take longer than ``timeout`` seconds.
+    """
+    aioquic = _import_aioquic()
+    timeout = float(step.get("timeout", DEFAULT_TIMEOUT_SECONDS))
+    response = await asyncio.wait_for(_exchange(aioquic, step), timeout)
+    expect = step.get("expect_status")
+    if expect is not None and response.status != int(expect):
+        raise AssertionError(f"http3 status expected {expect}, got {response.status}")
+    return response.status, len(response.body)
 
 
 class Http3UserWrapper(User):

@@ -134,8 +134,10 @@ def install_module(monkeypatch, dotted_name, **attrs):
 
 
 def block_module(monkeypatch, name):
-    """Make ``import name`` raise ImportError regardless of what is installed."""
+    """Make ``import name`` and its submodules raise ImportError regardless of what is installed."""
     monkeypatch.setitem(sys.modules, name, None)
+    for loaded in [module for module in sys.modules if module.startswith(name + ".")]:
+        monkeypatch.setitem(sys.modules, loaded, None)
 
 
 def fresh_proxy(monkeypatch, key):
@@ -300,127 +302,6 @@ def test_missing_client_library_reports_clear_runtime_error(monkeypatch, wrapper
     event = assert_failure(user, request_type, "step", RuntimeError, match=fragment)
     assert "is required" in str(event["exception"])
     assert isinstance(event["exception"].__cause__, ImportError)
-
-
-# ---------------------------------------------------------------------------
-# HTTP/3
-# ---------------------------------------------------------------------------
-
-def install_fake_aioquic(monkeypatch, fail_connect=None):
-    state = SimpleNamespace(connects=[], h3=[], configs=[])
-
-    class FakeQuic:
-        def get_next_available_stream_id(self):
-            return 4
-
-    class FakeConnection:
-        def __init__(self):
-            self._quic = FakeQuic()
-            self.closed_waited = False
-
-        async def wait_closed(self):
-            self.closed_waited = True
-
-    class FakeConnect:
-        def __init__(self, host, port, configuration):
-            state.connects.append((host, port, configuration))
-            if fail_connect is not None:
-                raise fail_connect
-            self.connection = FakeConnection()
-
-        async def __aenter__(self):
-            return self.connection
-
-        async def __aexit__(self, *exc):
-            return False
-
-    class FakeH3Connection:
-        def __init__(self, quic):
-            self.quic = quic
-            self.headers = []
-            self.data = []
-            state.h3.append(self)
-
-        def send_headers(self, stream_id, headers, end_stream=False):
-            self.headers.append((stream_id, headers, end_stream))
-
-        def send_data(self, stream_id, data, end_stream=False):
-            self.data.append((stream_id, data, end_stream))
-
-    class FakeQuicConfiguration:
-        def __init__(self, alpn_protocols, is_client):
-            self.alpn_protocols = alpn_protocols
-            self.is_client = is_client
-            self.verify_mode = "default-verify"
-            state.configs.append(self)
-
-    install_module(monkeypatch, "aioquic.asyncio.client", connect=FakeConnect)
-    install_module(monkeypatch, "aioquic.h3.connection", H3_ALPN=["h3"], H3Connection=FakeH3Connection)
-    install_module(monkeypatch, "aioquic.h3.events", DataReceived=object, HeadersReceived=object)
-    install_module(monkeypatch, "aioquic.quic.configuration", QuicConfiguration=FakeQuicConfiguration)
-    return state
-
-
-def test_http3_get_sends_headers_without_body(monkeypatch):
-    state = install_fake_aioquic(monkeypatch)
-    user = make_user(Http3UserWrapper)
-
-    user._do_step({"method": "get", "request_url": "https://example.com/api/x", "headers": {"X-Trace": 7}})
-
-    assert_success(user, "HTTP/3", "https://example.com/api/x")
-    host, port, conf = state.connects[0]
-    assert (host, port) == ("example.com", 443)
-    assert conf.alpn_protocols == ["h3"] and conf.is_client is True
-    assert conf.verify_mode == "default-verify"
-    stream_id, headers, end_stream = state.h3[0].headers[0]
-    assert stream_id == 4
-    assert headers == [
-        (b":method", b"GET"),
-        (b":scheme", b"https"),
-        (b":authority", b"example.com"),
-        (b":path", b"/api/x"),
-        (b"x-trace", b"7"),
-    ]
-    assert end_stream is True
-    assert state.h3[0].data == []
-
-
-def test_http3_post_sends_json_body_on_explicit_port(monkeypatch):
-    state = install_fake_aioquic(monkeypatch)
-    user = make_user(Http3UserWrapper)
-
-    user._do_step({
-        "method": "post", "request_url": "https://example.com:8443", "json": {"a": 1},
-        "name": "create", "verify_mode": 0,
-    })
-
-    assert_success(user, "HTTP/3", "create")
-    host, port, conf = state.connects[0]
-    assert (host, port) == ("example.com", 8443)
-    assert conf.verify_mode == 0
-    h3 = state.h3[0]
-    assert (b":path", b"/") in h3.headers[0][1]
-    assert h3.headers[0][2] is False
-    assert h3.data == [(4, json.dumps({"a": 1}).encode("utf-8"), True)]
-
-
-def test_http3_put_sends_raw_string_body(monkeypatch):
-    state = install_fake_aioquic(monkeypatch)
-    user = make_user(Http3UserWrapper)
-
-    user._do_step({"method": "put", "request_url": "https://h/x", "body": "héllo"})
-
-    assert_success(user, "HTTP/3", "https://h/x")
-    assert state.h3[0].data[0][1] == "héllo".encode("utf-8")
-
-
-def test_http3_connect_error_is_reported(monkeypatch):
-    install_fake_aioquic(monkeypatch, fail_connect=ConnectionRefusedError("quic down"))
-    user = make_user(Http3UserWrapper)
-
-    user._do_step({"method": "get", "request_url": "https://h/x"})
-
-    assert_failure(user, "HTTP/3", "https://h/x", ConnectionRefusedError, match="quic down")
 
 
 # ---------------------------------------------------------------------------
