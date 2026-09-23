@@ -12,8 +12,6 @@ import asyncio
 import base64
 import json
 import sqlite3
-import tempfile
-import time
 import zipfile
 from contextlib import closing
 from pathlib import Path
@@ -312,7 +310,8 @@ def test_asyncio_engine_returns_summary():
             tasks=[{"method": "get",
                     "request_url": "http://127.0.0.1:1/never",
                     "timeout": 0.2}],
-            users=1, duration_seconds=0.6,
+            # Long enough that a loaded machine still sends at least one request before the deadline.
+            users=1, duration_seconds=2.0,
         ))
     except RuntimeError as error:
         pytest.skip(f"httpx not installed: {error}")

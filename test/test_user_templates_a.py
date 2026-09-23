@@ -804,7 +804,7 @@ def install_fake_elasticsearch(monkeypatch) -> SimpleNamespace:
             record.calls.append(("search", index, body))
             return {"took": 1, "hits": {"hits": [{"_id": "1"}]}}
 
-        def get(self, index: str, id: str) -> Dict[str, Any]:  # noqa: A002 - mirrors the client signature
+        def get(self, index: str, id: str) -> Dict[str, Any]:  # noqa: A002  # pylint: disable=redefined-builtin
             record.calls.append(("get", index, id))
             return {"_id": id, "found": True}
 

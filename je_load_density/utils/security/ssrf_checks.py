@@ -11,7 +11,7 @@ The caller plugs these into an existing HTTP task and watches for 2xx
 or response bodies that contain known metadata markers.
 """
 
-from typing import Any, Dict, Iterable, List
+from typing import Any, Dict, List
 
 # These are the payloads an SSRF probe sends: cloud metadata endpoints are plain-HTTP link-local
 # addresses by definition, so the scheme and the fixed IPs are the point, not a mistake.

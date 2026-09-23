@@ -6,6 +6,7 @@ behind the LLM-driven MCP tool.
 
 from typing import Any, Dict, List, Optional
 
+from je_load_density.utils.logging.loggin_instance import load_density_logger
 from je_load_density.utils.recording.curl_importer import curl_to_task
 from je_load_density.utils.recording.openapi_importer import (
     load_openapi,
@@ -63,8 +64,8 @@ def generate_from_curls(
     for command in curls:
         try:
             tasks.append(curl_to_task(command))
-        except Exception:  # noqa: BLE001 - per-curl failure should not poison batch
-            continue
+        except Exception as error:  # noqa: BLE001 - one bad cURL line must not lose the whole batch
+            load_density_logger.warning(f"generate_from_curls: skipped an unparsable cURL command: {error!r}")
     return _wrap_action(tasks, user, user_count, spawn_rate, test_time, variables)
 
 

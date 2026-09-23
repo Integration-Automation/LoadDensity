@@ -8,8 +8,8 @@ sheet containing every test record.
 
 import math
 import os
-import xml.sax.saxutils as xml_escape
 import zipfile
+from html import escape as html_escape
 from typing import Any, Dict, Iterable, List, Optional
 
 from je_load_density.utils.test_record.test_record_class import test_record_instance
@@ -30,7 +30,7 @@ def _cell(value: Any, column_index: int, row_number: int) -> str:
     if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value):
         return f'<c r="{ref}"><v>{value}</v></c>'
     text = "" if value is None else str(value).translate(_XML_ILLEGAL)
-    escaped = xml_escape.escape(text)
+    escaped = html_escape(text, quote=False)  # escapes & < >, as XML text content needs
     return (
         f'<c r="{ref}" t="inlineStr">'
         f"<is><t>{escaped}</t></is></c>"

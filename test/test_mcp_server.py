@@ -96,7 +96,7 @@ def test_stdio_round_trip_in_a_child_process(tmp_path):
     ]
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(REPO_ROOT), env.get("PYTHONPATH")]))
-    result = subprocess.run(  # nosec B603 - fixed interpreter, test-controlled input
+    result = subprocess.run(  # nosec B603  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         [sys.executable, "-m", "je_load_density.mcp_server"],
         input="".join(json.dumps(line, ensure_ascii=False) + "\n" for line in lines).encode("utf-8"),
         cwd=tmp_path, env=env, capture_output=True, timeout=300, check=False,

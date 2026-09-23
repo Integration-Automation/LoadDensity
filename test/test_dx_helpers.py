@@ -164,7 +164,7 @@ def test_memory_snapshot_stops_tracing_when_callable_raises():
 class _FakeConsole:
     instances: list = []
 
-    def __init__(self, locals=None):  # noqa: A002 - mirrors code.InteractiveConsole
+    def __init__(self, locals=None):  # noqa: A002  # pylint: disable=redefined-builtin - mirrors code.InteractiveConsole
         self.namespace = locals
         self.interact_kwargs = None
         type(self).instances.append(self)

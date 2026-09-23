@@ -6,7 +6,7 @@ p95 latency approaches a target. Pure deterministic controller —
 intentionally not ML-based to keep the dependency footprint flat.
 """
 
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Dict, List
 
 
 class AutoTuner:

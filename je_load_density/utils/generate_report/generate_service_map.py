@@ -10,7 +10,7 @@ Mermaid, or Cytoscape.
 import json
 import os
 from collections import defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 

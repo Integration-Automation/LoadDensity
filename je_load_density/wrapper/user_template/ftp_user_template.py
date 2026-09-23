@@ -11,7 +11,7 @@ Each task entry::
     {"method": "quit"}
 """
 
-import ftplib
+import ftplib  # nosec B402 - plain FTP is the protocol this user load-tests
 import io
 import os.path
 import time
@@ -53,7 +53,7 @@ class FtpUserWrapper(User):
         port = int(step.get("port", 21))
         timeout = float(step.get("timeout", 10))
         # Plain FTP is what this user load-tests; FTPS servers need a TLS template of their own.
-        self._client = ftplib.FTP(timeout=timeout)  # NOSONAR S5332 — the protocol under test
+        self._client = ftplib.FTP(timeout=timeout)  # nosec B321  # NOSONAR S5332 — the protocol under test
         self._client.connect(host, port)
         return 0
 

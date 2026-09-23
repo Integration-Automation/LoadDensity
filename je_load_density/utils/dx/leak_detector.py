@@ -9,7 +9,7 @@ plugged into a custom LoadDensity run hook.
 import threading
 import time
 import tracemalloc
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 
 _state: Dict[str, Any] = {

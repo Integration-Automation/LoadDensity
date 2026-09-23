@@ -28,7 +28,7 @@ def _run_cli(cwd: Path, *args: str) -> subprocess.CompletedProcess:
     env = dict(os.environ)
     env["PYTHONPATH"] = os.pathsep.join(filter(None, [str(REPO_ROOT), env.get("PYTHONPATH")]))
     env["PYTHONIOENCODING"] = "utf-8"
-    return subprocess.run(  # nosec B603 - fixed interpreter, test-controlled arguments
+    return subprocess.run(  # nosec B603  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         [sys.executable, "-m", PACKAGE, *args],
         cwd=cwd, env=env, capture_output=True, text=True, encoding="utf-8",
         timeout=300, check=False,

@@ -13,6 +13,8 @@ import time
 import urllib.request
 from typing import Any, Dict, List, Optional
 
+from je_load_density.utils.logging.loggin_instance import load_density_logger
+
 
 def _import_websocket():
     try:
@@ -99,8 +101,8 @@ def capture_cdp_session(
         msg_id += 1
     try:
         ws.close()
-    except Exception:  # noqa: BLE001
-        pass
+    except Exception as error:  # noqa: BLE001 - the capture is already complete
+        load_density_logger.debug(f"cdp_capture: closing the DevTools socket failed: {error!r}")
     return entries
 
 

@@ -57,8 +57,9 @@ def _build_response(rule: Dict[str, Any]) -> Tuple[int, Dict[str, str], bytes]:
 
 
 class _StubHandler(BaseHTTPRequestHandler):
-    def log_message(self, _format, *_args):  # noqa: D401
-        return
+    def log_message(self, format, *args):  # noqa: A002  # pylint: disable=redefined-builtin
+        """Silence the per-request stderr line; the stub records requests itself."""
+        del format, args
 
     def _serve(self, method: str) -> None:
         rule = _match_rule(_state["rules"], method, self.path)

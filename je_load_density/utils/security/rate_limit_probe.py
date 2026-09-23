@@ -10,6 +10,8 @@ import time
 import urllib.request
 from typing import Any, Dict, Optional
 
+from je_load_density.utils.logging.loggin_instance import load_density_logger
+
 
 def probe_rate_limit(
     url: str,
@@ -40,8 +42,9 @@ def probe_rate_limit(
         except urllib.request.HTTPError as error:
             status = error.code
             response_headers = {k: v for k, v in (error.headers.items() if error.headers else [])}
-        except Exception:  # noqa: BLE001
-            continue
+        except Exception as error:  # noqa: BLE001 - an unreachable request is not a throttle
+            load_density_logger.debug(f"probe_rate_limit: request {index} failed: {error!r}")
+            continue  # nosec B112 - logged above
         if status in rate_limit_statuses and first_throttle is None:
             first_throttle = index
             first_headers = response_headers

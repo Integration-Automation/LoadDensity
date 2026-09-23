@@ -5,7 +5,7 @@ Renders the build_summary output as a one-page printable PDF.
 """
 
 import os
-from xml.sax.saxutils import escape
+from html import escape
 from typing import Any, Dict, Optional
 
 
@@ -82,7 +82,7 @@ def generate_pdf_report(
     styles = rl["styles"]()
     flow = [
         # Paragraph parses its text as markup; escape so "&" or "<" in a run label is shown, not parsed.
-        rl["Paragraph"](escape(title), styles["Title"]),
+        rl["Paragraph"](escape(title, quote=False), styles["Title"]),
         rl["Spacer"](1, 12),
         _totals_table(rl, summary),
     ]

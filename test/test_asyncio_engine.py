@@ -36,7 +36,7 @@ server.serve_forever()
 
 @pytest.fixture(scope="module")
 def base_url():
-    process = subprocess.Popen(  # nosec B603 - fixed interpreter, test-controlled code
+    process = subprocess.Popen(  # nosec B603  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
         [sys.executable, "-c", _SERVER], stdout=subprocess.PIPE, text=True)
     try:
         port = int(process.stdout.readline())

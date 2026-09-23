@@ -64,7 +64,7 @@ def craft_expired_token(
 def craft_kid_traversal_token(
     claims: Dict[str, Any],
     kid_path: str = "../../dev/null",
-    secret: str = "",
+    secret: str = "",  # nosec B107 - no secret means a placeholder key; these are probe tokens
 ) -> str:
     """JWT with a ``kid`` header that attempts path traversal."""
     header = _encode_part({"alg": "HS256", "typ": "JWT", "kid": kid_path})
@@ -77,7 +77,7 @@ def craft_kid_traversal_token(
 def craft_attack_pack(
     claims: Dict[str, Any],
     public_key_pem: Optional[str] = None,
-    hmac_secret: str = "",
+    hmac_secret: str = "",  # nosec B107 - no secret means a placeholder key; these are probe tokens
 ) -> Dict[str, str]:
     """Return a dict of attack-type → token string."""
     pack: Dict[str, str] = {

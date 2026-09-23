@@ -7,7 +7,6 @@ mocked posters). External-dep modules (HTTP/3, AMQP, NATS, etc.) are
 asserted only on import + lazy-error surface.
 """
 
-import io
 import json
 import sqlite3
 import urllib.request

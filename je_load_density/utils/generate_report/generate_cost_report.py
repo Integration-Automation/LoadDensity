@@ -8,7 +8,7 @@ cost breakdown JSON.
 
 import json
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 def estimate_run_cost(

@@ -6,7 +6,7 @@ existing SLA gate rules; emits a structured verdict that a deployment
 controller (Argo Rollouts, Flagger, Spinnaker, custom) can read.
 """
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List
 
 from je_load_density.utils.sla.sla_gates import evaluate_sla
 
