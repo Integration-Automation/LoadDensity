@@ -8,9 +8,10 @@ Each task entry::
     {"method": "write", "node_id": "ns=2;i=2", "value": 42}
     {"method": "browse", "node_id": "i=85"}
     {"method": "disconnect"}
+
+A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
-import asyncio
 import time
 from typing import Any, Callable, Dict, Optional
 
@@ -23,7 +24,11 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.user_template._common import fire_request_event
+from je_load_density.wrapper.user_template._common import (
+    fire_request_event,
+    new_template_event_loop,
+    with_connection_defaults,
+)
 
 
 def set_wrapper_opcua_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -54,7 +59,7 @@ class OpcuaUserWrapper(User):
     def __init__(self, environment):
         super().__init__(environment)
         self._client = None
-        self._loop = asyncio.new_event_loop()
+        self._loop = new_template_event_loop()
 
     def _run(self, coro):
         return self._loop.run_until_complete(coro)
@@ -107,7 +112,7 @@ class OpcuaUserWrapper(User):
         return lambda step: self._run(coro(step))
 
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
-        step = parameter_resolver.resolve(raw_task)
+        step = with_connection_defaults("opcua_user", parameter_resolver.resolve(raw_task))
         method = str(step.get("method", "")).lower()
         name = step.get("name") or method
         handler = self._command_for(method)

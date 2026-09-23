@@ -106,7 +106,10 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
      Import the client library lazily. Fire events through `_common.fire_request_event` or subclass
      `_protocol_base.ProtocolUserBase`. `host` and `connection` given to the setter are defaults for
      the steps, and a value named in the step wins: read them with `_common.default_host` and
-     `_common.with_connection_defaults` (`ProtocolUserBase` already merges `connection`).
+     `_common.with_connection_defaults` (`ProtocolUserBase` already merges `connection`). A template
+     that drives an asyncio client runs it with `_common.run_template_coroutine` or on a
+     `_common.new_template_event_loop()` loop, not `asyncio.run` or `asyncio.new_event_loop()`: under
+     Locust on Windows, a plain loop's host name lookup never returns.
   4. Add `"<proto>_user"` to `_USER_REGISTRY` in `wrapper/start_wrapper/start_test.py`.
   5. Add an extra in `pyproject.toml` (and to `all`), then tests (`test/test_new_user_templates.py`,
      `test/test_proxy_user.py`).

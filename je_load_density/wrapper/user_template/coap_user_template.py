@@ -7,9 +7,10 @@ Each task entry::
     {"method": "post",   "uri": "coap://127.0.0.1/sensor",  "payload": "1"}
     {"method": "put",    "uri": "coap://127.0.0.1/sensor",  "payload": "2"}
     {"method": "delete", "uri": "coap://127.0.0.1/sensor"}
+
+A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
-import asyncio
 import time
 from typing import Any, Dict, Tuple
 
@@ -22,7 +23,12 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.user_template._common import fire_request_event, payload_bytes
+from je_load_density.wrapper.user_template._common import (
+    fire_request_event,
+    payload_bytes,
+    run_template_coroutine,
+    with_connection_defaults,
+)
 
 
 def set_wrapper_coap_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -78,11 +84,11 @@ class CoapUserWrapper(User):
     wait_time = between(0.1, 0.2)
 
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
-        step = parameter_resolver.resolve(raw_task)
+        step = with_connection_defaults("coap_user", parameter_resolver.resolve(raw_task))
         name = step.get("name") or step.get("uri", "")
         start = time.monotonic()
         try:
-            _code, length = asyncio.run(_send_coap(step))
+            _code, length = run_template_coroutine(_send_coap(step))
             fire_request_event(self.environment, "COAP", name, start, length)
         except Exception as error:
             load_density_logger.debug(f"coap step failed: {error!r}")
