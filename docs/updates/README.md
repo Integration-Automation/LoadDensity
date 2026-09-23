@@ -58,6 +58,9 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-24 | 2026-09-23 | Deploy manifests bounded; operator image runs as non-root | #done #deploy #security | [2026-09](2026-09.md) |
+| U-20260923-23 | 2026-09-23 | generate_from_openapi works again; MCP tool paths are confined | #bugfix #security | [2026-09](2026-09.md) |
+| U-20260923-22 | 2026-09-23 | Template setters' host and connection are step defaults | #done #bugfix | [2026-09](2026-09.md) |
 | U-20260923-21 | 2026-09-23 | Python 3.10 import restored; XML refusals become XMLException | #bugfix #ci | [2026-09](2026-09.md) |
 | U-20260923-20 | 2026-09-23 | cryptography floor 50 | #done #deps #security | [2026-09](2026-09.md) |
 | U-20260923-19 | 2026-09-23 | Nine bugs in the protocol user templates | #bugfix | [2026-09](2026-09.md) |
@@ -89,4 +92,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 26 |
+| [2026-09.md](2026-09.md) | 2026-09 | 29 |
