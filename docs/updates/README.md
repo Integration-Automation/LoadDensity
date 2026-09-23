@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-25 | 2026-09-23 | Terraform module and operator image fixed; deploy/ is checked in CI | #done #bugfix #deploy #ci | [2026-09](2026-09.md) |
 | U-20260923-24 | 2026-09-23 | Deploy manifests bounded; operator image runs as non-root | #done #deploy #security | [2026-09](2026-09.md) |
 | U-20260923-23 | 2026-09-23 | generate_from_openapi works again; MCP tool paths are confined | #bugfix #security | [2026-09](2026-09.md) |
 | U-20260923-22 | 2026-09-23 | Template setters' host and connection are step defaults | #done #bugfix | [2026-09](2026-09.md) |
@@ -92,4 +93,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 29 |
+| [2026-09.md](2026-09.md) | 2026-09 | 30 |
