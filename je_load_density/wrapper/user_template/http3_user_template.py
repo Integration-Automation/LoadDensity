@@ -20,9 +20,7 @@ A ``connection`` dict given to the setter supplies default step fields; keys in 
 
 import asyncio
 import json as json_module
-import socket
 import time
-from contextlib import asynccontextmanager
 from dataclasses import dataclass, field
 from types import SimpleNamespace
 from typing import Any, Dict, List, Tuple
@@ -39,6 +37,7 @@ from je_load_density.utils.parameterization import (
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 from je_load_density.wrapper.user_template._common import (
     fire_request_event,
+    run_template_coroutine,
     with_connection_defaults,
 )
 
@@ -57,17 +56,17 @@ DEFAULT_TIMEOUT_SECONDS = 10.0
 
 def _import_aioquic() -> SimpleNamespace:
     try:
+        from aioquic.asyncio.client import connect
         from aioquic.asyncio.protocol import QuicConnectionProtocol
         from aioquic.h3.connection import H3_ALPN, H3Connection
         from aioquic.h3.events import DataReceived, HeadersReceived
         from aioquic.quic.configuration import QuicConfiguration
-        from aioquic.quic.connection import QuicConnection
     except ImportError as error:
         raise RuntimeError(
             "aioquic is required for Http3User; install with: pip install aioquic"
         ) from error
     return SimpleNamespace(
-        QuicConnection=QuicConnection,
+        connect=connect,
         QuicConnectionProtocol=QuicConnectionProtocol,
         H3_ALPN=H3_ALPN,
         H3Connection=H3Connection,
@@ -151,46 +150,6 @@ def _request_headers(step: Dict[str, Any], method: str) -> List[Tuple[bytes, byt
     return headers
 
 
-def _resolve(host: str, port: int) -> Tuple[Any, ...]:
-    """Resolve ``host`` to an IPv6 (or IPv4-mapped) UDP address, without the event loop's executor.
-
-    ``loop.getaddrinfo`` runs in a thread pool. Under Locust, gevent turns those threads into
-    greenlets, which never run while the Windows event loop waits, so that lookup never returns.
-    """
-    address = socket.getaddrinfo(host, port, type=socket.SOCK_DGRAM)[0][4]
-    if len(address) == 2:
-        return ("::ffff:" + address[0], address[1], 0, 0)
-    return address
-
-
-@asynccontextmanager
-async def _quic_connect(aioquic: SimpleNamespace, host: str, port: int, configuration: Any):
-    """``aioquic.asyncio.client.connect`` with the address resolved by :func:`_resolve`."""
-    address = _resolve(host, port)
-    if configuration.server_name is None:
-        configuration.server_name = host
-    connection = aioquic.QuicConnection(configuration=configuration)
-    sock = socket.socket(socket.AF_INET6, socket.SOCK_DGRAM)
-    try:
-        sock.setsockopt(socket.IPPROTO_IPV6, socket.IPV6_V6ONLY, 0)
-        sock.bind(("::", 0, 0, 0))
-    except OSError:
-        sock.close()
-        raise
-    protocol_class = _h3_client_protocol(aioquic)
-    transport, protocol = await asyncio.get_running_loop().create_datagram_endpoint(
-        lambda: protocol_class(connection), sock=sock,
-    )
-    try:
-        protocol.connect(address)
-        await protocol.wait_connected()
-        yield protocol
-    finally:
-        protocol.close()
-        await protocol.wait_closed()
-        transport.close()
-
-
 async def _exchange(aioquic: SimpleNamespace, step: Dict[str, Any]) -> _H3Response:
     parsed = urlparse(step["request_url"])
     method = step.get("method", "GET").upper()
@@ -199,7 +158,9 @@ async def _exchange(aioquic: SimpleNamespace, step: Dict[str, Any]) -> _H3Respon
     conf.verify_mode = step.get("verify_mode", conf.verify_mode)
     if step.get("ca_file"):
         conf.load_verify_locations(cafile=step["ca_file"])
-    async with _quic_connect(aioquic, parsed.hostname, parsed.port or 443, conf) as client:
+    async with aioquic.connect(
+        parsed.hostname, parsed.port or 443, configuration=conf, create_protocol=_h3_client_protocol(aioquic),
+    ) as client:
         return await client.request(_request_headers(step, method), body)
 
 
@@ -229,7 +190,7 @@ class Http3UserWrapper(User):
         name = step.get("name") or step.get("request_url", "")
         start = time.monotonic()
         try:
-            _status, length = asyncio.run(_send_h3_request(step))
+            _status, length = run_template_coroutine(_send_h3_request(step))
             fire_request_event(self.environment, "HTTP/3", name, start, length)
         except Exception as error:
             load_density_logger.debug(f"http3 step failed: {error!r}")

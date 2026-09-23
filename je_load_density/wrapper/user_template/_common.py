@@ -6,11 +6,57 @@ template (SMTP, IMAP, FTP, AMQP, NATS, etc.) avoids duplicating the same
 event-dispatch boilerplate.
 """
 
+import asyncio
 import json
+import socket
 import time
-from typing import Any, Dict, Optional
+from typing import Any, Coroutine, Dict, Optional, TypeVar
 
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
+
+T = TypeVar("T")
+
+
+async def _getaddrinfo_inline(host: Any, port: Any, *, family: int = 0, type: int = 0,  # noqa: A002
+                              proto: int = 0, flags: int = 0) -> list:
+    """``loop.getaddrinfo`` resolved in the calling thread instead of the loop's thread pool."""
+    return socket.getaddrinfo(host, port, family, type, proto, flags)
+
+
+def new_template_event_loop() -> asyncio.AbstractEventLoop:
+    """Return a new event loop for a template that drives an asyncio client from a Locust user.
+
+    The loop's ``getaddrinfo`` resolves in the calling thread, not in the loop's thread pool.
+    Under Locust, gevent turns the pool's threads into greenlets, and on Windows they never run
+    while the loop waits on IOCP, so a host name lookup through the pool never returns. The
+    inline lookup is cooperative under gevent and an ordinary blocking call without it.
+    """
+    loop = asyncio.new_event_loop()
+    loop.getaddrinfo = _getaddrinfo_inline  # type: ignore[method-assign]
+    return loop
+
+
+def run_template_coroutine(coro: Coroutine[Any, Any, T]) -> T:
+    """Run ``coro`` to completion on a fresh :func:`new_template_event_loop` loop, like ``asyncio.run``.
+
+    The loop is the thread's current event loop while it runs. Tasks still pending when ``coro``
+    finishes are cancelled, and the loop is closed.
+    """
+    loop = new_template_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        return loop.run_until_complete(coro)
+    finally:
+        try:
+            pending = asyncio.all_tasks(loop)
+            for leftover in pending:
+                leftover.cancel()
+            if pending:
+                loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
+            loop.run_until_complete(loop.shutdown_asyncgens())
+        finally:
+            asyncio.set_event_loop(None)
+            loop.close()
 
 
 def fire_request_event(

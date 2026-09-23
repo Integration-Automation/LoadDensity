@@ -11,7 +11,6 @@ Each task entry::
 A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
-import asyncio
 import time
 from typing import Any, Dict, Tuple
 
@@ -27,6 +26,7 @@ from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 from je_load_density.wrapper.user_template._common import (
     fire_request_event,
     payload_bytes,
+    run_template_coroutine,
     with_connection_defaults,
 )
 
@@ -88,7 +88,7 @@ class CoapUserWrapper(User):
         name = step.get("name") or step.get("uri", "")
         start = time.monotonic()
         try:
-            _code, length = asyncio.run(_send_coap(step))
+            _code, length = run_template_coroutine(_send_coap(step))
             fire_request_event(self.environment, "COAP", name, start, length)
         except Exception as error:
             load_density_logger.debug(f"coap step failed: {error!r}")

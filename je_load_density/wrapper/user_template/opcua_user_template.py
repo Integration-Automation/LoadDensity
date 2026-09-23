@@ -12,7 +12,6 @@ Each task entry::
 A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
-import asyncio
 import time
 from typing import Any, Callable, Dict, Optional
 
@@ -27,6 +26,7 @@ from je_load_density.utils.parameterization import (
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 from je_load_density.wrapper.user_template._common import (
     fire_request_event,
+    new_template_event_loop,
     with_connection_defaults,
 )
 
@@ -59,7 +59,7 @@ class OpcuaUserWrapper(User):
     def __init__(self, environment):
         super().__init__(environment)
         self._client = None
-        self._loop = asyncio.new_event_loop()
+        self._loop = new_template_event_loop()
 
     def _run(self, coro):
         return self._loop.run_until_complete(coro)
