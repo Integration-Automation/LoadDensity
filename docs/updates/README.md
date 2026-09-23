@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-28 | 2026-09-23 | Codacy findings on PR #110: Chrome recorder, CI template injection, operator pod | #bugfix #security | [2026-09](2026-09.md) |
 | U-20260923-27 | 2026-09-23 | Security helpers have real tests; two bugs fixed | #bugfix #tests #security | [2026-09](2026-09.md) |
 | U-20260923-26 | 2026-09-23 | Remaining PR #110 security findings: Gradle lock, pinned workflow, intended payloads | #done #security #ci | [2026-09](2026-09.md) |
 | U-20260923-25 | 2026-09-23 | Terraform module and operator image fixed; deploy/ is checked in CI | #done #bugfix #deploy #ci | [2026-09](2026-09.md) |
@@ -95,4 +96,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 32 |
+| [2026-09.md](2026-09.md) | 2026-09 | 33 |
