@@ -52,6 +52,16 @@ spec:
         - name: operator
           image: ghcr.io/integration-automation/loaddensity-operator:latest
           command: ["kopf", "run", "-A", "/opt/operator.py"]
+          # The image runs as uid 10001 and the operator only calls the Kubernetes API.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
           resources:
             requests:
               cpu: 50m
@@ -61,3 +71,10 @@ spec:
               cpu: 500m
               memory: 256Mi
               ephemeral-storage: 256Mi
+          # Writable scratch space, since the root filesystem is read-only.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

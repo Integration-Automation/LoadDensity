@@ -21,11 +21,18 @@ spec:
           - name: image
       container:
         image: "{{inputs.parameters.image}}"
+        # Parameters reach the script as environment variables, not as text pasted into it, so a
+        # value containing quotes or ";" stays a value instead of becoming part of the command.
+        env:
+          - name: LD_EXTRAS
+            value: "{{inputs.parameters.extras}}"
+          - name: LD_ACTION_FILE
+            value: "{{inputs.parameters.action-file}}"
         command: ["/bin/sh", "-c"]
         args:
           - |
-            set -eux
-            if [ -n "{{inputs.parameters.extras}}" ]; then
-              pip install --quiet "je_load_density[{{inputs.parameters.extras}}]"
+            set -eu
+            if [ -n "$LD_EXTRAS" ]; then
+              pip install --quiet "je_load_density[$LD_EXTRAS]"
             fi
-            loaddensity run "{{inputs.parameters.action-file}}"
+            loaddensity run "$LD_ACTION_FILE"

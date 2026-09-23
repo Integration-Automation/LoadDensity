@@ -24,10 +24,17 @@ spec:
     - name: run
       image: $(params.image)
       workingDir: $(workspaces.source.path)
+      # Parameters reach the script as environment variables; Tekton pastes $(params.*) into a
+      # script as text, where a value containing quotes or ";" would become part of the command.
+      env:
+        - name: LD_EXTRAS
+          value: $(params.extras)
+        - name: LD_ACTION_FILE
+          value: $(params.action-file)
       script: |
         #!/usr/bin/env bash
-        set -euxo pipefail
-        if [ -n "$(params.extras)" ]; then
-          pip install --quiet "je_load_density[$(params.extras)]"
+        set -euo pipefail
+        if [ -n "$LD_EXTRAS" ]; then
+          pip install --quiet "je_load_density[$LD_EXTRAS]"
         fi
-        loaddensity run "$(params.action-file)"
+        loaddensity run "$LD_ACTION_FILE"
