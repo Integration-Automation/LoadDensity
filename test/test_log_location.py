@@ -48,7 +48,7 @@ def test_importing_writes_no_file(tmp_path):
     target = tmp_path / "home" / "LoadDensity.log"
     env = {key: value for key, value in os.environ.items() if key != LOG_FILE_ENV}
     env[LOG_FILE_ENV] = str(target)
-    result = subprocess.run(  # nosec B603 - fixed interpreter, test-controlled arguments
+    result = subprocess.run(  # nosec B603  # nosemgrep - fixed interpreter, test-controlled arguments
         [sys.executable, "-c", _IMPORT_ONLY, str(MODULE_FILE)],
         cwd=tmp_path, env=env, capture_output=True, text=True, timeout=120, check=False,
     )

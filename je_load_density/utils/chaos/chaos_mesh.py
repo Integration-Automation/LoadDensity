@@ -21,7 +21,7 @@ def _require_kubectl() -> str:
 
 
 def _run(binary: str, args: List[str], timeout: float) -> str:
-    completed = subprocess.run(  # nosec - args are a constructed list, no shell
+    completed = subprocess.run(  # nosec B603  # nosemgrep - args are a constructed list, no shell
         [binary, *args],
         capture_output=True,
         timeout=timeout,

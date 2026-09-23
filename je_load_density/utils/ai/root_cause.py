@@ -21,7 +21,7 @@ def _git_diff_stat(commits: int = 5, timeout: float = 5.0) -> Optional[str]:
     if git is None:
         return None
     try:
-        completed = subprocess.run(  # nosec B603  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit
+        completed = subprocess.run(  # nosec B603  # nosemgrep - fixed argument list, no shell
             [git, "log", "--stat", f"-{commits}"],
             capture_output=True, timeout=timeout, check=False,
         )
