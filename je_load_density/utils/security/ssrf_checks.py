@@ -13,16 +13,18 @@ or response bodies that contain known metadata markers.
 
 from typing import Any, Dict, Iterable, List
 
+# These are the payloads an SSRF probe sends: cloud metadata endpoints are plain-HTTP link-local
+# addresses by definition, so the scheme and the fixed IPs are the point, not a mistake.
 _METADATA_TARGETS = (
-    "http://169.254.169.254/latest/meta-data/",
-    "http://metadata.google.internal/computeMetadata/v1/",
-    "http://169.254.169.254/metadata/instance?api-version=2021-02-01",
-    "http://100.100.100.200/latest/meta-data/",
+    "http://169.254.169.254/latest/meta-data/",  # NOSONAR S1313,S5332 — AWS metadata endpoint used as a probe payload
+    "http://metadata.google.internal/computeMetadata/v1/",  # NOSONAR S5332 — GCP metadata probe payload
+    "http://169.254.169.254/metadata/instance?api-version=2021-02-01",  # NOSONAR S1313,S5332 — Azure probe payload
+    "http://100.100.100.200/latest/meta-data/",  # NOSONAR S1313,S5332 — Alibaba Cloud probe payload
 )
 
 _LOOPBACK_VARIANTS = (
-    "http://127.0.0.1/",
-    "http://localhost/",
+    "http://127.0.0.1/",  # NOSONAR S5332 — loopback probe payload
+    "http://localhost/",  # NOSONAR S5332 — loopback probe payload
     "http://0.0.0.0/",
     "http://[::1]/",
     "http://2130706433/",   # decimal-encoded 127.0.0.1

@@ -52,7 +52,8 @@ class FtpUserWrapper(User):
         host = step.get("host", "127.0.0.1")
         port = int(step.get("port", 21))
         timeout = float(step.get("timeout", 10))
-        self._client = ftplib.FTP(timeout=timeout)
+        # Plain FTP is what this user load-tests; FTPS servers need a TLS template of their own.
+        self._client = ftplib.FTP(timeout=timeout)  # NOSONAR S5332 — the protocol under test
         self._client.connect(host, port)
         return 0
 
