@@ -24,3 +24,9 @@ tasks {
         untilBuild.set("251.*")
     }
 }
+
+// Every resolved configuration is pinned in gradle.lockfile; refresh it with
+//   gradle dependencies --write-locks
+dependencyLocking {
+    lockAllConfigurations()
+}
