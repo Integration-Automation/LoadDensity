@@ -25,18 +25,36 @@ def _walk_strings(value: Any) -> Iterable[str]:
             yield from _walk_strings(inner)
 
 
+def _walk_keys(value: Any) -> Iterable[str]:
+    if isinstance(value, dict):
+        for key, inner in value.items():
+            yield str(key)
+            yield from _walk_keys(inner)
+    elif isinstance(value, list):
+        for inner in value:
+            yield from _walk_keys(inner)
+
+
+def _exposes_field(response_body: Any, field: str) -> bool:
+    """True when ``field`` is a key of the parsed body, or appears quoted inside raw JSON text."""
+    if any(key == field for key in _walk_keys(response_body)):
+        return True
+    return any(f'"{field}"' in text or f"'{field}'" in text for text in _walk_strings(response_body))
+
+
 def check_excessive_data_exposure(response_body: Any, fields: List[str]) -> List[Dict[str, Any]]:
-    """Flag API responses leaking sensitive field names."""
+    """Flag API responses leaking sensitive field names.
+
+    ``response_body`` may be the parsed JSON (the field is then a key at any depth) or its raw text.
+    """
     findings: List[Dict[str, Any]] = []
     for field in fields:
-        for text in _walk_strings(response_body):
-            if f'"{field}"' in text or f"'{field}'" in text:
-                findings.append({
-                    "rule": "owasp.api3.excessive_data_exposure",
-                    "field": field,
-                    "severity": "warning",
-                })
-                break
+        if _exposes_field(response_body, field):
+            findings.append({
+                "rule": "owasp.api3.excessive_data_exposure",
+                "field": field,
+                "severity": "warning",
+            })
     return findings
 
 
