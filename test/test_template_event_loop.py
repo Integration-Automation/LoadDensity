@@ -17,8 +17,8 @@ from je_load_density.wrapper.user_template._common import new_template_event_loo
 
 
 class RefusingExecutor(concurrent.futures.ThreadPoolExecutor):
-    def submit(self, *_args, **_kwargs):
-        raise AssertionError("the event loop's thread pool was used")
+    def submit(self, fn, /, *_args, **_kwargs):
+        raise AssertionError(f"the event loop's thread pool was used for {fn!r}")
 
 
 @pytest.fixture

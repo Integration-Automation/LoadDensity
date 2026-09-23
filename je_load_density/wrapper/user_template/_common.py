@@ -17,10 +17,12 @@ from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 T = TypeVar("T")
 
 
-async def _getaddrinfo_inline(host: Any, port: Any, *, family: int = 0, type: int = 0,  # noqa: A002
-                              proto: int = 0, flags: int = 0) -> list:
-    """``loop.getaddrinfo`` resolved in the calling thread instead of the loop's thread pool."""
-    return socket.getaddrinfo(host, port, family, type, proto, flags)
+async def _getaddrinfo_inline(host: Any, port: Any, **options: int) -> list:
+    """``loop.getaddrinfo`` resolved in the calling thread instead of the loop's thread pool.
+
+    ``options`` are the ``family``, ``type``, ``proto`` and ``flags`` keywords the loop passes.
+    """
+    return socket.getaddrinfo(host, port, **options)
 
 
 def new_template_event_loop() -> asyncio.AbstractEventLoop:

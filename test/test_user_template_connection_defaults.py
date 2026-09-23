@@ -48,7 +48,8 @@ def isolated_resolver(monkeypatch):
 
 
 def load(name):
-    return importlib.import_module(f"{TEMPLATE_PACKAGE}.{name}_user_template")
+    # name is a key of COMMAND_TEMPLATES / SENDER_TEMPLATES or "fuzz_http", never outside input.
+    return importlib.import_module(f"{TEMPLATE_PACKAGE}.{name}_user_template")  # nosemgrep
 
 
 def configure(monkeypatch, module, key, setter_name):
