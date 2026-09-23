@@ -11,8 +11,5 @@
   "action": {
     "default_popup": "popup.html",
     "default_title": "LoadDensity Recorder"
-  },
-  "icons": {
-    "128": "icon.png"
   }
 }

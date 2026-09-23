@@ -1,6 +1,11 @@
 // LoadDensity Recorder — background service worker.
 // Captures request + response metadata via chrome.webRequest, batches
 // them into a HAR-shaped object, and emits a downloadable JSON.
+/* global chrome */
+
+// "<all_urls>" is Chrome's match pattern for every URL, not HTML.
+// eslint-disable-next-line xss/no-mixed-html
+const ALL_URLS = { urls: ["<all_urls>"] };
 
 const state = {
   recording: false,
@@ -52,12 +57,9 @@ function onCompleted(details) {
   state.entries.delete(details.requestId);
 }
 
-chrome.webRequest.onBeforeRequest.addListener(onBeforeRequest,
-  { urls: ["<all_urls>"] }, ["requestBody"]);
-chrome.webRequest.onSendHeaders.addListener(onSendHeaders,
-  { urls: ["<all_urls>"] }, ["requestHeaders"]);
-chrome.webRequest.onCompleted.addListener(onCompleted,
-  { urls: ["<all_urls>"] }, ["responseHeaders"]);
+chrome.webRequest.onBeforeRequest.addListener(onBeforeRequest, ALL_URLS, ["requestBody"]);
+chrome.webRequest.onSendHeaders.addListener(onSendHeaders, ALL_URLS, ["requestHeaders"]);
+chrome.webRequest.onCompleted.addListener(onCompleted, ALL_URLS, ["responseHeaders"]);
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
   if (message.type === "start") {
@@ -74,9 +76,8 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         entries: state.output,
       },
     };
-    const blob = new Blob([JSON.stringify(har, null, 2)],
-      { type: "application/json" });
-    const url = URL.createObjectURL(blob);
+    // A Manifest V3 service worker has no URL.createObjectURL, so the HAR goes out as a data URL.
+    const url = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(har, null, 2));
     chrome.downloads.download({
       url, filename: `loaddensity-${Date.now()}.har`, saveAs: true,
     });

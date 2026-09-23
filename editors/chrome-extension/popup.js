@@ -1,3 +1,5 @@
+/* global chrome */
+
 function setStatus(text) {
   document.getElementById("status").textContent = text;
 }
