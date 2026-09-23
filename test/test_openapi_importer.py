@@ -51,3 +51,37 @@ def test_openapi_handles_missing_servers():
                        "paths": {"/x": {"get": {"responses": {"200": {}}}}}}
     tasks = openapi_to_tasks(spec_no_servers)
     assert tasks[0]["request_url"] == "/x"
+
+
+def _spec_file(tmp_path):
+    import json
+
+    path = tmp_path / "openapi.json"
+    path.write_text(json.dumps(SPEC), encoding="utf-8")
+    return str(path)
+
+
+def _urls(document):
+    start = next(action[1] for action in document["load_density"] if action[0] == "LD_start_test")
+    return [task["request_url"] for task in start["tasks"]]
+
+
+def test_generate_from_openapi_uses_the_spec_server(tmp_path):
+    from je_load_density.utils.action_generator.generate import generate_from_openapi
+
+    urls = _urls(generate_from_openapi(_spec_file(tmp_path)))
+    assert urls and all(url.startswith("https://api.example.com/v1/") for url in urls)
+
+
+def test_generate_from_openapi_base_url_replaces_the_server(tmp_path):
+    from je_load_density.utils.action_generator.generate import generate_from_openapi
+
+    urls = _urls(generate_from_openapi(_spec_file(tmp_path), base_url="http://staging.test/"))
+    assert urls and all(url.startswith("http://staging.test/") for url in urls)
+
+
+def test_mcp_generate_from_openapi_tool_runs(tmp_path):
+    from je_load_density.mcp_server import server
+
+    document = server._tool_generate_from_openapi({"openapi_path": _spec_file(tmp_path), "base_url": "http://s.test"})
+    assert all(url.startswith("http://s.test/") for url in _urls(document))
