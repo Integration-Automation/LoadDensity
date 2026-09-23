@@ -118,3 +118,21 @@ class TestRoundTrip:
         xml_str = dict_to_elements_tree(data)
         assert "<Method>GET</Method>" in xml_str
         assert "<test_url>https://example.com</test_url>" in xml_str
+
+
+_ENTITY_BOMB = """<?xml version="1.0"?>
+<!DOCTYPE lolz [<!ENTITY lol "lol"><!ENTITY lol2 "&lol;&lol;&lol;&lol;">]>
+<lolz>&lol2;</lolz>
+"""
+
+
+def test_refused_xml_is_an_xml_exception_with_its_cause():
+    with pytest.raises(XMLException) as caught:
+        XMLParser(_ENTITY_BOMB, "string")
+    assert caught.value.__cause__ is not None
+
+
+def test_missing_xml_file_is_an_xml_exception_with_its_cause(tmp_path):
+    with pytest.raises(XMLException) as caught:
+        XMLParser(str(tmp_path / "absent.xml"), "file")
+    assert isinstance(caught.value.__cause__, OSError)

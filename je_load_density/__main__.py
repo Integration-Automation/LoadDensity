@@ -37,6 +37,28 @@ def _cmd_init(args: argparse.Namespace) -> None:
     create_project_dir(args.path)
 
 
+def _cmd_bench(args: argparse.Namespace) -> None:
+    from je_load_density.engine.bench_cli import main as bench_main
+
+    bench_argv: list = [args.url]
+    if args.method:
+        bench_argv += ["--method", args.method]
+    if args.body is not None:
+        bench_argv += ["--body", args.body]
+    bench_argv += ["--users", str(args.users), "--duration", str(args.duration)]
+    if args.http2:
+        bench_argv.append("--http2")
+    if args.max_in_flight is not None:
+        bench_argv += ["--max-in-flight", str(args.max_in_flight)]
+    bench_main(bench_argv)
+
+
+def _cmd_shell(_: argparse.Namespace) -> None:
+    from je_load_density.utils.dx.repl import start_repl
+
+    start_repl()
+
+
 def _cmd_serve(args: argparse.Namespace) -> None:
     start_load_density_socket_server(
         host=args.host,
@@ -67,6 +89,19 @@ def _build_parser() -> argparse.ArgumentParser:
     init = sub.add_parser("init", help="create a project skeleton at PATH")
     init.add_argument("path", type=str)
     init.set_defaults(func=_cmd_init)
+
+    bench = sub.add_parser("bench", help="quick asyncio HTTP benchmark for a URL")
+    bench.add_argument("url")
+    bench.add_argument("--method", default="get")
+    bench.add_argument("--body", default=None)
+    bench.add_argument("--users", type=int, default=10)
+    bench.add_argument("--duration", type=float, default=10.0)
+    bench.add_argument("--http2", action="store_true")
+    bench.add_argument("--max-in-flight", type=int, default=None)
+    bench.set_defaults(func=_cmd_bench)
+
+    shell = sub.add_parser("shell", help="interactive Python REPL with ld pre-imported")
+    shell.set_defaults(func=_cmd_shell)
 
     serve = sub.add_parser("serve", help="start the TCP control socket server")
     serve.add_argument("--host", default="localhost")

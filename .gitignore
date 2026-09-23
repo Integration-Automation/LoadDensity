@@ -116,3 +116,5 @@ dmypy.json
 .pyre/
 /.claude/
 /.claude
+# Gradle state for editors/jetbrains
+.gradle/

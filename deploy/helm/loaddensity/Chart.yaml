@@ -1,0 +1,19 @@
+apiVersion: v2
+name: loaddensity
+description: Run LoadDensity master + worker pods on Kubernetes.
+type: application
+version: 0.1.0
+appVersion: 0.0.67
+maintainers:
+  - name: JE-Chen
+    email: jechenmailman@gmail.com
+sources:
+  - https://github.com/Integration-Automation/LoadDensity
+home: https://loaddensity.readthedocs.io
+keywords:
+  - load-testing
+  - locust
+  - performance
+  - http
+  - grpc
+  - websocket

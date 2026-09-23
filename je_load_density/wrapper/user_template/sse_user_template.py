@@ -8,7 +8,8 @@ Each task entry should look like::
     {"method": "close"}
 
 Uses ``requests`` with streaming for the SSE GET, which is already in
-the base dependency tree.
+the base dependency tree. ``host`` given to ``set_wrapper_sse_user`` is the
+URL used until a step names one.
 """
 
 import time
@@ -23,6 +24,7 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
+from je_load_density.wrapper.user_template._common import default_host
 
 
 def set_wrapper_sse_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -104,7 +106,7 @@ class SseUserWrapper(User):
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
         step = parameter_resolver.resolve(raw_task)
         method = str(step.get("method", "wait")).lower()
-        url = step.get("request_url") or step.get("url") or self._url
+        url = step.get("request_url") or step.get("url") or self._url or default_host("sse_user", "")
         name = step.get("name") or url or method
         timeout = float(step.get("timeout", 30))
         start = time.monotonic()

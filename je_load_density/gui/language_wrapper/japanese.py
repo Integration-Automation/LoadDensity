@@ -8,7 +8,6 @@ japanese_word_dict = {
     "spawn_rate": "生成レート: ",
     "test_method": "HTTP メソッド: ",
     "start_button": "開始: ",
-    "log": "ログ: ",
     # Test method
     "get": "GET",
     "post": "POST",
@@ -24,4 +23,10 @@ japanese_word_dict = {
     "stats_avg_ms": "平均",
     "stats_p95_ms": "p95",
     "stats_failures": "失敗",
+    # Tabs and run history
+    "tab_log": "ログ",
+    "tab_chart": "ライブチャート",
+    "tab_history": "実行履歴",
+    "history_open_db": "DB を開く…",
+    "history_refresh": "更新",
 }

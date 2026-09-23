@@ -77,11 +77,29 @@ def _is_pair(value: Any) -> bool:
     return isinstance(value, list) and len(value) == 2
 
 
+_FALSE_WORDS = frozenset({"", "false", "0", "no", "none", "null"})
+
+
+def _truthy(value: Any) -> bool:
+    """Truthiness of a resolved value.
+
+    The resolver returns text, so a variable registered as ``False`` arrives as ``"False"``, and an
+    unset one stays as its ``${...}`` placeholder; both count as false here, as do ``0``, ``no``,
+    ``none``, ``null`` and blank text.
+    """
+    if isinstance(value, str):
+        text = value.strip()
+        if text.startswith("${") and text.endswith("}"):
+            return False
+        return text.lower() not in _FALSE_WORDS
+    return bool(value)
+
+
 _CONDITION_OPS = {
     "equals": lambda v: v[0] == v[1] if _is_pair(v) else False,
     "not_equals": lambda v: v[0] != v[1] if _is_pair(v) else False,
     "in": lambda v: (v[0] in (v[1] or [])) if _is_pair(v) else False,
-    "truthy": bool,
+    "truthy": _truthy,
 }
 
 
@@ -98,7 +116,7 @@ def _eval_condition(expression: Any) -> bool:
     if isinstance(expression, (bool, int)):
         return bool(expression)
     if isinstance(expression, str):
-        return bool(parameter_resolver.resolve(expression))
+        return _truthy(parameter_resolver.resolve(expression))
     if not isinstance(expression, dict):
         return False
     for op, args in expression.items():
@@ -110,7 +128,8 @@ def _eval_condition(expression: Any) -> bool:
 
 
 def _pick_weighted(tasks: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
-    weights = [max(int(t.get("weight", 1) or 1), 0) for t in tasks]
+    # Only a missing weight defaults to 1: "or 1" also turned an explicit 0 into 1.
+    weights = [max(int(1 if t.get("weight") is None else t["weight"]), 0) for t in tasks]
     total = sum(weights)
     if total <= 0:
         return None

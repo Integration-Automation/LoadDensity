@@ -88,15 +88,16 @@ class RedisUserWrapper(User):
             raise AssertionError(f"redis expected {expect!r}, got {text!r}")
 
     def _command_for(self, method: str) -> Optional[Callable[..., Any]]:
-        client = self._ensure_client()
+        # The client is created inside each command, so a missing redis package or a bad URL
+        # happens inside _do_step's try and is reported as a failed request.
         return {
-            "get":   lambda step: client.get(step["key"]),
-            "set":   lambda step: client.set(step["key"], step.get("value", "")),
-            "incr":  lambda step: client.incr(step["key"]),
-            "lpush": lambda step: client.lpush(step["key"], step.get("value", "")),
-            "rpop":  lambda step: client.rpop(step["key"]),
-            "delete": lambda step: client.delete(step["key"]),
-            "exists": lambda step: client.exists(step["key"]),
+            "get":   lambda step: self._ensure_client().get(step["key"]),
+            "set":   lambda step: self._ensure_client().set(step["key"], step.get("value", "")),
+            "incr":  lambda step: self._ensure_client().incr(step["key"]),
+            "lpush": lambda step: self._ensure_client().lpush(step["key"], step.get("value", "")),
+            "rpop":  lambda step: self._ensure_client().rpop(step["key"]),
+            "delete": lambda step: self._ensure_client().delete(step["key"]),
+            "exists": lambda step: self._ensure_client().exists(step["key"]),
         }.get(method)
 
     def _do_step(self, raw_task: Dict[str, Any]) -> None:

@@ -71,6 +71,7 @@ LoadDensity (`je_load_density`) started as a Locust wrapper and grew into a full
 - [Exception Handling](#exception-handling)
 - [Logging](#logging)
 - [Supported Platforms](#supported-platforms)
+- [More Modules](#more-modules)
 - [License](#license)
 
 ## Highlights
@@ -91,10 +92,10 @@ LoadDensity (`je_load_density`) started as a Locust wrapper and grew into a full
 - **Six importers.** HAR (browser traffic), Postman v2.1 collections, OpenAPI 3.x specs, standalone cURL commands, **k6 scripts**, and **JMeter JMX** plans — each converts to action JSON or a single task ready for `LD_start_test`.
 - **Auth helpers.** Stdlib OAuth2 client (`client_credentials` / `password` / `refresh` with token cache), JWT signer (HS256/384/512 + RS256/384/512), AWS SigV4 request signer, plus mTLS client-cert support on every HTTP user template via `task["cert"]`.
 - **Persistent records.** Optional SQLite sink with `runs` / `records` / `metadata` schema, indexed for cross-run regression checks; works against an empty file out of the box.
-- **MCP server.** `python -m je_load_density.mcp_server` exposes 11 tools so Claude (Desktop, Code, any MCP client) can run tests, manage projects, and pull reports without leaving chat.
+- **MCP server.** `python -m je_load_density.mcp_server` exposes 13 tools so Claude (Desktop, Code, any MCP client) can run tests, manage projects, and pull reports without leaving chat.
 - **Action JSON tooling.** Built-in linter (`LD_lint_action`), JSON Schema exporter (`LD_export_schema`), GitHub Actions annotation emitter (`LD_emit_github_annotations`), stdlib LSP server (`python -m je_load_density.action_lsp`), composite **GitHub Action** wrapper (`action.yml`), **pre-commit hook**, and **VS Code extension** skeleton — editor + CI integration end-to-end.
 - **Hardened control socket.** 4-byte big-endian length-prefix framing (1 MiB cap), optional TLS via `ssl.create_default_context`, shared-secret token via env var or arg, plus a backwards-compatible legacy mode for downstream tools such as PyBreeze.
-- **Safe executor.** `eval`, `exec`, `compile`, `__import__`, `breakpoint`, `open`, and `input` are explicitly blocked from action JSON — only `LD_*` commands and a curated set of safe builtins (`print`, `len`, `range`, …) are dispatchable.
+- **Safe executor.** An action JSON file can call the `LD_*` commands and nothing else except a 22-name builtin allowlist (`print`, `len`, `sorted`, `sum`, …). Everything outside it — `eval`, `exec`, `compile`, `__import__`, `open`, `input`, and the attribute and scope builtins `getattr` / `setattr` / `vars` / `globals` — is simply not registered, so it cannot be dispatched.
 - **Live GUI.** Optional PySide6 front-end with a live stats panel (RPS / avg / p95 / failures), translated to English, Traditional Chinese, Japanese, and Korean.
 - **CLI subcommands.** `run` / `run-dir` / `run-str` / `init` / `serve`. Legacy `-e/-d/-c/--execute_str` single-flag form is preserved for downstream tools.
 - **Cross-platform.** Windows 10/11, macOS, Ubuntu/Linux, Raspberry Pi (3B+ and later) on Python 3.10+.
@@ -132,14 +133,12 @@ Install only the slices you use:
 | `charts` | `matplotlib` (chart-rendering reports) |
 | `yaml` | `pyyaml` (OpenAPI YAML loading) |
 | `faker` | `Faker` (powers `${faker.method}` placeholders) |
-| `mcp` | `mcp` SDK (drives the MCP server) |
 | `all` | Everything above |
 
 ```bash
 pip install "je_load_density[gui]"
 pip install "je_load_density[mqtt,grpc,websocket]"
 pip install "je_load_density[metrics]"
-pip install "je_load_density[mcp]"
 pip install "je_load_density[all]"
 ```
 
@@ -256,7 +255,7 @@ je_load_density/
 │   ├── main_widget.py                # Form-based test configurator
 │   ├── main_window.py                # PySide6 main window shell
 │   └── stats_panel.py                # Live RPS / avg / p95 / failures panel
-├── mcp_server/                       # MCP server (11 tools for Claude)
+├── mcp_server/                       # MCP server (13 tools for Claude)
 │   ├── __main__.py
 │   └── server.py
 ├── utils/
@@ -706,9 +705,11 @@ Schema is created lazily; an empty file is fine. Indexes on `run_id` and `name` 
 ## MCP Server (for Claude)
 
 ```bash
-pip install "je_load_density[mcp]"
+pip install je_load_density
 python -m je_load_density.mcp_server
 ```
+
+The server speaks MCP (JSON-RPC 2.0, one message per line) over stdio itself, so it needs no `mcp` SDK; the `[mcp]` extra is empty and only kept so old install commands still work.
 
 Wire it into Claude Desktop / Code:
 
@@ -723,7 +724,9 @@ Wire it into Claude Desktop / Code:
 }
 ```
 
-Eleven tools are exposed: `run_test`, `run_action_json`, `create_project`, `list_executor_commands`, `import_har`, `generate_reports`, `summary`, `persist_records`, `list_runs`, `fetch_run`, `clear_records`.
+Thirteen tools are exposed: `run_test`, `run_action_json`, `create_project`, `list_executor_commands`, `import_har`, `generate_reports`, `summary`, `persist_records`, `list_runs`, `fetch_run`, `clear_records`, `generate_from_openapi`, `generate_from_curls`.
+
+Every path a tool takes (`create_project`'s `path`, `import_har`'s `file_path`, the `database_path` of the run tools, `generate_from_openapi`'s `openapi_path`, and `generate_reports`'s `base_name`) must resolve inside the server's root. The root is the working directory unless `JE_LOAD_DENSITY_MCP_ROOT` points elsewhere. A path outside it is refused, so a model steered by content it reads cannot read or write files elsewhere.
 
 ## Hardened Control Socket
 
@@ -774,7 +777,7 @@ Legacy single-flag form (`-e/-d/-c/--execute_str`) is still accepted for backwar
 
 ## Test Record
 
-`test_record_instance.test_record_list` and `error_record_list` collect every request with `Method`, `test_url`, `name`, `status_code`, `response_time_ms`, `response_length`, and (for failures) `error`. Reports and the SQLite sink read directly from these lists.
+`test_record_instance.test_record_list` and `error_record_list` collect every request with `Method`, `test_url`, `name`, `status_code`, `response_time_ms`, `response_length`, `start_time` (epoch seconds, so reports can restore request order across the two lists), and (for failures) `error`. Reports and the SQLite sink read directly from these lists.
 
 ## Exception Handling
 
@@ -795,6 +798,8 @@ All custom exceptions inherit from `LoadDensityTestException`; catching that one
 ## Logging
 
 LoadDensity exposes a single configured logger (`load_density_logger`) under `je_load_density.utils.logging.loggin_instance`. Hook it into your existing log infrastructure with the standard `logging` module APIs.
+
+It writes WARNING+ to stderr and INFO+ to `~/.je_load_density/logs/LoadDensity.log` (set `LOAD_DENSITY_LOG_FILE` to write elsewhere, or to `os.devnull` to turn the file off). The file is opened on the first record, so importing the package writes nothing to the working directory; it is shared and appended to by every process, each line carrying the process id.
 
 ## Supported Platforms
 
@@ -1038,6 +1043,23 @@ LoadDensity reads from every common load-test source format.
 `python -m je_load_density.action_lsp` over stdio for completion +
 diagnostics. Build with `npm install && npm run package` and install
 the resulting `.vsix`.
+
+## More Modules
+
+Added in the 2026-05 expansion. Each one is imported lazily and needs only its own extra.
+
+- **Asyncio engine.** `je_load_density.engine.asyncio_engine.run_async_load` drives an HTTP target from asyncio without Locust and writes the same records as Locust users do, with a 4xx/5xx counted as a failure. The `bench` subcommand wraps it:
+
+  ```bash
+  python -m je_load_density bench https://api.example.com/health --users 10 --duration 10
+  ```
+
+  Options: `--method`, `--body`, `--http2`, `--max-in-flight`.
+- **Cloud workers** (`aws`, `gcp`, `azure` or `cloud` extras): `cloud.aws_fargate.launch_fargate_workers`, `cloud.aws_lambda.invoke_lambda_workers` (with `lambda_worker_handler` as the function entry), `cloud.azure_aci.launch_aci_workers` and `cloud.gcp_cloud_run.run_cloud_run_job` start remote workers for a distributed run.
+- **Chaos helpers**: `utils.chaos.toxiproxy` adds and removes latency or bandwidth toxics on a Toxiproxy instance (`install_latency`, `install_bandwidth`, `reset_all`); `utils.chaos.chaos_mesh` builds and applies Chaos Mesh manifests (`build_network_delay`, `apply_manifest`, `delete_manifest`).
+- **Stub server**: `utils.stub_server.start_stub_server` / `stop_stub_server` serve canned responses so a scenario can run against a fake backend. It serves from a thread, which works beside Locust's gevent users; for the asyncio engine start it in a separate process, because a server thread in the engine's own process never gets scheduled.
+- **More report formats** next to the seven above: Allure, cost, CycloneDX, Excel, latency histogram, PDF (`pdf` extra), SARIF and a service map, one `generate_*_report.py` module each under `utils/generate_report/`.
+- **Deployment templates** in `deploy/`: a Helm chart, a Kubernetes operator (`k8s` extra), Terraform, a Grafana dashboard and CI templates.
 
 ## License
 

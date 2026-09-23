@@ -1,0 +1,45 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Release.Name }}-worker
+  labels:
+    app.kubernetes.io/name: loaddensity
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    role: worker
+spec:
+  replicas: {{ .Values.workers.replicas }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: loaddensity
+      app.kubernetes.io/instance: {{ .Release.Name }}
+      role: worker
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: loaddensity
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        role: worker
+    spec:
+      # The load pods never call the Kubernetes API, so they get no service-account token.
+      automountServiceAccountToken: false
+      containers:
+        - name: worker
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          args:
+            - "python"
+            - "-m"
+            - "je_load_density"
+            - "run"
+            - "{{ .Values.actionFile }}"
+          env:
+            - name: LD_MASTER_HOST
+              value: "{{ .Release.Name }}-master"
+          resources: {{- toYaml .Values.workers.resources | nindent 12 }}
+          volumeMounts:
+            - name: action
+              mountPath: /etc/loaddensity
+      volumes:
+        - name: action
+          configMap:
+            name: {{ .Release.Name }}-action

@@ -8,7 +8,6 @@ english_word_dict = {
     "spawn_rate": "Spawn Rate: ",
     "test_method": "Test Method: ",
     "start_button": "Start: ",
-    "log": "Log: ",
     # Test method
     "get": "GET",
     "post": "POST",
@@ -24,4 +23,10 @@ english_word_dict = {
     "stats_avg_ms": "Avg",
     "stats_p95_ms": "p95",
     "stats_failures": "Failures",
+    # Tabs and run history
+    "tab_log": "Log",
+    "tab_chart": "Live Chart",
+    "tab_history": "Run History",
+    "history_open_db": "Open DB...",
+    "history_refresh": "Refresh",
 }

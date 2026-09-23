@@ -65,8 +65,6 @@ who only need HTTP load testing.
      - ``prometheus`` + ``opentelemetry`` bundle.
    * - ``faker``
      - ``Faker`` (powers ``${faker.method}`` placeholders).
-   * - ``mcp``
-     - ``mcp`` SDK (drives the MCP server for Claude).
    * - ``all``
      - Everything above.
 
@@ -75,7 +73,6 @@ Examples::
     pip install "je_load_density[gui]"
     pip install "je_load_density[mqtt,grpc,websocket]"
     pip install "je_load_density[metrics]"
-    pip install "je_load_density[mcp]"
     pip install "je_load_density[all]"
 
 Development install

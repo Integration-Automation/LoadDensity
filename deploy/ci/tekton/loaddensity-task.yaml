@@ -1,0 +1,40 @@
+apiVersion: tekton.dev/v1
+kind: Task
+metadata:
+  name: loaddensity
+  labels:
+    app.kubernetes.io/name: loaddensity
+spec:
+  description: Run a LoadDensity action JSON.
+  params:
+    - name: action-file
+      type: string
+      description: Path inside the workspace to the action JSON to run.
+    - name: extras
+      type: string
+      default: ""
+      description: Optional comma-separated extras for pip install.
+    - name: image
+      type: string
+      default: ghcr.io/integration-automation/loaddensity:latest
+  workspaces:
+    - name: source
+      description: Workspace containing the action JSON.
+  steps:
+    - name: run
+      image: $(params.image)
+      workingDir: $(workspaces.source.path)
+      # Parameters reach the script as environment variables; Tekton pastes $(params.*) into a
+      # script as text, where a value containing quotes or ";" would become part of the command.
+      env:
+        - name: LD_EXTRAS
+          value: $(params.extras)
+        - name: LD_ACTION_FILE
+          value: $(params.action-file)
+      script: |
+        #!/usr/bin/env bash
+        set -euo pipefail
+        if [ -n "$LD_EXTRAS" ]; then
+          pip install --quiet "je_load_density[$LD_EXTRAS]"
+        fi
+        loaddensity run "$LD_ACTION_FILE"

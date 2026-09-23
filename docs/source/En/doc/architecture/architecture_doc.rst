@@ -126,7 +126,7 @@ Module map
     ├── __init__.py                       # Public API re-exports (108 symbols)
     ├── __main__.py                       # CLI: run / run-dir / run-str / init / serve
     ├── action_lsp/                       # LSP server for action JSON
-    ├── mcp_server/                       # MCP server (11 tools for Claude)
+    ├── mcp_server/                       # MCP server (13 tools for Claude)
     ├── tools/                            # CLI helpers (pre-commit linter, …)
     ├── gui/                              # Optional PySide6 front-end
     ├── utils/
@@ -223,7 +223,7 @@ Module responsibilities
      - ``prepare_env`` / ``create_env`` building a Locust environment in
        local, master, or worker mode (with optional ``load_shape``).
    * - ``je_load_density.mcp_server``
-     - MCP server exposing 11 tools so Claude can drive LoadDensity.
+     - MCP server exposing 13 tools so Claude can drive LoadDensity.
    * - ``je_load_density.action_lsp``
      - LSP server (completion + diagnostics) for editor integration.
    * - ``je_load_density.gui``

@@ -1,0 +1,2 @@
+# The templates job parses YAML; deploy-check.txt is generated from this file.
+pyyaml>=6.0

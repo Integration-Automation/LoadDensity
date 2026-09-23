@@ -3,6 +3,7 @@ from xml.etree import ElementTree as _SafeElementTree  # nosec B405 - used only 
 from xml.etree.ElementTree import ParseError  # nosec B405  # nosemgrep: python.lang.security.use-defused-xml.use-defused-xml
 
 import defusedxml.ElementTree as ElementTree
+from defusedxml import DefusedXmlException
 from defusedxml.minidom import parseString as _parse_xml_string
 
 from je_load_density.utils.exception.exception_tags import cant_read_xml_error, xml_type_error
@@ -62,8 +63,8 @@ class XMLParser:
         """
         try:
             self.xml_root = ElementTree.fromstring(self.xml_string, **kwargs)
-        except ParseError as error:
-            raise XMLException(f"{cant_read_xml_error}: {error}")
+        except (ParseError, DefusedXmlException) as error:
+            raise XMLException(f"{cant_read_xml_error}: {error}") from error
         return self.xml_root
 
     def xml_parser_from_file(self, **kwargs) -> _SafeElementTree.Element:
@@ -76,8 +77,8 @@ class XMLParser:
         """
         try:
             self.tree = ElementTree.parse(self.xml_string, **kwargs)
-        except (ParseError, OSError) as error:
-            raise XMLException(f"{cant_read_xml_error}: {error}")
+        except (ParseError, DefusedXmlException, OSError) as error:
+            raise XMLException(f"{cant_read_xml_error}: {error}") from error
         self.xml_root = self.tree.getroot()
         self.xml_from_type = "file"
         return self.xml_root
@@ -94,5 +95,5 @@ class XMLParser:
             content = ElementTree.fromstring(write_content.strip())
             tree = _SafeElementTree.ElementTree(content)
             tree.write(write_xml_filename, encoding="utf-8", xml_declaration=True)
-        except ParseError as error:
-            raise XMLException(f"{cant_read_xml_error}: {error}")
+        except (ParseError, DefusedXmlException) as error:
+            raise XMLException(f"{cant_read_xml_error}: {error}") from error

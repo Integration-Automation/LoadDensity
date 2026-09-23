@@ -18,6 +18,7 @@
 * ``response_time_ms`` — Locust 回報的回應時間（ms）。
 * ``response_length`` — 回應大小（bytes）。
 * ``error`` — 成功為 ``None``；失敗為 exception 字串。
+* ``start_time`` — Locust 開始這個請求的時間（epoch 秒），沒有時為 ``None``。成功與失敗分放兩個清單，需要請求順序的報表（service map、Allure）依它排序。
 * ``text``、``content``、``headers`` — 選用，僅 HTTP 成功才有。
 
 清除

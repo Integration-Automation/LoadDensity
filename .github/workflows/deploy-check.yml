@@ -1,0 +1,96 @@
+name: Deploy Check
+
+# Validates the non-Python trees under deploy/: the Helm chart renders and its manifests match the
+# Kubernetes schemas, the operator manifests are valid, the Terraform module is formatted and valid,
+# the operator image builds from its hash-locked requirements, and every CI template parses.
+on:
+  push:
+    branches: [dev, main]
+    paths: ["deploy/**", ".github/workflows/deploy-check.yml"]
+  pull_request:
+    branches: [dev, main]
+    paths: ["deploy/**", ".github/workflows/deploy-check.yml"]
+
+permissions:
+  contents: read
+
+env:
+  KUBECONFORM_VERSION: v0.6.7
+  # From the release's CHECKSUMS file.
+  KUBECONFORM_SHA256: 95f14e87aa28c09d5941f11bd024c1d02fdc0303ccaa23f61cef67bc92619d73
+
+jobs:
+  kubernetes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: azure/setup-helm@1a275c3b69536ee54be43f2070a358922e12c8d4  # v4
+        with:
+          version: v3.16.4
+      - name: Install kubeconform
+        run: |
+          curl -sSL --proto '=https' --proto-redir '=https' -o kubeconform.tar.gz \
+            "https://github.com/yannh/kubeconform/releases/download/${KUBECONFORM_VERSION}/kubeconform-linux-amd64.tar.gz"
+          echo "${KUBECONFORM_SHA256}  kubeconform.tar.gz" | sha256sum --check
+          tar -xzf kubeconform.tar.gz kubeconform
+      - name: Lint the Helm chart
+        run: helm lint deploy/helm/loaddensity
+      - name: Validate rendered chart and operator manifests
+        run: |
+          helm template ci deploy/helm/loaddensity > rendered.yaml
+          ./kubeconform -strict -summary -ignore-missing-schemas rendered.yaml deploy/k8s-operator/deployment.yaml
+
+  terraform:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: deploy/terraform
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd  # v3
+        with:
+          terraform_version: 1.9.8
+      - run: terraform fmt -check -diff
+      - run: terraform init -backend=false -input=false
+      - run: terraform validate
+
+  operator-image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the operator image
+        run: docker build -t loaddensity-operator:ci deploy/k8s-operator
+      - name: Smoke-test it
+        run: |
+          docker run --rm --entrypoint python loaddensity-operator:ci -c \
+            "import importlib.util, os; s = importlib.util.spec_from_file_location('op', '/opt/operator.py'); \
+          m = importlib.util.module_from_spec(s); s.loader.exec_module(m); assert os.getuid() != 0"
+
+  templates:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install pyyaml (hash-locked, from .github/requirements/deploy-check.in)
+        run: |
+          pip install --require-hashes --only-binary :all: -r .github/requirements/deploy-check.txt
+      - name: Parse the CI templates and dashboards
+        run: |
+          python - <<'PY'
+          import json, pathlib, sys, yaml
+          failures = []
+          for path in pathlib.Path("deploy").rglob("*"):
+              if "helm" in path.parts or not path.is_file():
+                  continue
+              try:
+                  if path.suffix in (".yml", ".yaml"):
+                      list(yaml.safe_load_all(path.read_text(encoding="utf-8")))
+                  elif path.suffix == ".json":
+                      json.loads(path.read_text(encoding="utf-8"))
+              except Exception as error:  # report every broken file, not just the first
+                  failures.append(f"{path}: {error}")
+          print("\n".join(failures) or "all templates parse")
+          sys.exit(1 if failures else 0)
+          PY

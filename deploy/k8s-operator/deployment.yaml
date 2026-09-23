@@ -1,0 +1,80 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: loaddensity-operator
+  namespace: loaddensity-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: loaddensity-operator
+rules:
+  - apiGroups: ["integration.automation"]
+    resources: ["loadtests", "loadtests/status"]
+    verbs: ["get", "list", "watch", "patch", "update"]
+  - apiGroups: [""]
+    resources: ["pods", "services", "configmaps", "events"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: loaddensity-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: loaddensity-operator
+subjects:
+  - kind: ServiceAccount
+    name: loaddensity-operator
+    namespace: loaddensity-system
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loaddensity-operator
+  namespace: loaddensity-system
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loaddensity-operator
+  template:
+    metadata:
+      labels:
+        app: loaddensity-operator
+    spec:
+      serviceAccountName: loaddensity-operator
+      containers:
+        - name: operator
+          image: ghcr.io/integration-automation/loaddensity-operator:latest
+          command: ["kopf", "run", "-A", "/opt/operator.py"]
+          # The image runs as uid 10001 and the operator only calls the Kubernetes API.
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 10001
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+              ephemeral-storage: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+              ephemeral-storage: 256Mi
+          # Writable scratch space, since the root filesystem is read-only.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}

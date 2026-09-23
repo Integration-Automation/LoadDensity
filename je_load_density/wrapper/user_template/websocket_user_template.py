@@ -10,6 +10,7 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
+from je_load_density.wrapper.user_template._common import default_host
 
 
 def set_wrapper_websocket_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -41,6 +42,8 @@ class WebSocketUserWrapper(User):
             "expect": "substring",     # optional substring assertion on recv
             "timeout": 5
         }
+
+    ``host`` given to ``set_wrapper_websocket_user`` is the URL used until a step names one.
     """
 
     host = "ws://localhost"
@@ -88,7 +91,7 @@ class WebSocketUserWrapper(User):
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
         step = parameter_resolver.resolve(raw_task)
         method = str(step.get("method", "send")).lower()
-        url = step.get("request_url") or step.get("url") or self._url
+        url = step.get("request_url") or step.get("url") or self._url or default_host("websocket_user", "")
         name = step.get("name") or url or method
         timeout = float(step.get("timeout", 5))
 

@@ -11,13 +11,21 @@ Load & Stress Automation Framework built on top of Locust.
 
 ## Project Structure
 
+`architecture.md` §2 has one row per directory; this is the short version.
+
 - `je_load_density/` - main package
-  - `gui/` - PySide6 GUI with multi-language support
-  - `utils/` - utilities (executor, file I/O, reports, logging, JSON/XML, socket server, test records)
-  - `wrapper/` - Locust wrappers (env creation, event hooks, proxy users, start/stop)
-- `load_density_driver/` - driver generation
-- `test/` - pytest test suite
-- `docs/` - Sphinx documentation
+  - `wrapper/` - Locust wrappers: `start_test`, environment and runner modes, user templates for 41 user types (HTTP variants and other protocols), per-type proxies, the request hook
+  - `utils/` - executor (`LD_*` commands), test records and SQLite persistence, reports (HTML/JSON/XML/CSV/JUnit/summary/chart plus Allure, SARIF, PDF, …), parameterisation, load shapes, SLA gates, importers (HAR, cURL, Postman, OpenAPI, JMeter, k6), metrics sinks and notifiers, socket server, security probes, chaos, scenario FSM and more
+  - `engine/` - asyncio HTTP engine without Locust and the `bench` CLI
+  - `cloud/` - worker launchers for AWS Fargate/Lambda, Azure ACI and GCP Cloud Run
+  - `mcp_server/` - MCP stdio server (JSON-RPC written out, no SDK)
+  - `action_lsp/` - LSP server for action JSON; `tools/lint_files.py` is the pre-commit entry
+  - `gui/` - optional PySide6 GUI (`gui` extra) with multi-language support
+- `editors/` - VS Code, Chrome and JetBrains extensions
+- `deploy/` - Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates
+- `load_density_driver/` - prebuilt driver
+- `test/` - pytest test suite; `test/test_doc_counts.py` fails when a count quoted in `README.md`, `CLAUDE.md` or `architecture.md` no longer matches the code
+- `docs/` - Sphinx documentation (`docs/updates/` is the update log, not built)
 
 ## Development Commands
 
@@ -139,3 +147,15 @@ Code must pass static analysis with no new issues introduced. Follow these rules
 - Use conventional commit style: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
 - Keep subject line under 72 characters
 - Use imperative mood ("add feature" not "added feature")
+
+## Stage commits, `progress.md`, `docs/updates/` and `architecture.md`
+
+Workspace rule shared by every repository under `D:\Codes` (full text: `D:\Codes\CLAUDE.md`).
+
+- **Commit at every stage.** A stage is the smallest piece of work that leaves the repository consistent and passes this project's checks (definition of done, tests, lint): one finished `progress.md` item, or one self-contained step of a larger one. Commit it before starting the next stage, before switching to another repository, and before the session ends. Do not leave work uncommitted across sessions; if a stage cannot be finished, commit the consistent part and record the rest in `progress.md`.
+  - Stage only the files that stage touched (`git add <path>`, never `git add -A`), follow this file's commit-message rules, and never add AI attribution.
+  - Committing is not pushing: push or open a PR only as this project's branch flow says or when asked.
+- **`progress.md`** (repository root, tracked) holds outstanding work only: no finished items, no history, no rules.
+- **`docs/updates/`** records finished work: one batch file per month (`YYYY-MM.md`), one entry per piece of work headed `## U-YYYYMMDD-NN · date · title · #tags`, and an index with query commands in `docs/updates/README.md`. When a `progress.md` item is done, delete it and add a `#done` entry plus its index row in the same commit.
+- **`architecture.md`** (repository root) is the short architecture overview: layers, entry points, main flows, extension points, cross-project boundaries. Update it in the same commit whenever a change alters any of those.
+- **Cross-project contracts** are listed in `architecture.md` §6: what other repositories rely on here (CLI flags, import paths, constructor arguments, file layouts) and what this repository relies on elsewhere. No test here protects them, so never rename or remove one without changing its consumers in the same round, and update §6 whenever a contract is added or changes.

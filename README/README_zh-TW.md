@@ -86,7 +86,7 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步擴展為完整的�
 - **六種匯入器。** HAR(瀏覽流量)、Postman v2.1、OpenAPI 3.x、cURL、**k6 腳本**、**JMeter JMX** — 全部可轉成 action JSON 或單一 task。
 - **Auth 工具。** stdlib OAuth2 client(`client_credentials` / `password` / `refresh` 含 token cache)、JWT 簽發(HS256/384/512 + RS256/384/512)、AWS SigV4 簽章,所有 HTTP user template 透過 `task["cert"]` 即可走 mTLS。
 - **持久化紀錄。** 選用 SQLite sink,含 `runs`/`records`/`metadata` schema 並建立索引;空檔即可直接使用,便於跨次回歸比對。
-- **MCP server。** `python -m je_load_density.mcp_server` 對外開 11 個工具,讓 Claude(Desktop、Code、任何 MCP client)端對端驅動 LoadDensity。
+- **MCP server。** `python -m je_load_density.mcp_server` 對外開 13 個工具,讓 Claude(Desktop、Code、任何 MCP client)端對端驅動 LoadDensity。
 - **Action JSON 工具鏈。** 內建 linter(`LD_lint_action`)、JSON Schema 匯出(`LD_export_schema`)、GitHub Actions 註解(`LD_emit_github_annotations`)、stdlib LSP server(`python -m je_load_density.action_lsp`)、composite **GitHub Action** 包裝(`action.yml`)、**pre-commit hook**、**VS Code 擴充套件** 骨架 — 編輯器 + CI 整合完整覆蓋。
 - **硬化控制 socket。** 4-byte big-endian 長度前綴 framing(上限 1 MiB)、選用 TLS、共享密鑰 token(環境變數或參數),並保留與 PyBreeze 等工具相容的 legacy 模式。
 - **安全 executor。** 動作 JSON 內 `eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 一律封鎖。
@@ -127,7 +127,6 @@ pip install je_load_density
 | `charts` | `matplotlib`(chart 報告) |
 | `yaml` | `pyyaml`(OpenAPI YAML 載入) |
 | `faker` | `Faker`(驅動 `${faker.method}` 占位符) |
-| `mcp` | `mcp` SDK(驅動 MCP server) |
 | `all` | 上列全部 |
 
 ```bash
@@ -255,7 +254,7 @@ je_load_density/
 ├── __init__.py                       # 公開 API re-export
 ├── __main__.py                       # CLI: run / run-dir / run-str / init / serve
 ├── action_lsp/                       # 動作 JSON 的 LSP 伺服器
-├── mcp_server/                       # MCP server(11 個給 Claude 的工具)
+├── mcp_server/                       # MCP server(13 個給 Claude 的工具)
 ├── tools/                            # CLI 工具(pre-commit linter 等)
 ├── gui/                              # 選用 PySide6 前端
 ├── utils/
@@ -621,11 +620,13 @@ if report["has_regressions"]:
 ## MCP Server(給 Claude)
 
 ```bash
-pip install "je_load_density[mcp]"
+pip install je_load_density
 python -m je_load_density.mcp_server
 ```
 
-11 個工具:`run_test`、`run_action_json`、`create_project`、`list_executor_commands`、`import_har`、`generate_reports`、`summary`、`persist_records`、`list_runs`、`fetch_run`、`clear_records`。
+server 自己在 stdio 上講 MCP(JSON-RPC 2.0,一行一則訊息),不需要 `mcp` SDK;`[mcp]` extra 是空的,只是讓舊的安裝指令還能用。
+
+13 個工具:`run_test`、`run_action_json`、`create_project`、`list_executor_commands`、`import_har`、`generate_reports`、`summary`、`persist_records`、`list_runs`、`fetch_run`、`clear_records`、`generate_from_openapi`、`generate_from_curls`。
 
 ## 硬化控制 Socket
 

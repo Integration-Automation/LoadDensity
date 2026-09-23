@@ -89,8 +89,9 @@ def _operation_to_task(
     return task
 
 
-def openapi_to_tasks(spec: Dict[str, Any]) -> List[Dict[str, Any]]:
-    server = _first_server(spec)
+def openapi_to_tasks(spec: Dict[str, Any], base_url: Optional[str] = None) -> List[Dict[str, Any]]:
+    """One task per operation; ``base_url``, when given, replaces the spec's first ``servers`` URL."""
+    server = base_url.rstrip("/") if base_url else _first_server(spec)
     return [_operation_to_task(server, path, method, operation)
             for path, method, operation in _iter_operations(spec)]
 
