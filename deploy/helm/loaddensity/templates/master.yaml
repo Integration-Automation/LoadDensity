@@ -20,6 +20,8 @@ spec:
         app.kubernetes.io/instance: {{ .Release.Name }}
         role: master
     spec:
+      # The load pods never call the Kubernetes API, so they get no service-account token.
+      automountServiceAccountToken: false
       containers:
         - name: master
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"

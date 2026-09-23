@@ -52,3 +52,12 @@ spec:
         - name: operator
           image: ghcr.io/integration-automation/loaddensity-operator:latest
           command: ["kopf", "run", "-A", "/opt/operator.py"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+              ephemeral-storage: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+              ephemeral-storage: 256Mi
