@@ -25,11 +25,11 @@ _METADATA_TARGETS = (
 _LOOPBACK_VARIANTS = (
     "http://127.0.0.1/",  # NOSONAR S5332 — loopback probe payload
     "http://localhost/",  # NOSONAR S5332 — loopback probe payload
-    "http://0.0.0.0/",
-    "http://[::1]/",
-    "http://2130706433/",   # decimal-encoded 127.0.0.1
-    "http://0x7f000001/",   # hex-encoded
-    "http://127.1/",        # truncated octets
+    "http://0.0.0.0/",  # NOSONAR S5332 — loopback probe payload
+    "http://[::1]/",  # NOSONAR S5332 — loopback probe payload
+    "http://2130706433/",  # NOSONAR S5332 — decimal-encoded 127.0.0.1 probe payload
+    "http://0x7f000001/",  # NOSONAR S5332 — hex-encoded loopback probe payload
+    "http://127.1/",  # NOSONAR S5332 — truncated-octet loopback probe payload
 )
 
 
