@@ -1,0 +1,83 @@
+name: Editor Extensions
+
+# Builds the editor extensions under editors/: the VS Code extension packages into a .vsix with
+# its committed schema, the Chrome extension's scripts and manifest parse, and the JetBrains
+# plugin builds against its gradle.lockfile with the Gradle version the lock was written with.
+on:
+  push:
+    branches: [dev, main]
+    paths: ["editors/**", ".github/workflows/editors.yml"]
+  pull_request:
+    branches: [dev, main]
+    paths: ["editors/**", ".github/workflows/editors.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  vscode:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: editors/vscode
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx --no-install vsce package --out loaddensity.vsix
+      - name: The package carries the schema
+        run: npx --no-install vsce ls | grep -Fx "schemas/loaddensity-action-schema.json"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loaddensity-vscode
+          path: editors/vscode/loaddensity.vsix
+
+  chrome:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: editors/chrome-extension
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Scripts parse
+        run: |
+          for script in *.js; do
+            node --check "$script"
+          done
+      - name: Manifest parses and every file it names exists
+        run: |
+          node -e '
+            const fs = require("fs");
+            const m = JSON.parse(fs.readFileSync("manifest.json", "utf8"));
+            const files = [m.background && m.background.service_worker, m.action && m.action.default_popup].filter(Boolean);
+            const missing = files.filter((f) => !fs.existsSync(f));
+            if (m.manifest_version !== 3 || missing.length) {
+              console.error("manifest_version", m.manifest_version, "missing", missing);
+              process.exit(1);
+            }
+          '
+
+  jetbrains:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: editors/jetbrains
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb  # v6.3.0
+        with:
+          gradle-version: "8.10.2"
+      - run: gradle buildPlugin --no-daemon
+      - uses: actions/upload-artifact@v4
+        with:
+          name: loaddensity-jetbrains
+          path: editors/jetbrains/build/distributions/*.zip

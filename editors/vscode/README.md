@@ -18,12 +18,15 @@ npm run package         # produces a .vsix
 code --install-extension loaddensity-0.1.0.vsix
 ```
 
-Generate the bundled schema once with:
+The bundled schema is committed. After adding, renaming or removing an `LD_*` command,
+regenerate it from the repository root (`test/test_vscode_schema.py` fails while it is stale):
 
 ```bash
 python -c "from je_load_density import export_schema; \
   export_schema('editors/vscode/schemas/loaddensity-action-schema.json')"
 ```
+
+CI (`.github/workflows/editors.yml`) packages the `.vsix` on every change under `editors/`.
 
 ## Configuration
 

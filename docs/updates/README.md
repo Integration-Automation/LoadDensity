@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20260923-34 | 2026-09-23 | CI builds the editor extensions; the VS Code schema is committed | #done #ci #editors | [2026-09](2026-09.md) |
 | U-20260923-33 | 2026-09-23 | Release 0.0.74 | #done #release | [2026-09](2026-09.md) |
 | U-20260923-32 | 2026-09-23 | Asyncio templates resolve host names without the loop's thread pool | #done #bugfix | [2026-09](2026-09.md) |
 | U-20260923-31 | 2026-09-23 | HTTP/3 template sends the request and reads the response | #done #bugfix | [2026-09](2026-09.md) |
@@ -101,4 +102,4 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 38 |
+| [2026-09.md](2026-09.md) | 2026-09 | 39 |
