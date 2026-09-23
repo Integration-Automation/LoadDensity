@@ -4,6 +4,8 @@ Fuzz HTTP user template — wraps a seed task and replays mutated variants.
 Each task entry has the shape of a normal HTTP task plus optional
 ``fuzz_count`` (default 5). The runner emits ``fuzz_count`` mutated
 requests per tick.
+
+A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
 import time
@@ -22,7 +24,10 @@ from je_load_density.utils.parameterization import (
 )
 from je_load_density.utils.security.fuzz import expand_task_fuzz
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.user_template._common import fire_request_event
+from je_load_density.wrapper.user_template._common import (
+    fire_request_event,
+    with_connection_defaults,
+)
 
 
 def set_wrapper_fuzz_http_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -58,7 +63,7 @@ class FuzzHttpUserWrapper(User):
     wait_time = between(0.1, 0.2)
 
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
-        seed = parameter_resolver.resolve(raw_task)
+        seed = with_connection_defaults("fuzz_http_user", parameter_resolver.resolve(raw_task))
         count = int(seed.get("fuzz_count", 5))
         timeout = float(seed.get("timeout", 5.0))
         for variant in expand_task_fuzz(seed, count):

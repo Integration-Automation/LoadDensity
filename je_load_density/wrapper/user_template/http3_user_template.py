@@ -9,6 +9,8 @@ Each task entry::
 
 aioquic is async-only; this template runs an event loop per task to keep
 the dispatch contract identical to the other sync templates.
+
+A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
 import asyncio
@@ -26,7 +28,10 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.user_template._common import fire_request_event
+from je_load_density.wrapper.user_template._common import (
+    fire_request_event,
+    with_connection_defaults,
+)
 
 
 def set_wrapper_http3_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -95,7 +100,7 @@ class Http3UserWrapper(User):
     wait_time = between(0.1, 0.2)
 
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
-        step = parameter_resolver.resolve(raw_task)
+        step = with_connection_defaults("http3_user", parameter_resolver.resolve(raw_task))
         name = step.get("name") or step.get("request_url", "")
         start = time.monotonic()
         try:
