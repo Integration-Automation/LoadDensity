@@ -9,6 +9,8 @@ Each task entry::
      "data": {"data": {"k": "v"}}}
     {"method": "delete", "path": "secret/data/myapp"}
     {"method": "list", "path": "secret/metadata"}
+
+A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
 import json

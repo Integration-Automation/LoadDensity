@@ -7,6 +7,8 @@ Each task entry::
     {"method": "login", "username": "u", "password": "p"}
     {"method": "send", "from": "a@x", "to": ["b@y"], "subject": "hi", "body": "..."}
     {"method": "quit"}
+
+A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
 import smtplib
@@ -26,6 +28,7 @@ from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 from je_load_density.wrapper.user_template._common import (
     coerce_response_length,
     fire_request_event,
+    with_connection_defaults,
 )
 
 
@@ -103,7 +106,7 @@ class SmtpUserWrapper(User):
         }.get(method)
 
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
-        step = parameter_resolver.resolve(raw_task)
+        step = with_connection_defaults("smtp_user", parameter_resolver.resolve(raw_task))
         method = str(step.get("method", "")).lower()
         name = step.get("name") or method
         handler = self._command_for(method)

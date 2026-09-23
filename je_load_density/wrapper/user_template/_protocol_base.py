@@ -3,7 +3,8 @@ Reusable Locust User base for protocol templates.
 
 Subclasses provide ``_proxy_key``, ``_request_type``, and a
 ``_command_for(method)`` implementation. The base handles parameter
-resolution, dispatch, Locust event firing, and the run-task loop.
+resolution, dispatch, Locust event firing, and the run-task loop. A
+``connection`` dict given to the setter supplies default step fields.
 """
 
 import time
@@ -14,7 +15,10 @@ from locust import User, between, task
 from je_load_density.utils.logging.loggin_instance import load_density_logger
 from je_load_density.utils.parameterization import parameter_resolver
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.user_template._common import fire_request_event
+from je_load_density.wrapper.user_template._common import (
+    fire_request_event,
+    with_connection_defaults,
+)
 
 
 class ProtocolUserBase(User):
@@ -33,7 +37,7 @@ class ProtocolUserBase(User):
         return str(step.get("name") or step.get("method", "") or "")
 
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
-        step = parameter_resolver.resolve(raw_task)
+        step = with_connection_defaults(self._proxy_key, parameter_resolver.resolve(raw_task))
         method = str(step.get("method", "")).lower()
         handler = self._command_for(method)
         if handler is None:

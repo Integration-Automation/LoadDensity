@@ -11,6 +11,7 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
+from je_load_density.wrapper.user_template._common import default_host
 
 
 def set_wrapper_mqtt_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -46,6 +47,8 @@ class MqttUserWrapper(User):
             "client_id": "...",
             "name": "publish-telemetry"
         }
+
+    ``host`` given to ``set_wrapper_mqtt_user`` is the default ``broker``.
     """
 
     host = "127.0.0.1:1883"
@@ -104,7 +107,7 @@ class MqttUserWrapper(User):
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
         step = parameter_resolver.resolve(raw_task)
         method = str(step.get("method", "publish")).lower()
-        broker = step.get("broker") or step.get("host") or self.host
+        broker = step.get("broker") or step.get("host") or default_host("mqtt_user", self.host)
         name = step.get("name") or f"{method}:{step.get('topic', '')}"
 
         start = time.monotonic()

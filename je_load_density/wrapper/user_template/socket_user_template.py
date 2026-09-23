@@ -11,6 +11,7 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
+from je_load_density.wrapper.user_template._common import default_host
 
 
 def set_wrapper_socket_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -43,12 +44,17 @@ class SocketUserWrapper(User):
             "timeout": 5,
             "name": "ping"
         }
+
+    ``host`` given to ``set_wrapper_socket_user`` is the default ``target``.
     """
 
     host = "127.0.0.1:9000"
     wait_time = between(0.1, 0.2)
 
-    def _fire(self, name: str, target: str, protocol: str, start: float, length: int, exception: Exception = None) -> None:
+    def _fire(
+        self, name: str, target: str, protocol: str, start: float, length: int,
+        exception: Exception = None,
+    ) -> None:
         self.environment.events.request.fire(
             request_type=protocol.upper(),
             name=name,
@@ -73,7 +79,7 @@ class SocketUserWrapper(User):
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
         step = parameter_resolver.resolve(raw_task)
         protocol = str(step.get("protocol", "tcp")).lower()
-        target = step.get("target") or step.get("host") or self.host
+        target = step.get("target") or step.get("host") or default_host("socket_user", self.host)
         host, _, port = target.partition(":")
         port = int(port or 0)
         timeout = float(step.get("timeout", 5))

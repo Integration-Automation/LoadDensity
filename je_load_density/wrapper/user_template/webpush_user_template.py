@@ -9,6 +9,8 @@ Each task entry::
      "vapid_private_key": "...",
      "vapid_claims": {"sub": "mailto:ops@example"},
      "ttl": 60}
+
+A ``connection`` dict given to the setter supplies default step fields; keys in the step win.
 """
 
 from typing import Any, Callable, Dict, Optional

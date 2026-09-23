@@ -8,7 +8,9 @@ event-dispatch boilerplate.
 
 import json
 import time
-from typing import Any, Optional
+from typing import Any, Dict, Optional
+
+from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 
 
 def fire_request_event(
@@ -31,6 +33,27 @@ def fire_request_event(
         response=None,
         start_time=start,
     )
+
+
+def default_host(proxy_key: str, fallback: Any) -> Any:
+    """Return the ``host`` given to the template's ``set_wrapper_*`` setter, or ``fallback``.
+
+    The setter's ``host`` is the user's default host: steps that name their own target still win.
+    """
+    proxy_user = locust_wrapper_proxy.user_dict.get(proxy_key)
+    return getattr(proxy_user, "host", None) or fallback
+
+
+def with_connection_defaults(proxy_key: str, step: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge the ``connection`` dict given to the setter under ``step``; keys in the step win.
+
+    Returns ``step`` itself when no ``connection`` dict was given.
+    """
+    proxy_user = locust_wrapper_proxy.user_dict.get(proxy_key)
+    connection = getattr(proxy_user, "connection", None)
+    if not isinstance(connection, dict) or not connection:
+        return step
+    return {**connection, **step}
 
 
 def payload_bytes(value: Any) -> bytes:
