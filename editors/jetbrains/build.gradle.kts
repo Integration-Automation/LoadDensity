@@ -16,6 +16,9 @@ intellij {
     version.set("2024.1")
     type.set("IC")
     plugins.set(listOf("com.intellij.java"))
+    // The plugin's default is "download sources unless $CI is set", which resolves a different
+    // IDE artifact locally than in CI and breaks the dependency lock. Pin it to one answer.
+    downloadSources.set(false)
 }
 
 tasks {
