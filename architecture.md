@@ -36,7 +36,7 @@ persistence all read from that record.
 | `je_load_density/action_lsp/` | LSP server for action JSON, standard library only (diagnostics and `LD_*` completion) |
 | `je_load_density/tools/lint_files.py` | Pre-commit entry that lints action JSON files |
 | `je_load_density/gui/` | Optional PySide6 GUI (`gui` extra). `LoadDensityWidget` shows the form, the live stats panel and a tab bar with the log, the live chart (`chart_panel.py`) and the run history (`run_history_panel.py`) |
-| `editors/vscode/` | VS Code extension that starts the LSP. `editors/chrome-extension/` and `editors/jetbrains/` hold the Chrome and JetBrains extensions |
+| `editors/vscode/` | VS Code extension that starts the LSP; its action schema is committed under `schemas/`. `editors/chrome-extension/` and `editors/jetbrains/` hold the Chrome and JetBrains extensions. `.github/workflows/editors.yml` builds all three |
 | `deploy/` | Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates |
 | `docker/`, `action.yml`, `.pre-commit-hooks.yaml`, `examples/` | docker-compose test stack, composite GitHub Action, pre-commit hook, sample actions and scripts |
 | `load_density_driver/` | Prebuilt driver (script plus Windows and Linux binaries) |

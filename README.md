@@ -1042,7 +1042,8 @@ LoadDensity reads from every common load-test source format.
 `editors/vscode/` ships a minimal extension that launches
 `python -m je_load_density.action_lsp` over stdio for completion +
 diagnostics. Build with `npm install && npm run package` and install
-the resulting `.vsix`.
+the resulting `.vsix`. The `.github/workflows/editors.yml` workflow packages it, checks the
+Chrome extension and builds the JetBrains plugin on every change under `editors/`.
 
 ## More Modules
 
