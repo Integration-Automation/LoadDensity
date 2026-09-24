@@ -18,9 +18,9 @@
 
 ---
 
-LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步擴展為完整的多協定負載框架:HTTP、FastHttp、WebSocket、gRPC、MQTT、原生 TCP/UDP,再加上 SQL、Redis、Kafka、MongoDB、SSE、Async HTTP/2 等使用者模板,皆透過同一個 JSON 驅動的動作執行器;另含資料參數化、情境流程、報告、可觀測性、分散式 runner、錄製、持久化儲存、可靠性(自適應重試 / 失敗預算 / 網路條件)、即時 dashboard、Slack/Teams 通知、Auth(OAuth2 / JWT / AWS SigV4),以及讓 Claude 端對端驅動測試的 MCP 控制介面。每個 executor 指令以 `LD_*` 命名、使用單一派發點,因此一份動作 JSON 可同時混用協定、exporter 與報告。
+LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步成長為完整的多協定負載框架:HTTP、FastHttp、WebSocket、gRPC、MQTT,以及原生 TCP/UDP 使用者模板,全部收攏在同一個 JSON 驅動的動作執行器之後;另外還有參數化資料、情境流程、報告、可觀測性、分散式 runner、錄製、持久化儲存,以及讓 Claude 端對端驅動負載測試的 MCP 控制介面等模組。每個 executor 指令都有確定性的名稱(`LD_*`)與單一派發點,因此一份動作 JSON 可以在同一個腳本裡混用協定、exporter 與報告。
 
-> **選用相依、可選安裝** — 每個協定驅動與 exporter 都以 `pip install je_load_density[<extra>]` 提供。僅做 HTTP 壓測者執行期不受影響。
+> **選用相依、選擇性安裝** — 每個協定驅動與 exporter 都以 `pip install je_load_density[<extra>]` 這個 extra 提供。對只需要 HTTP 負載測試的使用者而言,基礎安裝的體積維持不變。
 
 ## 目次
 
@@ -36,6 +36,11 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步擴展為完整的�
 - [核心 API](#核心-api)
 - [動作 Executor](#動作-executor)
 - [使用者模板](#使用者模板)
+  - [HTTP / FastHttp](#http--fasthttp)
+  - [WebSocket](#websocket)
+  - [gRPC](#grpc)
+  - [MQTT](#mqtt)
+  - [原生 TCP / UDP](#原生-tcp--udp)
 - [參數解析器](#參數解析器)
 - [情境模式](#情境模式)
 - [斷言與擷取](#斷言與擷取)
@@ -66,32 +71,33 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步擴展為完整的�
 - [例外處理](#例外處理)
 - [日誌](#日誌)
 - [支援平台](#支援平台)
+- [更多模組](#更多模組)
 - [授權](#授權)
 
 ## 亮點
 
-- **一個 executor,41 種 user type。** HTTP、FastHttp、**Async HTTP/2 (httpx)**、HTTP/3、WebSocket、SSE、gRPC(unary 與 server/client/bidi 串流)、MQTT、原生 TCP/UDP、SQL(SQLAlchemy)、Redis、Kafka、**MongoDB**,以及更多協定(AMQP、NATS、Pulsar、Cassandra、Elasticsearch、Modbus、OPC-UA、LDAP、SNMP、SMTP/IMAP、FTP/SFTP 等)— 全部透過同一個 `LD_start_test` 以 `user_detail_dict["user"]` 切換派發。
-- **動作 JSON 即契約。** 每個指令皆由 `Executor.event_dict` 解析;不論手寫、HAR 匯入、控制 socket 傳送或 MCP 工具呼叫,動作列表格式相同。
-- **參數解析器處處可用。** `${var.NAME}`、`${env.NAME}`、`${csv.SOURCE.COL}`、`${db.SOURCE.COL}`、`${faker.method}`,以及內建 `${uuid()}`、`${now()}`、`${randint(min,max)}`;從前一個回應擷取的值可餵給下一個 task 的 URL、header、body 或斷言。
-- **無需寫 Python 的情境流程。** task 流程以 `sequence`(預設)、`weighted`、`conditional`(`run_if`/`skip_if`)宣告;per-task `think_time`、`throttle.rps`、`retry`(`{transient, flaky, permanent}` 預算)直接控制節奏與韌性。
-- **內建 load shapes。** `load_shape="stages"|"spike"|"soak"` + JSON `shape_config`,免寫 Locust subclass。
-- **生產等級可靠度。** 自適應重試(指數退避 + 抖動 + 三級錯誤預算)、滑動視窗失敗預算 / circuit breaker、process supervisor 與硬牆鐘 watchdog、in-process 網路條件(latency / jitter / loss)。
-- **SLA gate + 跨次回歸 diff。** `LD_assert_sla` 在 latency / failure_rate / requests 規則破線時讓 CI 失敗;`LD_diff_runs` 比對兩個 SQLite run,容忍範圍外的 per-name 回歸會被標出。
-- **七種報告格式。** HTML、JSON、XML、CSV、JUnit XML、百分位摘要 JSON,另含選用的 matplotlib **chart 報告**(`latency-over-time` + `RPS-over-time` PNG,需 `[charts]` extra)。
-- **四種即時 exporter。** Prometheus HTTP 端點、InfluxDB line-protocol UDP/HTTP sink、OpenTelemetry OTLP gRPC、**Datadog DogStatsD UDP**,全部 lazy import 並由對應 install extra 控制。
-- **即時 web dashboard。** `start_dashboard()` 啟動 stdlib HTTP + SSE 伺服器,即時把 RPS / avg / p95 / failure 推送到瀏覽器,含 per-name 表格。
-- **Slack + Teams 通知。** `LD_post_slack_summary`(Block Kit)與 `LD_post_teams_summary`(MessageCard),自動取自 build_summary 結果。
-- **斷言與擷取。** `status_code`、`contains`、`not_contains`、`json_path`、`header` 斷言在 Locust 的 `catch_response` 下執行;擷取來源 `json_path`/`header`/`status_code` 會寫回參數解析器。
-- **分散式 runner。** `runner_mode="master"`/`"worker"`,跨機壓測共用同一份 `start_test` API;master 等待設定的 worker 數量(最多 60 秒)後再開始 ramp。
-- **六種匯入器。** HAR(瀏覽流量)、Postman v2.1、OpenAPI 3.x、cURL、**k6 腳本**、**JMeter JMX** — 全部可轉成 action JSON 或單一 task。
-- **Auth 工具。** stdlib OAuth2 client(`client_credentials` / `password` / `refresh` 含 token cache)、JWT 簽發(HS256/384/512 + RS256/384/512)、AWS SigV4 簽章,所有 HTTP user template 透過 `task["cert"]` 即可走 mTLS。
-- **持久化紀錄。** 選用 SQLite sink,含 `runs`/`records`/`metadata` schema 並建立索引;空檔即可直接使用,便於跨次回歸比對。
-- **MCP server。** `python -m je_load_density.mcp_server` 對外開 13 個工具,讓 Claude(Desktop、Code、任何 MCP client)端對端驅動 LoadDensity。
-- **Action JSON 工具鏈。** 內建 linter(`LD_lint_action`)、JSON Schema 匯出(`LD_export_schema`)、GitHub Actions 註解(`LD_emit_github_annotations`)、stdlib LSP server(`python -m je_load_density.action_lsp`)、composite **GitHub Action** 包裝(`action.yml`)、**pre-commit hook**、**VS Code 擴充套件** 骨架 — 編輯器 + CI 整合完整覆蓋。
-- **硬化控制 socket。** 4-byte big-endian 長度前綴 framing(上限 1 MiB)、選用 TLS、共享密鑰 token(環境變數或參數),並保留與 PyBreeze 等工具相容的 legacy 模式。
-- **安全 executor。** 動作 JSON 內 `eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 一律封鎖。
-- **即時 GUI。** 選用的 PySide6 GUI 含即時統計面板(RPS、平均、p95、失敗),翻譯為英文、繁中、日文、韓文。
-- **CLI 子指令。** `run`/`run-dir`/`run-str`/`init`/`bench`/`shell`/`serve`,並保留舊式單旗標形式以相容下游工具。
+- **一個 executor,41 種 user type。** HTTP、FastHttp、**Async HTTP/2 (httpx)**、HTTP/3、WebSocket、SSE、gRPC(unary 與 server/client/bidi 串流)、MQTT、原生 TCP/UDP、SQL(SQLAlchemy)、Redis、Kafka、**MongoDB**,以及更多協定(AMQP、NATS、Pulsar、Cassandra、Elasticsearch、Modbus、OPC-UA、LDAP、SNMP、SMTP/IMAP、FTP/SFTP 等)— 全部透過同一個 `LD_start_test` 指令,以 `user_detail_dict["user"]` 這個 key 派發。
+- **動作 JSON 即契約。** 每個指令都經由 `Executor.event_dict` 解析;不論是手寫、由 HAR 匯入產生、透過控制 socket 傳送,還是由 MCP 工具驅動,動作列表都是同一套。
+- **參數解析器處處可用。** `${var.NAME}`、`${env.NAME}`、`${csv.SOURCE.COL}`、`${db.SOURCE.COL}`、`${faker.method}`,以及內建的 `${uuid()}`、`${now()}`、`${randint(min,max)}` 輔助函式;從某個回應擷取的值,可以餵給下一個 task 的 URL、header、body 或斷言。
+- **無需 Python 的情境流程。** 把 task 宣告成 `sequence`(預設)、`weighted` 或帶 `run_if` / `skip_if` 判斷式的 `conditional`;per-task 的 `think_time`、`throttle.rps` 與 `retry`(`{transient, flaky, permanent}` 預算)不必寫等待迴圈就能控制節奏與韌性。
+- **內建 load shapes。** `load_shape="stages"|"spike"|"soak"` 搭配 JSON `shape_config` — 不需要 Locust subclass。
+- **生產等級的可靠度。** 自適應重試(指數退避 + 抖動 + 每種錯誤類別各自的預算)、滑動視窗失敗預算 / circuit breaker、帶硬性逾時 watchdog 的 process supervisor、in-process 網路條件模擬(latency / jitter / loss)。
+- **SLA gate + 回歸 diff。** 當 latency / failure-rate / request-count 規則破線時,`LD_assert_sla` 會讓 CI 失敗;`LD_diff_runs` 比對兩個持久化到 SQLite 的 run,並標出超過容忍範圍的 per-name 回歸。
+- **七種報告格式。** HTML、JSON、XML、CSV、JUnit XML、百分位摘要 JSON,再加上選用的 matplotlib **chart 報告**(透過 `[charts]` extra 產生 `latency-over-time` 與 `RPS-over-time` PNG)。
+- **四種即時 exporter。** Prometheus HTTP 端點、InfluxDB line-protocol UDP/HTTP sink、OpenTelemetry OTLP gRPC exporter、**Datadog DogStatsD UDP** sink — 全部延遲匯入,並由對應的安裝 extra 控制。
+- **即時 web dashboard。** `start_dashboard()` 會啟動一個 stdlib HTTP + SSE 伺服器,把執行中的 RPS / avg / p95 / failure 計數串流到任意瀏覽器,並附上 per-name 表格。
+- **Slack + Teams 通知。** 以 build_summary 的輸出為基礎的 Block Kit + MessageCard 摘要張貼器(`LD_post_slack_summary`、`LD_post_teams_summary`)。
+- **斷言 + 擷取。** `status_code`、`contains`、`not_contains`、`json_path`、`header` 斷言在 Locust 的 `catch_response` 下執行;來源為 `json_path` / `header` / `status_code` 的擷取器會把值寫回參數解析器。
+- **分散式 runner。** `runner_mode="master"` / `"worker"` 以同一套 `start_test` API 進行跨機負載;master 會先等待設定的 worker 數量最多 60 秒,再開始 ramp。
+- **六種匯入器。** HAR(瀏覽器流量)、Postman v2.1 collection、OpenAPI 3.x spec、獨立的 cURL 指令、**k6 腳本**,以及 **JMeter JMX** plan — 每一種都能轉成動作 JSON 或一個可直接餵給 `LD_start_test` 的 task。
+- **Auth 輔助工具。** stdlib OAuth2 client(`client_credentials` / `password` / `refresh`,含 token cache)、JWT 簽章器(HS256/384/512 + RS256/384/512)、AWS SigV4 請求簽章器,再加上每個 HTTP 使用者模板都能透過 `task["cert"]` 支援 mTLS client-cert。
+- **持久化紀錄。** 選用的 SQLite sink,採 `runs` / `records` / `metadata` schema 並建立索引以利跨次回歸檢查;開箱即可對空檔運作。
+- **MCP server。** `python -m je_load_density.mcp_server` 對外開放 13 個工具,讓 Claude(Desktop、Code、任何 MCP client)不必離開對話就能執行測試、管理專案並取回報告。
+- **動作 JSON 工具鏈。** 內建 linter(`LD_lint_action`)、JSON Schema 匯出器(`LD_export_schema`)、GitHub Actions 註解發送器(`LD_emit_github_annotations`)、stdlib LSP server(`python -m je_load_density.action_lsp`)、composite **GitHub Action** 包裝(`action.yml`)、**pre-commit hook**,以及 **VS Code 擴充套件** 骨架 — 編輯器 + CI 整合端對端到位。
+- **硬化控制 socket。** 4-byte big-endian 長度前綴 framing(上限 1 MiB)、透過 `ssl.create_default_context` 的選用 TLS、以環境變數或參數提供的共享密鑰 token,再加上一個與 PyBreeze 等下游工具相容的 legacy 模式。
+- **安全 executor。** 動作 JSON 檔只能呼叫 `LD_*` 指令,以及一份 22 個名稱的內建白名單(`print`、`len`、`sorted`、`sum` 等),此外別無其他。名單外的一切 — `eval`、`exec`、`compile`、`__import__`、`open`、`input`,以及 `getattr` / `setattr` / `vars` / `globals` 這些屬性與作用域內建 — 根本沒有註冊,因此無法被派發。
+- **即時 GUI。** 選用的 PySide6 前端,附帶即時統計面板(RPS / avg / p95 / failures),已翻譯為英文、繁體中文、日文與韓文。
+- **CLI 子指令。** `run` / `run-dir` / `run-str` / `init` / `bench` / `shell` / `serve`。舊式單旗標形式(`-e/-d/-c/--execute_str`)仍為下游工具保留。
 - **跨平台。** Windows 10/11、macOS、Ubuntu/Linux、Raspberry Pi(3B+ 以上),Python 3.10+。
 
 ## 安裝
@@ -102,29 +108,29 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步擴展為完整的�
 pip install je_load_density
 ```
 
-引入 [Locust](https://locust.io/) 與 `defusedxml`,僅此而已。
+引入 [Locust](https://locust.io/) 與 `defusedxml`,別無其他。
 
 ### 選用 extras
 
-僅安裝所需切片:
+只安裝你會用到的切片:
 
 | Extra | 加入 |
 |-------|------|
-| `gui` | PySide6 + qt-material(圖形介面) |
-| `websocket` | `websocket-client`(WebSocket user 模板) |
-| `grpc` | `grpcio` + `protobuf`(gRPC user 模板) |
-| `mqtt` | `paho-mqtt`(MQTT user 模板) |
-| `redis` | `redis`(Redis user 模板) |
-| `kafka` | `kafka-python`(Kafka user 模板) |
-| `sql` | `sqlalchemy`(SQL user 模板 + `${db.*}` 占位符) |
-| `mongo` | `pymongo`(MongoDB user 模板) |
-| `http2` | `httpx[http2]`(Async HTTP/2 user 模板) |
-| `auth` | `cryptography`(RS256/384/512 JWT 簽發) |
+| `gui` | PySide6 + qt-material(圖形前端) |
+| `websocket` | `websocket-client`(WebSocket 使用者模板) |
+| `grpc` | `grpcio` + `protobuf`(gRPC 使用者模板) |
+| `mqtt` | `paho-mqtt`(MQTT 使用者模板) |
+| `redis` | `redis`(Redis 使用者模板) |
+| `kafka` | `kafka-python`(Kafka 使用者模板) |
+| `sql` | `sqlalchemy`(SQL 使用者模板 + `${db.*}` 占位符) |
+| `mongo` | `pymongo`(MongoDB 使用者模板) |
+| `http2` | `httpx[http2]`(Async HTTP/2 使用者模板) |
+| `auth` | `cryptography`(RS256/384/512 JWT 簽章) |
 | `reliability` | `psutil`(ProcessSupervisor) |
 | `prometheus` | `prometheus-client`(Prometheus exporter) |
 | `opentelemetry` | OpenTelemetry SDK + OTLP gRPC exporter |
 | `metrics` | `prometheus` + `opentelemetry` 一次裝齊 |
-| `charts` | `matplotlib`(chart 報告) |
+| `charts` | `matplotlib`(圖表渲染報告) |
 | `yaml` | `pyyaml`(OpenAPI YAML 載入) |
 | `faker` | `Faker`(驅動 `${faker.method}` 占位符) |
 | `all` | 上列全部 |
@@ -154,17 +160,16 @@ pip install -r requirements.txt
 ```mermaid
 flowchart LR
   subgraph Authoring
-    A1["Action JSON 檔案"]
-    A2["程式呼叫 start_test"]
-    A3["HAR / Postman / OpenAPI /<br/>cURL / k6 / JMeter 匯入"]
+    A1["Action JSON files"]
+    A2["Programmatic start_test"]
+    A3["HAR → action JSON"]
     A4["MCP / Claude"]
   end
 
   subgraph Core
     EXE["Action Executor<br/>event_dict (LD_*)"]
-    RES["Parameter Resolver<br/>${var} / ${env} / ${csv} / ${db} / ${faker}"]
+    RES["Parameter Resolver<br/>${var} / ${env} / ${csv} / ${faker}"]
     REC["test_record_instance"]
-    REL["Reliability<br/>retry · failure budget · conditioner"]
   end
 
   subgraph Runners
@@ -174,20 +179,17 @@ flowchart LR
   end
 
   subgraph Templates
-    HTTP["HTTP / FastHttp / Async-HTTP2"]
-    WS["WebSocket / SSE"]
-    GRPC["gRPC<br/>(unary + 串流)"]
-    MQ["MQTT / Kafka"]
-    SOCK["原生 TCP/UDP"]
-    DATA["SQL / Redis / MongoDB"]
+    HTTP["HTTP / FastHttp"]
+    WS["WebSocket"]
+    GRPC["gRPC"]
+    MQTT["MQTT"]
+    SOCK["Raw TCP/UDP"]
   end
 
   subgraph Outputs
-    REP["報告<br/>HTML/JSON/XML/CSV/JUnit/Summary/Chart"]
-    EXP["Exporter<br/>Prometheus · InfluxDB · OTel · StatsD"]
-    DASH["即時 Dashboard<br/>(SSE)"]
-    NOT["通知<br/>Slack · Teams"]
-    SQL["SQLite 持久化 + 跨次 diff"]
+    REP["Reports<br/>HTML/JSON/XML/CSV/JUnit/Summary"]
+    EXP["Exporters<br/>Prometheus · InfluxDB · OTel"]
+    SQL["SQLite persistence"]
   end
 
   A1 --> EXE
@@ -195,15 +197,16 @@ flowchart LR
   A3 --> A1
   A4 --> EXE
   EXE --> RES
-  EXE --> REL
   EXE --> LOC
   EXE --> MAS
   EXE --> WRK
-  LOC --> HTTP & WS & GRPC & MQ & SOCK & DATA
+  LOC --> HTTP & WS & GRPC & MQTT & SOCK
   MAS --> WRK
-  WRK --> HTTP & WS & GRPC & MQ & SOCK & DATA
-  HTTP & WS & GRPC & MQ & SOCK & DATA --> REC
-  REC --> REP & EXP & DASH & NOT & SQL
+  WRK --> HTTP & WS & GRPC & MQTT & SOCK
+  HTTP & WS & GRPC & MQTT & SOCK --> REC
+  REC --> REP
+  REC --> EXP
+  REC --> SQL
 ```
 
 ### 動作生命週期
@@ -211,19 +214,17 @@ flowchart LR
 ```mermaid
 flowchart LR
   IN["Action<br/>[cmd, args_or_kwargs]"] --> DISP["event_dict[cmd]"]
-  DISP -- "LD_start_test" --> SEED["依 variables / csv_sources /<br/>db_sources 填入 resolver"]
-  SEED --> PICK["挑選 user 模板"]
-  PICK --> ENV["prepare_env<br/>(local / master / worker · load_shape)"]
-  ENV --> RUN["Locust runner tick"]
-  RUN --> THR["throttle.rps 限流"]
-  THR --> COND["network conditioner<br/>(latency / jitter / loss)"]
-  COND --> EXPAND["參數解析器<br/>展開 task ${...}"]
-  EXPAND --> RETRY["per-task retry policy<br/>(transient / flaky / permanent)"]
-  RETRY --> EXEC["execute_task"]
-  EXEC -- 回應 --> ASSERT["assertions + extractors"]
-  ASSERT --> EVT["Locust request 事件"]
+  DISP -- "LD_start_test" --> SEED["Seed resolver from<br/>variables / csv_sources"]
+  SEED --> PICK["Pick user template<br/>(_USER_REGISTRY)"]
+  PICK --> ENV["prepare_env<br/>(local / master / worker)"]
+  ENV --> RUN["Locust runner ticks"]
+  RUN --> EXPAND["Parameter resolver<br/>expands ${...} per task"]
+  EXPAND --> EXEC["execute_task<br/>(per-protocol request)"]
+  EXEC -- response --> ASSERT["assertions + extractors"]
+  ASSERT --> EVT["Locust request event"]
   EVT --> REC["test_record_instance.append"]
-  EVT --> FB["failure_budget · 超標即 trip"]
+  DISP -- "LD_generate_*_report" --> RREAD["Read from test_record_instance"]
+  RREAD --> OUT["Report file(s)"]
 ```
 
 ### User 派發
@@ -231,19 +232,13 @@ flowchart LR
 ```mermaid
 flowchart TB
   CMD["start_test(user_detail_dict={...})"] --> KEY{"user key?"}
-  KEY -- "fast_http_user(預設)" --> FH["FastHttpUserWrapper"]
-  KEY -- "http_user" --> H["HttpUserWrapper(requests)"]
-  KEY -- "async_http_user" --> AH["AsyncHttpUserWrapper<br/>(httpx HTTP/2 可選)"]
-  KEY -- "websocket_user" --> WS["WebSocketUserWrapper"]
-  KEY -- "sse_user" --> SS["SseUserWrapper"]
-  KEY -- "grpc_user" --> G["GrpcUserWrapper<br/>(unary / streaming)"]
-  KEY -- "mqtt_user" --> M["MqttUserWrapper"]
-  KEY -- "kafka_user" --> K["KafkaUserWrapper"]
-  KEY -- "socket_user" --> S["SocketUserWrapper"]
-  KEY -- "sql_user" --> SQ["SqlUserWrapper"]
-  KEY -- "redis_user" --> R["RedisUserWrapper"]
-  KEY -- "mongo_user" --> MO["MongoUserWrapper"]
-  FH & H & AH & WS & SS & G & M & K & S & SQ & R & MO --> SC["scenario_runner<br/>(sequence / weighted / conditional)"]
+  KEY -- "fast_http_user (default)" --> FH["FastHttpUserWrapper<br/>(geventhttpclient)"]
+  KEY -- "http_user" --> H["HttpUserWrapper<br/>(requests)"]
+  KEY -- "websocket_user" --> WS["WebSocketUserWrapper<br/>(websocket-client)"]
+  KEY -- "grpc_user" --> G["GrpcUserWrapper<br/>(grpcio + importlib lookup)"]
+  KEY -- "mqtt_user" --> M["MqttUserWrapper<br/>(paho-mqtt)"]
+  KEY -- "socket_user" --> S["SocketUserWrapper<br/>(stdlib TCP / UDP)"]
+  FH & H & WS & G & M & S --> SC["scenario_runner<br/>(sequence / weighted / conditional)"]
   SC --> RX["request_executor.execute_task"]
 ```
 
@@ -251,60 +246,50 @@ flowchart TB
 
 ```
 je_load_density/
-├── __init__.py                       # 公開 API re-export
-├── __main__.py                       # CLI: run / run-dir / run-str / init / bench / shell / serve
-├── action_lsp/                       # 動作 JSON 的 LSP 伺服器
-├── mcp_server/                       # MCP server(13 個給 Claude 的工具)
-├── tools/                            # CLI 工具(pre-commit linter 等)
-├── gui/                              # 選用 PySide6 前端
+├── __init__.py                       # Public API re-exports
+├── __main__.py                       # CLI: run / run-dir / run-str / init / serve
+├── gui/                              # Optional PySide6 front-end
+│   ├── language_wrapper/             # En / zh-TW / Ja / Ko translations
+│   ├── load_density_gui_thread.py    # Worker thread for non-blocking starts
+│   ├── log_to_ui_filter.py           # Forward logger records to the UI pane
+│   ├── main_widget.py                # Form-based test configurator
+│   ├── main_window.py                # PySide6 main window shell
+│   └── stats_panel.py                # Live RPS / avg / p95 / failures panel
+├── mcp_server/                       # MCP server (13 tools for Claude)
+│   ├── __main__.py
+│   └── server.py
 ├── utils/
-│   ├── auth/                         # OAuth2 / JWT / AWS SigV4
-│   ├── callback/                     # callback_executor
-│   ├── ci_annotations/               # GitHub Actions 註解
-│   ├── dashboard/                    # 即時 web dashboard (SSE)
-│   ├── exception/                    # LoadDensity* 例外階層
-│   ├── executor/                     # Executor · event_dict · 安全 builtins
-│   ├── file_process/                 # 目錄走訪 · 專案 scaffold
-│   ├── generate_report/              # HTML / JSON / XML / CSV / JUnit / Summary / Chart
-│   ├── get_data_structure/           # API 資料 helper(舊)
-│   ├── graphql/                      # GraphQL helper
-│   ├── json/                         # JSON 讀寫
-│   ├── linter/                       # Action JSON linter
-│   ├── load_shapes/                  # Stages / Spike / Soak
-│   ├── logging/                      # 已設定 logger
-│   ├── metrics/                      # Prometheus · InfluxDB · OTel · StatsD
-│   ├── notifier/                     # Slack · Teams
-│   ├── package_manager/              # 動態套件載入
-│   ├── parameterization/             # ParameterResolver(var / env / csv / db / faker)
-│   ├── project/                      # 專案範本
-│   ├── recording/                    # HAR / Postman / OpenAPI / cURL / k6 / JMeter
-│   ├── regression/                   # 跨次 diff
-│   ├── reliability/                  # adaptive_retry / failure_budget /
-│   │                                 # network_conditioner / process_supervisor
-│   ├── schema/                       # JSON Schema 匯出
-│   ├── sla/                          # SLA gate
-│   ├── socket_server/                # 長度框架 TCP 控制 plane(+TLS+token)
-│   ├── test_record/                  # 記憶體紀錄 + SQLite 持久化
-│   ├── throttle/                     # 共享 token-bucket
-│   └── xml/                          # defusedxml XML helper
+│   ├── callback/                     # callback_executor (post-action callbacks)
+│   ├── exception/                    # LoadDensity* exception hierarchy + tags
+│   ├── executor/                     # Executor class · event_dict · safe builtins
+│   ├── file_process/                 # Directory walker · project scaffolder
+│   ├── generate_report/              # HTML / JSON / XML / CSV / JUnit / Summary
+│   ├── get_data_structure/           # API data helper (legacy)
+│   ├── json/                         # JSON read/write · placeholder normaliser
+│   ├── logging/                      # Configured load_density_logger
+│   ├── metrics/                      # Prometheus · InfluxDB · OpenTelemetry sinks
+│   ├── package_manager/              # Dynamic package loader (LD_add_package_*)
+│   ├── parameterization/             # ParameterResolver + CSV / faker sources
+│   ├── project/                      # Project template + create_project_dir
+│   ├── recording/                    # HAR → action JSON converter
+│   ├── socket_server/                # Length-framed TCP control plane (+TLS+token)
+│   ├── test_record/                  # In-memory record list + SQLite persistence
+│   └── xml/                          # defusedxml-backed XML helpers
 └── wrapper/
-    ├── create_locust_env/            # prepare_env / create_env(local/master/worker + shape)
-    ├── event/                        # request_hook(Locust 事件 → 紀錄)
-    ├── proxy/                        # 各協定 task store(locust_wrapper_proxy)
-    └── user_template/                # 12 種 Locust user + scenario_runner + request_executor
-load_density_driver/                  # 獨立 driver 建置
-examples/                             # 12 個可執行範例
-docker/                               # httpbin / mosquitto / redis / kafka / prometheus
-editors/vscode/                       # VS Code 擴充套件骨架
-action.yml                            # composite GitHub Action
-.pre-commit-hooks.yaml                # pre-commit 入口
-test/                                 # pytest 測試
-docs/                                 # Sphinx 文件(En / Zh / API)
+    ├── create_locust_env/            # prepare_env / create_env (local/master/worker)
+    ├── event/                        # request_hook (binds Locust events → records)
+    ├── proxy/                        # Per-protocol task store (locust_wrapper_proxy)
+    │   └── user/                     # fast_http / http / websocket / grpc / mqtt / socket
+    ├── start_wrapper/                # start_test dispatcher (_USER_REGISTRY)
+    └── user_template/                # Locust user classes + scenario_runner + request_executor
+load_density_driver/                  # Standalone driver builds
+test/                                 # pytest test suite
+docs/                                 # Sphinx documentation (En / Zh / API)
 ```
 
 ## Quick Start
 
-### 以 Python 跑 HTTP 壓測
+### 以 Python 跑 HTTP 負載測試
 
 ```python
 from je_load_density import start_test
@@ -351,43 +336,38 @@ python -m je_load_density run smoke.json
 ### Action 形式
 
 ```python
-["command"]                                    # 無參數
+["command"]                                    # no args
 ["command", {"key": "value"}]                  # kwargs
 ["command", [arg1, arg2]]                      # positional
 ```
 
-最外層可為純 list,或 `{"load_density": [...]}` wrapper。
+最外層文件可以是一個純 list,或一個 `{"load_density": [...]}` wrapper。
 
 ## 食譜 (Recipes)
 
-最常用的需求做成短小可複製範例。
+涵蓋最常見需求的簡短複製貼上片段。每一則都能以 Python 的 `start_test` 呼叫,或以 `LD_start_test` 動作執行。
 
 | 食譜 | 展示 |
 |---|---|
-| **HTTP smoke** | `fast_http_user` + `status_code` 斷言 + summary 報告 |
-| **登入流程** | `extract` 取 token,後續 task 以 `${var.auth}` 帶 header |
-| **加權混合** | `mode: "weighted"` + `weight` 偏向熱門端點 |
-| **WebSocket echo** | `websocket_user` `connect → sendrecv → close` |
-| **gRPC unary / 串流** | `grpc_user` 配 `rpc: "server_stream"` / `"client_stream"` / `"bidi"` |
-| **MQTT pub/sub** | `mqtt_user` `connect → subscribe → publish → disconnect` |
-| **原生 TCP/UDP** | `socket_user` 帶 `payload` 與 `expect_substring` |
-| **SQL / Redis / Mongo** | 三種資料層 user template,內含 expect 斷言 |
-| **Async HTTP/2** | `async_http_user` + `http2=True`(httpx) |
-| **分散式跑法** | 一個 master + N 個 worker,對同一份 action JSON |
-| **HAR / Postman / OpenAPI / k6 / JMeter** | 對應 `LD_*_to_action_json` 匯入器 |
-| **匯出指標** | Prometheus / InfluxDB / OTel / DogStatsD |
-| **持久化結果** | `LD_persist_records` → SQLite → `LD_diff_runs` |
-| **SLA gate** | `LD_assert_sla` 在 latency / failure_rate 破線時失敗 |
-| **Spike shape** | `load_shape="spike"` + `shape_config` |
-| **Think time + throttle** | `task["think_time"]` 與 `task["throttle"]={"rps":...}` |
-| **可靠度** | `LD_install_failure_budget` + `LD_install_network_conditioner` + per-task `retry` |
-| **即時 Dashboard** | `LD_start_dashboard` 後瀏覽 `http://127.0.0.1:8765` |
-| **Slack / Teams** | `LD_post_slack_summary` / `LD_post_teams_summary` |
-| **OAuth2 / JWT / AWS SigV4** | `OAuth2Client` 含 token cache · `sign_jwt` · `sign_aws_request` |
-| **mTLS** | task 加 `"cert": ["client.pem","key.pem"]` |
-| **MCP 驅動** | Claude 連 `python -m je_load_density.mcp_server` |
+| **HTTP smoke** | `fast_http_user` + `status_code` 斷言 + summary 報告。 |
+| **登入流程** | 從登入回應 `extract` token,後續受保護的呼叫透過 `${var.auth}` header 重用。 |
+| **加權混合** | `mode: "weighted"` 配合每個 task 的 `weight`,把流量偏向熱門端點。 |
+| **WebSocket echo** | `websocket_user` 的 `connect → sendrecv → close`,搭配 `expect` 子字串斷言。 |
+| **gRPC unary** | `grpc_user` 配 `stub_path` / `request_path` + metadata tuple list + 每次呼叫的 timeout。 |
+| **MQTT pub/sub** | `mqtt_user` 的 `connect → subscribe → publish → disconnect`,對本地 broker。 |
+| **原生 TCP/UDP** | `socket_user` 帶 `payload`(文字或 `hex:…`)與 `expect_substring`。 |
+| **分散式跑法** | 一個 `runner_mode="master"` + N 個 `runner_mode="worker"` 行程,對同一份動作 JSON。 |
+| **HAR replay** | `LD_load_har` → `LD_har_to_action_json`,含 regex include / exclude。 |
+| **匯出指標** | `LD_start_prometheus_exporter`、`LD_start_influxdb_sink`、`LD_start_opentelemetry_exporter`。 |
+| **持久化結果** | `LD_persist_records` 帶 `label` + `metadata` 存進 SQLite,再以 `LD_list_runs` 看趨勢。 |
+| **MCP 驅動** | 把 Claude 接到 `python -m je_load_density.mcp_server`,呼叫 `run_test` / `generate_reports`。 |
+| **SLA gate** | `LD_assert_sla` 以 `latency_p95` / `failure_rate` 規則在回歸時讓 CI 失敗。 |
+| **Spike shape** | `load_shape="spike"` + `shape_config`,驅動 baseline → spike → baseline 的 ramp。 |
+| **Think time + throttle** | `task["think_time"]` 與 `task["throttle"]={"rps":...}` 控制流量節奏。 |
+| **Postman / OpenAPI / cURL** | `LD_postman_to_action_json` / `LD_openapi_to_action_json` / `LD_curl_to_task` 一次性匯入。 |
+| **Redis / Kafka / SQL** | 使用 `user_detail_dict={"user": "redis_user"}` 等,搭配協定專屬的 task 欄位。 |
 
-完整參數請對照目次的對應章節。
+把這張表和專屬章節(見目次)對照,就能看到完整的參數面。
 
 ## 核心 API
 
@@ -398,72 +378,42 @@ from je_load_density import (
     test_record_instance, locust_wrapper_proxy,
     register_variable, register_variables,
     register_csv_source, register_csv_sources,
-    register_db_source, register_db_sources,
     parameter_resolver, resolve,
-    # 匯入器
     har_to_action_json, har_to_tasks, load_har,
-    postman_to_action_json, postman_to_tasks, load_postman_collection,
-    openapi_to_action_json, openapi_to_tasks, load_openapi,
-    curl_to_task,
-    k6_script_to_action_json, k6_script_to_tasks, load_k6_script,
-    jmeter_to_action_json, jmeter_to_tasks, load_jmeter_jmx,
-    # 報告 / 持久化
-    generate_html_report, generate_json_report, generate_xml_report,
-    generate_csv_report, generate_junit_report, generate_summary_report,
-    generate_chart_report, build_summary,
     persist_records, list_runs, fetch_run_records,
-    diff_runs, summarise_records,
-    # SLA / 場景
-    evaluate_sla, assert_sla,
-    SoakShape, SpikeShape, StagesShape, build_load_shape,
-    RpsThrottle, get_throttle, reset_throttles,
-    # Exporter
     start_prometheus_exporter, stop_prometheus_exporter,
     start_influxdb_sink, stop_influxdb_sink,
     start_opentelemetry_exporter, stop_opentelemetry_exporter,
-    start_statsd_sink, stop_statsd_sink,
-    # 可靠度
-    AdaptiveRetryPolicy, run_with_retry, classify_error,
-    FailureBudget, install_failure_budget, uninstall_failure_budget,
-    NetworkConditioner,
-    install_network_conditioner, uninstall_network_conditioner,
-    ProcessSupervisor, with_watchdog,
-    # 通知 / Dashboard
-    snapshot_metrics, start_dashboard, stop_dashboard,
-    post_slack_summary, build_slack_summary,
-    post_teams_summary, build_teams_summary,
-    # Auth
-    OAuth2Client,
-    fetch_client_credentials_token, fetch_password_token, refresh_token,
-    sign_jwt, decode_jwt, sign_aws_request,
-    # 工具
-    lint_action, lint_action_file,
-    action_json_schema, export_schema,
-    emit_github_annotations, format_github_annotation,
-    graphql_to_http_task, extract_field,
     start_load_density_socket_server,
+    generate_html_report, generate_json_report, generate_xml_report,
+    generate_csv_report, generate_junit_report, generate_summary_report,
+    build_summary,
     create_project_dir, callback_executor, read_action_json,
 )
 ```
 
-完整公開介面定義於 `je_load_density/__init__.py` 的 `__all__`(108 條)。
+完整的公開介面定義於 `je_load_density/__init__.py` 的 `__all__`。
 
 ## 動作 Executor
 
+動作 executor 把字串指令名稱對應到一個 Python callable。每個後端、exporter 與報告 helper 都註冊在 `event_dict` 之下。
+
+### 內建 `LD_*` 指令
+
 | 類別 | 指令 |
-|------|------|
+|-------|----------|
 | 核心 | `LD_start_test`、`LD_execute_action`、`LD_execute_files`、`LD_add_package_to_executor`、`LD_start_socket_server` |
 | 報告 | `LD_generate_html(_report)`、`LD_generate_json(_report)`、`LD_generate_xml(_report)`、`LD_generate_csv_report`、`LD_generate_junit_report`、`LD_generate_summary_report`、`LD_generate_chart_report`、`LD_summary` |
 | 持久化 | `LD_persist_records`、`LD_list_runs`、`LD_fetch_run_records`、`LD_clear_records` |
 | 參數 | `LD_register_variable(s)`、`LD_register_csv_source(s)`、`LD_register_db_source(s)`、`LD_clear_resolver` |
-| 錄製 / 匯入 | `LD_load_har`、`LD_har_to_*`、`LD_postman_to_*`、`LD_openapi_to_*`、`LD_curl_to_task`、`LD_k6_script_to_*`、`LD_jmeter_to_*` |
+| 錄製 | `LD_load_har`、`LD_har_to_*`、`LD_postman_to_*`、`LD_openapi_to_*`、`LD_curl_to_task`、`LD_k6_script_to_*`、`LD_jmeter_to_*` |
 | 指標 | `LD_start/stop_prometheus_exporter`、`LD_start/stop_influxdb_sink`、`LD_start/stop_opentelemetry_exporter`、`LD_start/stop_statsd_sink` |
-| 品質 / DX | `LD_lint_action(_file)`、`LD_export_schema`、`LD_emit_github_annotations` |
+| 品質 / DX | `LD_lint_action`、`LD_lint_action_file`、`LD_export_schema`、`LD_emit_github_annotations` |
 | SLA / 回歸 | `LD_evaluate_sla`、`LD_assert_sla`、`LD_diff_runs` |
-| 可靠度 | `LD_install/uninstall_failure_budget`、`LD_install/uninstall_network_conditioner` |
-| Dashboard / 通知 | `LD_start/stop_dashboard`、`LD_post_slack_summary`、`LD_post_teams_summary` |
+| 可靠度 | `LD_install_failure_budget`、`LD_uninstall_failure_budget`、`LD_install_network_conditioner`、`LD_uninstall_network_conditioner` |
+| Dashboard / 通知 | `LD_start_dashboard`、`LD_stop_dashboard`、`LD_post_slack_summary`、`LD_post_teams_summary` |
 
-安全 builtins(`print`、`len`、`range`…)亦可呼叫;`eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 一律禁止。
+安全的 Python 內建(`print`、`len`、`range` 等)也可接受;`eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 則被明確封鎖。
 
 ### 自訂指令
 
@@ -478,34 +428,131 @@ add_command_to_executor({"LD_slack_notify": slack_notify})
 
 ## 使用者模板
 
-所有 user type 透過 `start_test(user_detail_dict={"user": "<key>"})` 註冊;task 共用相同 schema,僅協定欄位不同。41 種 user type 的詳細欄位與範例,請見英文 README 對應段落(本節結構相同,僅就重點列出)。
+每個模板都透過 `user_detail_dict={"user": "<key>"}` 註冊在 `start_test` 之下。task 在 HTTP、WebSocket、gRPC、MQTT 與原生 socket 使用者之間共用相同的形狀;只有協定專屬的欄位不同。
 
-* `fast_http_user` / `http_user` — 預設 HTTP 壓測,task 支援 `cert` 走 mTLS。
-* `async_http_user` — httpx 後端,可開 HTTP/2:`start_test(user="async_http_user", http2=True, ...)`。
-* `websocket_user` / `sse_user` — 串流型,`connect → sendrecv|wait → close`。
-* `grpc_user` — task 加 `rpc: "server_stream"` / `"client_stream"` / `"bidi"`;`payload` 為 list 即為 client 串流。
-* `mqtt_user` / `kafka_user` — pub/sub。
-* `socket_user` — 原生 TCP/UDP。
-* `sql_user` — SQLAlchemy `text(...)`,task 含 `expect_rows`。
-* `redis_user` — `get/set/incr/lpush/rpop/delete/exists`。
-* `mongo_user` — `find_one/find/insert_one/update_one/delete_one/count`,含 `expect_min`。
+### HTTP / FastHttp
+
+```python
+start_test(
+    user_detail_dict={"user": "fast_http_user"},
+    user_count=50, spawn_rate=10, test_time=60,
+    variables={"base": "https://api.example.com"},
+    tasks=[
+        {"method": "post", "request_url": "${var.base}/login",
+         "json": {"email": "u@example.com", "password": "secret"},
+         "extract": [{"var": "auth", "from": "json_path", "path": "data.token"}]},
+        {"method": "get", "request_url": "${var.base}/profile",
+         "headers": {"Authorization": "Bearer ${var.auth}"},
+         "assertions": [{"type": "status_code", "value": 200}]},
+    ],
+)
+```
+
+`fast_http_user` 是預設值;當第三方轉接器需要時,`http_user` 會把 client 換成 `requests` 風格的同步呼叫。
+
+### WebSocket
+
+`pip install "je_load_density[websocket]"`
+
+```python
+start_test(
+    user_detail_dict={"user": "websocket_user"},
+    user_count=10, spawn_rate=5, test_time=60,
+    tasks=[
+        {"method": "connect", "request_url": "wss://echo.example.com/socket"},
+        {"method": "sendrecv", "payload": '{"ping": 1}', "expect": "pong"},
+        {"method": "close"},
+    ],
+)
+```
+
+### gRPC
+
+`pip install "je_load_density[grpc]"`
+
+```python
+start_test(
+    user_detail_dict={"user": "grpc_user"},
+    user_count=20, spawn_rate=5, test_time=60,
+    tasks=[{
+        "name": "say_hello",
+        "target": "localhost:50051",
+        "stub_path": "pkg.greeter_pb2_grpc.GreeterStub",
+        "request_path": "pkg.greeter_pb2.HelloRequest",
+        "method": "SayHello",
+        "payload": {"name": "world"},
+        "metadata": [["x-token", "abc"]],
+        "timeout": 5,
+    }],
+)
+```
+
+`stub_path` 與 `request_path` 會在 `importlib.import_module` 之前先以嚴格的識別字 regex 驗證,因此 traversal 式攻擊會被拒絕。
+
+### MQTT
+
+`pip install "je_load_density[mqtt]"`
+
+```python
+start_test(
+    user_detail_dict={"user": "mqtt_user"},
+    user_count=10, spawn_rate=5, test_time=60,
+    tasks=[
+        {"method": "connect",   "broker": "127.0.0.1:1883"},
+        {"method": "subscribe", "topic":  "telemetry/in", "qos": 1},
+        {"method": "publish",   "topic":  "telemetry/out", "payload": "ping", "qos": 1},
+        {"method": "disconnect"},
+    ],
+)
+```
+
+### 原生 TCP / UDP
+
+只用 stdlib;無需安裝。
+
+```python
+start_test(
+    user_detail_dict={"user": "socket_user"},
+    user_count=20, spawn_rate=5, test_time=60,
+    tasks=[
+        {"protocol": "tcp", "target": "127.0.0.1:9000",
+         "payload": "PING\n", "expect_bytes": 64,
+         "expect_substring": "PONG"},
+        {"protocol": "udp", "target": "127.0.0.1:9000",
+         "payload": "hex:DEADBEEF", "expect_bytes": 4},
+    ],
+)
+```
 
 ## 參數解析器
 
-占位符會在每個 task 自動展開:
+占位符會在每個 task 上自動展開:
 
 | 占位符 | 解析為 |
-|--------|--------|
-| `${var.NAME}` | `register_variable(s)` 傳入的值 |
-| `${env.NAME}` | 環境變數 |
+|-------------|-------------|
+| `${var.NAME}` | 傳給 `register_variable(s)` 的值 |
+| `${env.NAME}` | 環境變數 `NAME` |
 | `${csv.SOURCE.COL}` | CSV 源 `SOURCE` 的下一列(預設循環) |
-| `${db.SOURCE.COL}` | SQLAlchemy 查詢結果的下一列(`register_db_source`) |
-| `${faker.METHOD}` | `Faker().METHOD()`(lazy) |
-| `${uuid()}` | UUID 4 |
-| `${now()}` | 本地 ISO-8601 時間戳 |
-| `${randint(min, max)}` | 加密強度隨機整數 |
+| `${faker.METHOD}` | `Faker().METHOD()`(延遲匯入) |
+| `${uuid()}` | 新的 UUID 4 字串 |
+| `${now()}` | 本地 ISO-8601 時間戳(秒) |
+| `${randint(min, max)}` | 加密強度的隨機整數 |
 
-未知占位符會保持原樣,以便 dry run 時看出缺資料。
+```python
+from je_load_density import register_variable, register_csv_source
+
+register_variable("base", "https://api.example.com")
+register_csv_source("users", "users.csv")
+```
+
+或從動作 JSON:
+
+```json
+["LD_register_variables", {"variables": {"base": "https://api.example.com"}}]
+["LD_register_csv_sources", {"sources": [{"name": "users", "file_path": "users.csv"}]}]
+```
+
+未知的占位符會原樣保留,因此 dry run 時缺少的資料會顯而易見。
 
 ## 情境模式
 
@@ -520,14 +567,16 @@ add_command_to_executor({"LD_slack_notify": slack_notify})
 ```
 
 | 模式 | 行為 |
-|------|------|
-| `sequence` | 每 tick 依序執行全部 task(預設) |
-| `weighted` | 每 tick 依 `weight` 挑一個 task |
-| `conditional` | 由 `run_if` / `skip_if` 對 resolver 求值 |
+|------|-----------|
+| `sequence` | 每個 tick 依序執行每個 task(預設) |
+| `weighted` | 每個 tick 依 `weight` 挑一個 task |
+| `conditional` | 使用對參數解析器求值的 `run_if` / `skip_if` 判斷式 |
 
-per-task 控制欄位:`think_time`、`throttle.rps`、`retry.{transient,flaky,permanent,base_delay,max_delay,backoff_factor,jitter}`。
+判斷式:`bool`、`"${var.x}"`、`{"equals": [a,b]}`、`{"not_equals": [a,b]}`、`{"in": [needle, haystack]}`、`{"truthy": value}`。
 
 ## 斷言與擷取
+
+兩者都在 Locust 的 `catch_response` 下執行;失敗的斷言會在每份報告中浮現。
 
 ```json
 {
@@ -549,73 +598,109 @@ per-task 控制欄位:`think_time`、`throttle.rps`、`retry.{transient,flaky,pe
 
 ## 報告
 
-| 格式 | 輸出 |
-|------|------|
-| HTML | `<base>.html`(成功 + 失敗 表格,色彩標記) |
-| JSON | `<base>_success.json` + `<base>_failure.json` |
-| XML | `<base>_success.xml` + `<base>_failure.xml` |
-| CSV | `<base>.csv` |
-| JUnit | `<base>-junit.xml`(CI 友善) |
-| Summary | `<base>.json`(per-name p50/p90/p95/p99) |
-| Chart | `<base>-latency.png` + `<base>-rps.png`(`[charts]` extra) |
+六種格式,皆從 `test_record_instance` 取用:
+
+```python
+from je_load_density import (
+    generate_html_report, generate_json_report, generate_xml_report,
+    generate_csv_report, generate_junit_report, generate_summary_report,
+)
+
+generate_html_report("report")           # report.html
+generate_json_report("report")           # report_success.json + report_failure.json
+generate_xml_report("report")            # report_success.xml  + report_failure.xml
+generate_csv_report("report")            # report.csv
+generate_junit_report("report-junit")    # report-junit.xml (CI)
+generate_summary_report("report-sum")    # totals + per-name p50/p90/p95/p99
+```
+
+| 格式 | 輸出形狀 | Spec 驅動? |
+|--------|--------------|--------------|
+| HTML | `<base>.html`(成功 + 失敗表格,色彩標記) | single |
+| JSON | `<base>_success.json` + `<base>_failure.json` | split |
+| XML | `<base>_success.xml` + `<base>_failure.xml` | split |
+| CSV | `<base>.csv` | single |
+| JUnit | `<base>-junit.xml`(CI 原生) | single |
+| Summary | `<base>.json`(per-name p50/p90/p95/p99) | single |
 
 ## 可觀測性
 
 ```python
 from je_load_density import (
-    start_prometheus_exporter, start_influxdb_sink,
-    start_opentelemetry_exporter, start_statsd_sink,
+    start_prometheus_exporter, start_influxdb_sink, start_opentelemetry_exporter,
 )
 
 start_prometheus_exporter(port=9646, addr="127.0.0.1")
 start_influxdb_sink(transport="udp", host="influxdb", port=8089)
 start_opentelemetry_exporter(endpoint="http://otel-collector:4317",
                              service_name="loaddensity")
-start_statsd_sink(host="dogstatsd", port=8125, prefix="loaddensity")
 ```
+
+| Sink | 指標 |
+|------|---------|
+| Prometheus | `loaddensity_requests_total`、`loaddensity_request_latency_ms`、`loaddensity_response_bytes` |
+| InfluxDB | `loaddensity_request` line-protocol points(UDP 或 HTTP) |
+| OTel | `loaddensity.requests`、`loaddensity.request.latency`、`loaddensity.response.size` |
+
+三者都延遲載入,並由對應的安裝 extra 控制。
 
 ## 分散式 Master / Worker
 
 ```python
 # master
-start_test(user_detail_dict={"user": "fast_http_user"},
-           runner_mode="master", master_bind_host="0.0.0.0", master_bind_port=5557,
-           expected_workers=4, user_count=400, spawn_rate=40, test_time=600,
-           tasks=[...])
+start_test(
+    user_detail_dict={"user": "fast_http_user"},
+    runner_mode="master",
+    master_bind_host="0.0.0.0", master_bind_port=5557,
+    expected_workers=4,
+    web_ui_dict={"host": "0.0.0.0", "port": 8089},
+    user_count=400, spawn_rate=40, test_time=600,
+    tasks=[...],
+)
 
 # worker
-start_test(user_detail_dict={"user": "fast_http_user"},
-           runner_mode="worker", master_host="10.0.0.10", master_port=5557,
-           tasks=[...])
+start_test(
+    user_detail_dict={"user": "fast_http_user"},
+    runner_mode="worker",
+    master_host="10.0.0.10", master_port=5557,
+    tasks=[...],
+)
 ```
 
-master 等待最多 60 秒讓 `expected_workers` 完成註冊後開始 ramp。
+master 會等待最多 60 秒,讓 `expected_workers` 個 worker 完成註冊,再開始負載 ramp。
 
 ## HAR 錄製/重放
 
 ```python
 from je_load_density import load_har, har_to_action_json
 
+har = load_har("recording.har")
 action_json = har_to_action_json(
-    load_har("recording.har"),
-    user="fast_http_user", user_count=20, spawn_rate=10, test_time=120,
-    include=[r"api\.example\.com"], exclude=[r"\.svg$"],
+    har,
+    user="fast_http_user",
+    user_count=20, spawn_rate=10, test_time=120,
+    include=[r"api\.example\.com"],
+    exclude=[r"\.svg$"],
 )
 ```
+
+來自 Chrome / Firefox DevTools、mitmproxy、Charles 等的擷取全都可用。狀態碼會化為每個產生 task 上的 `status_code` 斷言。
 
 ## 持久化紀錄(SQLite)
 
 ```python
-from je_load_density import persist_records, list_runs, diff_runs
+from je_load_density import persist_records, list_runs, fetch_run_records
 
-run_id = persist_records("loadtests.db", label="checkout-2026-05-26",
-                          metadata={"branch": "dev", "commit": "abc1234"})
-
-report = diff_runs("loadtests.db", baseline_run_id=42, current_run_id=run_id,
-                    tolerance=0.10)
-if report["has_regressions"]:
-    raise SystemExit(report["regressions"])
+run_id = persist_records(
+    "loadtests.db",
+    label="checkout-2026-04-28",
+    metadata={"branch": "dev", "commit": "abc1234"},
+)
+for row in list_runs("loadtests.db", limit=10):
+    print(row)
 ```
+
+Schema 會延遲建立;空檔也沒問題。`run_id` 與 `name` 上的索引讓跨次查詢保持快速。
 
 ## MCP Server(給 Claude)
 
@@ -624,9 +709,24 @@ pip install je_load_density
 python -m je_load_density.mcp_server
 ```
 
-server 自己在 stdio 上講 MCP(JSON-RPC 2.0,一行一則訊息),不需要 `mcp` SDK;`[mcp]` extra 是空的,只是讓舊的安裝指令還能用。
+server 自己在 stdio 上講 MCP(JSON-RPC 2.0,一行一則訊息),因此不需要 `mcp` SDK;`[mcp]` extra 是空的,只是保留下來讓舊的安裝指令仍能運作。
 
-13 個工具:`run_test`、`run_action_json`、`create_project`、`list_executor_commands`、`import_har`、`generate_reports`、`summary`、`persist_records`、`list_runs`、`fetch_run`、`clear_records`、`generate_from_openapi`、`generate_from_curls`。
+把它接進 Claude Desktop / Code:
+
+```json
+{
+  "mcpServers": {
+    "loaddensity": {
+      "command": "python",
+      "args": ["-m", "je_load_density.mcp_server"]
+    }
+  }
+}
+```
+
+對外開放十三個工具:`run_test`、`run_action_json`、`create_project`、`list_executor_commands`、`import_har`、`generate_reports`、`summary`、`persist_records`、`list_runs`、`fetch_run`、`clear_records`、`generate_from_openapi`、`generate_from_curls`。
+
+每個工具接收的路徑(`create_project` 的 `path`、`import_har` 的 `file_path`、run 工具的 `database_path`、`generate_from_openapi` 的 `openapi_path`,以及 `generate_reports` 的 `base_name`)都必須解析在 server 的 root 之內。root 預設為工作目錄,除非 `JE_LOAD_DENSITY_MCP_ROOT` 指向他處。root 以外的路徑會被拒絕,因此被所讀內容操縱的模型無法在他處讀寫檔案。
 
 ## 硬化控制 Socket
 
@@ -638,11 +738,81 @@ python -m je_load_density serve \
     --tls-key /etc/loaddensity/server.key
 ```
 
-* 4-byte big-endian 長度前綴 framing(1 MiB 上限)
-* 選用 TLS(磁碟 cert/key,最低 TLS 1.2)
-* 共享密鑰 token 以 `hmac.compare_digest` 比對
-* token 亦讀自 `LOAD_DENSITY_SOCKET_TOKEN`
-* 保留 legacy 模式以維持相容
+- 4-byte big-endian 長度前綴 frame(上限 1 MiB)
+- 選用 TLS(磁碟上的 cert/key;`ssl.create_default_context`,最低 TLS 1.2+)
+- 以 `hmac.compare_digest` 比對的共享密鑰 token;一旦設定,所有 payload 都必須使用 `{"token": "...", "command": [...]}`,並可設 `"op": "quit"` 來停止 server
+- token 也會從 `LOAD_DENSITY_SOCKET_TOKEN` 環境變數讀取
+- 保留 legacy 未驗證模式以維持向後相容
+
+## GUI
+
+```bash
+pip install "je_load_density[gui]"
+```
+
+```python
+import sys
+from PySide6.QtWidgets import QApplication
+from je_load_density.gui.main_window import LoadDensityUI
+
+app = QApplication(sys.argv)
+window = LoadDensityUI()
+window.show()
+sys.exit(app.exec())
+```
+
+GUI 內附英文、繁體中文、日文與韓文翻譯,以及一個每秒輪詢 `test_record_instance` 一次的即時統計面板(RPS、平均 / p95 latency、失敗計數)。
+
+## CLI 用法
+
+```
+python -m je_load_density run FILE              # execute one action JSON file
+python -m je_load_density run-dir DIR           # execute every .json in DIR
+python -m je_load_density run-str JSON          # execute an inline JSON string
+python -m je_load_density init PATH             # scaffold a project skeleton
+python -m je_load_density bench URL [--users N] # quick asyncio HTTP benchmark (no Locust)
+python -m je_load_density shell                 # interactive REPL with ld pre-imported
+python -m je_load_density serve [--host ...]    # start the control socket
+```
+
+舊式單旗標形式(`-e/-d/-c/--execute_str`)仍為與下游工具向後相容而接受。
+
+## 測試紀錄
+
+`test_record_instance.test_record_list` 與 `error_record_list` 蒐集每次請求,內含 `Method`、`test_url`、`name`、`status_code`、`response_time_ms`、`response_length`、`start_time`(epoch 秒,因此報告可跨兩份 list 還原請求順序),失敗時還帶 `error`。報告與 SQLite sink 直接從這些 list 讀取。
+
+## 例外處理
+
+```
+LoadDensityTestException
+├── LoadDensityTestJsonException
+├── LoadDensityGenerateJsonReportException
+├── LoadDensityTestExecuteException
+├── LoadDensityAssertException
+├── LoadDensityHTMLException
+├── LoadDensityAddCommandException
+├── XMLException → XMLTypeException
+└── CallbackExecutorException
+```
+
+所有自訂例外都繼承自 `LoadDensityTestException`;捕捉這一個類別即可涵蓋公開介面。
+
+## 日誌
+
+LoadDensity 對外提供單一已設定的 logger(`load_density_logger`),位於 `je_load_density.utils.logging.loggin_instance`。以標準的 `logging` 模組 API 把它接進你既有的日誌基礎設施。
+
+它把 WARNING+ 寫到 stderr,INFO+ 寫到 `~/.je_load_density/logs/LoadDensity.log`(設 `LOAD_DENSITY_LOG_FILE` 可寫到別處,或設為 `os.devnull` 關閉檔案)。檔案在第一筆紀錄時才開啟,因此匯入套件不會在工作目錄寫入任何東西;它由每個行程共享並附加,每一行都帶著行程 id。
+
+## 支援平台
+
+| 平台 | 狀態 |
+|----------|--------|
+| Windows 10 / 11 | 完整支援 |
+| macOS | 完整支援 |
+| Ubuntu / Linux | 完整支援 |
+| Raspberry Pi | 已在 3B+ 以上測試 |
+
+需要 Python 3.10+。
 
 ## SLA Gate 與跨次回歸 Diff
 
@@ -656,13 +826,16 @@ assert_sla([
     {"type": "requests", "op": "gte", "value": 1000},
 ], summary=build_summary())
 
-report = diff_runs("loadtests.db", baseline_run_id=42, current_run_id=43,
-                    tolerance=0.10)
+report = diff_runs("loadtests.db",
+                   baseline_run_id=42, current_run_id=43,
+                   tolerance=0.10)
 if report["has_regressions"]:
     raise SystemExit(report["regressions"])
 ```
 
-支援規則類型:`latency_p50/_p90/_p95/_p99`、`latency_mean`、`failure_rate`、`requests`。`op` 為 `lt`(預設 `lte`)、`gt`、`gte`。指定 `name` 時即為 per-endpoint 規則。
+支援的規則類型:`latency_p50` / `_p90` / `_p95` / `_p99`、
+`latency_mean`、`failure_rate`、`requests`。`op` 為 `lt`(預設
+`lte`)、`gt`、`gte`。per-endpoint 規則傳入 `name`。
 
 ## Load Shapes
 
@@ -677,7 +850,9 @@ start_test(
 )
 ```
 
-內建:`"stages"`(list of `{duration, users, spawn_rate}`)、`"spike"`、`"soak"`。背後都會轉成 Locust `LoadTestShape` 子類別。
+內建:`"stages"`(`{duration, users, spawn_rate}` 的 list)、
+`"spike"`、`"soak"`。全部在背後回傳 Locust `LoadTestShape`
+子類別。
 
 ## Think Time 與 Throttle
 
@@ -690,7 +865,8 @@ start_test(
 ]
 ```
 
-兩者皆 per-task,在請求發出前解析。Throttle bucket 由 `key` 共用,跨 user 共享同一個 cap。
+兩種控制都是 per-task,並在請求發出前解析。
+Throttle bucket 由 `key` 在使用者之間共享。
 
 ## 匯入器
 
@@ -700,12 +876,16 @@ from je_load_density import (
     load_postman_collection, postman_to_action_json,
     load_openapi, openapi_to_action_json,
     curl_to_task,
-    load_k6_script, k6_script_to_action_json,
-    load_jmeter_jmx, jmeter_to_action_json,
 )
+
+action_a = har_to_action_json(load_har("recording.har"))
+action_b = postman_to_action_json(load_postman_collection("collection.json"))
+action_c = openapi_to_action_json(load_openapi("openapi.yaml"))
+task     = curl_to_task("curl -X POST https://api/login -d '{\"x\":1}'")
 ```
 
-OpenAPI 會把 `{param}` 路徑參數轉成 `${var.param}`;k6 把 `check()` 內的 `is 200` 解為 `status_code` 斷言;JMeter 會繼承同階層 HeaderManager。
+OpenAPI 會把 `{param}` 路徑段替換成 `${var.param}`,讓
+呼叫端能透過 `register_variables` 提供值。
 
 ## Action JSON Linter / Schema / LSP
 
@@ -718,13 +898,14 @@ findings = lint_action({"load_density": [["LD_typo"]]})
 export_schema("docs/reference/loaddensity-action-schema.json")
 ```
 
-LSP server(stdio):
+供編輯器整合的 stdlib LSP:
 
 ```bash
-python -m je_load_density.action_lsp   # 或: loaddensity-lsp
+python -m je_load_density.action_lsp   # or: loaddensity-lsp
 ```
 
-`textDocument/completion` 回傳每個 `LD_*` 指令;`publishDiagnostics` 在每次變更執行 linter。
+`textDocument/completion` 回傳每個 `LD_*` 指令;
+`publishDiagnostics` 在每次變更時執行 linter。
 
 ## GitHub Actions 註解
 
@@ -735,7 +916,16 @@ emit_github_annotations(title="LoadDensity")
 # ::error title=LoadDensity::GET /checkout (HTTP 500): timeout
 ```
 
-每筆失敗紀錄一行 `::error::`,reviewer 可在 PR *Files Changed* 直接看到。
+每筆失敗紀錄一行 `::error::`;reviewer 會在
+PR 的 *Files Changed* 檢視中直接看到它們。
+
+## 範例與本地實驗環境
+
+* [`examples/`](examples/) 提供 12 個可執行的 recipe(smoke、auth flow、
+  weighted mix、WebSocket、MQTT、Redis、spike shape、SLA gate、HAR /
+  Postman / OpenAPI 匯入)。
+* [`docker/`](docker/) 以一個 `docker compose up -d` 帶起 httpbin、Mosquitto(MQTT)、Redis、
+  Kafka 與 Prometheus。
 
 ## 可靠度
 
@@ -746,22 +936,23 @@ from je_load_density import (
     with_watchdog,
 )
 
-# 自適應重試
+# Adaptive retry — exponential backoff + jitter + per-error-class budget
 policy = AdaptiveRetryPolicy(transient_budget=5, flaky_budget=2,
                               base_delay=0.1, max_delay=2.0)
 run_with_retry(lambda: do_request(), policy=policy)
 
-# task 內宣告:task["retry"] = {"transient": 3, "flaky": 1, "base_delay": 0.2}
+# Per-task retry (declarative)
+# task["retry"] = {"transient": 3, "flaky": 1, "base_delay": 0.2}
 
-# 失敗預算 — 過去 30s 失敗率 > 5% 即中止
+# Failure budget — abort the run when 5% of the last 30s fail
 install_failure_budget(threshold=0.05, window_seconds=30,
                        runner_quit_callback=lambda: env.runner.quit())
 
-# 網路條件注入
+# Network conditioner — inject latency / jitter / loss
 install_network_conditioner(latency_ms=50, jitter_ms=20, loss_rate=0.01,
                              name_filter="/checkout")
 
-# watchdog 強制中止僵屍 CI 跑
+# Watchdog — hard-kill a hung CI run
 with_watchdog(lambda: execute_action(action_json), timeout_seconds=600)
 ```
 
@@ -771,7 +962,7 @@ with_watchdog(lambda: execute_action(action_json), timeout_seconds=600)
 from je_load_density import start_dashboard
 
 start_dashboard(host="127.0.0.1", port=8765, refresh_seconds=1.0)
-# 瀏覽 http://127.0.0.1:8765,/events 走 SSE 串流 JSON 快照
+# open http://127.0.0.1:8765 → /events streams JSON snapshots via SSE
 ```
 
 ## Slack / Teams / StatsD
@@ -789,10 +980,12 @@ post_teams_summary("https://outlook.office.com/webhook/...")
 ## Auth
 
 ```python
-from je_load_density import OAuth2Client, sign_jwt, sign_aws_request
+from je_load_density import (
+    OAuth2Client, sign_jwt, sign_aws_request,
+)
 
 client = OAuth2Client("https://idp/token", "id", "secret", scope="read:x")
-token = client.get_client_credentials()   # cache 至 expires_in 結束
+token = client.get_client_credentials()  # cached for the lifetime of expires_in
 
 jwt = sign_jwt({"sub": "alice"}, secret="topsecret",
                 algorithm="HS256", expires_in_seconds=300)
@@ -824,13 +1017,14 @@ action = k6_script_to_action_json(load_k6_script("script.js"))
 action = jmeter_to_action_json(load_jmeter_jmx("plan.jmx"))
 ```
 
-加上既有的 HAR / Postman / OpenAPI / cURL,LoadDensity 已涵蓋常見壓測工具的腳本格式。
+結合既有的 HAR / Postman / OpenAPI / cURL 匯入器,
+LoadDensity 能從每一種常見的負載測試來源格式讀取。
 
 ## GitHub Action 與 pre-commit
 
 ```yaml
 # .github/workflows/load.yml
-- uses: ./   # 或: Integration-Automation/LoadDensity@v1
+- uses: ./   # or: Integration-Automation/LoadDensity@v1
   with:
     action-file: actions/smoke.json
     extras: "metrics,websocket"
@@ -847,82 +1041,28 @@ action = jmeter_to_action_json(load_jmeter_jmx("plan.jmx"))
 
 ## VS Code 擴充套件
 
-`editors/vscode/` 提供最小擴充套件,以 stdio 啟動 `python -m je_load_density.action_lsp` 取得 completion + diagnostics。`npm install && npm run package` 可打包 `.vsix`。
+`editors/vscode/` 提供一個最小的擴充套件,以 stdio 啟動
+`python -m je_load_density.action_lsp` 取得 completion +
+diagnostics。以 `npm install && npm run package` 建置,再安裝
+產生的 `.vsix`。`.github/workflows/editors.yml` 這個 workflow 會在 `editors/` 下每次變更時
+打包它、檢查 Chrome 擴充套件並建置 JetBrains plugin。
 
-## 範例與本地實驗環境
+## 更多模組
 
-* `examples/` 內有 12 個可執行 recipe(smoke、auth flow、weighted mix、WebSocket、MQTT、Redis、spike shape、SLA gate、HAR / Postman / OpenAPI 匯入)。
-* `docker/` 一鍵 `docker compose up -d` 啟動 httpbin、Mosquitto、Redis、Kafka、Prometheus 本地實驗環境。
+於 2026-05 擴充加入。每一個都延遲匯入,且只需要它自己的 extra。
 
-## GUI
+- **Asyncio 引擎。** `je_load_density.engine.asyncio_engine.run_async_load` 不透過 Locust,直接以 asyncio 驅動一個 HTTP 目標,並寫出與 Locust 使用者相同的紀錄,4xx/5xx 一律計為失敗。`bench` 子指令包裝了它:
 
-```bash
-pip install "je_load_density[gui]"
-```
+  ```bash
+  python -m je_load_density bench https://api.example.com/health --users 10 --duration 10
+  ```
 
-```python
-import sys
-from PySide6.QtWidgets import QApplication
-from je_load_density.gui.main_window import LoadDensityUI
-
-app = QApplication(sys.argv)
-window = LoadDensityUI()
-window.show()
-sys.exit(app.exec())
-```
-
-GUI 內建英文、繁中、日文、韓文翻譯,即時統計面板每秒輪詢 `test_record_instance`。
-
-## CLI 用法
-
-```
-python -m je_load_density run FILE              # 執行單一 action JSON
-python -m je_load_density run-dir DIR           # 執行目錄下所有 .json
-python -m je_load_density run-str JSON          # 執行內嵌 JSON 字串
-python -m je_load_density init PATH             # 建立專案骨架
-python -m je_load_density bench URL [--users N] # 無 Locust 的 asyncio HTTP 基準測試
-python -m je_load_density shell                 # 預先 import ld 的互動式 REPL
-python -m je_load_density serve [--host ...]    # 啟動控制 socket
-```
-
-亦提供 console script:`loaddensity` / `loaddensity-mcp` / `loaddensity-lsp`。
-
-## 測試紀錄
-
-`test_record_instance.test_record_list` 與 `error_record_list` 蒐集每次請求,內含 `Method`、`test_url`、`name`、`status_code`、`response_time_ms`、`response_length`,失敗時還會帶 `error`。報告、SQLite sink、SLA gate、Dashboard 都直接讀取這些 list。
-
-## 例外處理
-
-```
-LoadDensityTestException
-├── LoadDensityTestJsonException
-├── LoadDensityGenerateJsonReportException
-├── LoadDensityTestExecuteException
-├── LoadDensityAssertException
-├── LoadDensityHTMLException
-├── LoadDensityAddCommandException
-├── XMLException → XMLTypeException
-└── CallbackExecutorException
-
-CircuitOpenError (utils/reliability/failure_budget.py)
-```
-
-所有自訂例外皆繼承 `LoadDensityTestException`(除 `CircuitOpenError`,屬 reliability sub-system)。
-
-## 日誌
-
-LoadDensity 對外提供單一已設定 logger(`load_density_logger`),位於 `je_load_density.utils.logging.loggin_instance`。
-
-## 支援平台
-
-| 平台 | 狀態 |
-|------|------|
-| Windows 10 / 11 | 完整支援 |
-| macOS | 完整支援 |
-| Ubuntu / Linux | 完整支援 |
-| Raspberry Pi | 已測 3B+ 以上 |
-
-需要 Python 3.10+。
+  選項:`--method`、`--body`、`--http2`、`--max-in-flight`。
+- **Cloud workers**(`aws`、`gcp`、`azure` 或 `cloud` extras):`cloud.aws_fargate.launch_fargate_workers`、`cloud.aws_lambda.invoke_lambda_workers`(以 `lambda_worker_handler` 作為函式進入點)、`cloud.azure_aci.launch_aci_workers` 與 `cloud.gcp_cloud_run.run_cloud_run_job` 為分散式跑法啟動遠端 worker。
+- **Chaos 輔助工具**:`utils.chaos.toxiproxy` 在 Toxiproxy 執行個體上新增與移除 latency 或 bandwidth toxic(`install_latency`、`install_bandwidth`、`reset_all`);`utils.chaos.chaos_mesh` 建構並套用 Chaos Mesh manifest(`build_network_delay`、`apply_manifest`、`delete_manifest`)。
+- **Stub server**:`utils.stub_server.start_stub_server` / `stop_stub_server` 供應罐頭回應,讓情境能對一個假後端執行。它從一個執行緒供應,可與 Locust 的 gevent 使用者並存;對 asyncio 引擎則要在獨立行程啟動它,因為引擎自己行程裡的伺服器執行緒永遠得不到排程。
+- **更多報告格式**,在上述七種之外:Allure、cost、CycloneDX、Excel、latency histogram、PDF(`pdf` extra)、SARIF 與一張 service map,各自對應 `utils/generate_report/` 下一個 `generate_*_report.py` 模組。
+- **部署範本** 位於 `deploy/`:一份 Helm chart、一個 Kubernetes operator(`k8s` extra)、Terraform、一張 Grafana dashboard 與 CI 範本。
 
 ## 授權
 
