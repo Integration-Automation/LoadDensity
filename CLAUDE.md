@@ -151,8 +151,8 @@ Code must pass static analysis with no new issues introduced. Follow these rules
 ## Documentation
 
 - **README parity.** This repository ships `README.md` (English) alongside the translated `README/README_zh-CN.md` and `README/README_zh-TW.md`. All three must stay current with the code.
-- When a change alters anything user-facing — features, commands, CLI flags, install/setup steps, configuration, or requirements — update `README.md` **and both translated READMEs in the same commit**, keeping their structure and content aligned.
-- Never update one language and leave the others stale. `test/test_doc_counts.py` catches counts in `README.md` that drift from the code, but it does not check the translations — keep the language variants in sync by hand.
+- When a change alters anything user-facing — features, commands, CLI flags, install/setup steps, configuration, or requirements — update `README.md`, **both translated READMEs (`README/README_zh-CN.md`, `README/README_zh-TW.md`), and the Sphinx docs under `docs/source/`, all in the same commit**, keeping their section structure and content aligned. Each translation must reflect the English README's actual content, not merely share its headings.
+- Never update one language or `README.md` alone and leave the other languages or the docs stale. `test/test_doc_counts.py` catches counts in `README.md` that drift from the code, but it does not check the translations or the docs — keep the language variants and `docs/source/` in sync by hand.
 
 ## Stage commits, `progress.md`, `docs/updates/` and `architecture.md`
 
