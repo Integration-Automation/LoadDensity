@@ -66,7 +66,7 @@ LoadDensity(`je_load_density`)从 Locust 封装起步,逐步扩展为完整的�
 
 ## 亮点
 
-- **一个 executor,十二种 user template。** HTTP、FastHttp、**Async HTTP/2 (httpx)**、WebSocket、SSE、gRPC(unary 与 server/client/bidi 流式)、MQTT、原生 TCP/UDP、SQL(SQLAlchemy)、Redis、Kafka、**MongoDB** — 全部通过同一个 `LD_start_test` 以 `user_detail_dict["user"]` 切换调度。
+- **一个 executor,41 种 user type。** HTTP、FastHttp、**Async HTTP/2 (httpx)**、HTTP/3、WebSocket、SSE、gRPC(unary 与 server/client/bidi 流式)、MQTT、原生 TCP/UDP、SQL(SQLAlchemy)、Redis、Kafka、**MongoDB**,以及更多协议(AMQP、NATS、Pulsar、Cassandra、Elasticsearch、Modbus、OPC-UA、LDAP、SNMP、SMTP/IMAP、FTP/SFTP 等)— 全部通过同一个 `LD_start_test` 以 `user_detail_dict["user"]` 切换调度。
 - **动作 JSON 即契约。** 每个命令都由 `Executor.event_dict` 解析。
 - **参数解析器处处可用。** `${var.NAME}`、`${env.NAME}`、`${csv.SOURCE.COL}`、`${db.SOURCE.COL}`、`${faker.method}` 及 `${uuid()}`、`${now()}`、`${randint(min,max)}`。
 - **无需写 Python 的场景流程。** task 流程以 `sequence`(默认)、`weighted`、`conditional` 声明;per-task `think_time`、`throttle.rps`、`retry`(`{transient, flaky, permanent}` 预算)直接控制节奏与韧性。
@@ -87,7 +87,7 @@ LoadDensity(`je_load_density`)从 Locust 封装起步,逐步扩展为完整的�
 - **硬化控制 socket。** 4 字节大端长度前缀 framing(上限 1 MiB)、可选 TLS、共享密钥 token,并保留 legacy 模式。
 - **安全 executor。** `eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 一律封锁。
 - **实时 GUI。** 可选 PySide6 GUI,内置 RPS/平均/p95/失败统计,翻译为英、繁中、日、韩。
-- **CLI 子命令。** `run`/`run-dir`/`run-str`/`init`/`serve`,保留旧式单旗标形式以维持下游工具兼容。
+- **CLI 子命令。** `run`/`run-dir`/`run-str`/`init`/`bench`/`shell`/`serve`,保留旧式单旗标形式以维持下游工具兼容。
 - **跨平台。** Windows 10/11、macOS、Ubuntu/Linux、Raspberry Pi(3B+ 以上),Python 3.10+。
 
 ## 安装
@@ -336,7 +336,7 @@ python -m je_load_density run smoke.json
 
 ## 用户模板
 
-参见英文 README,12 个 user template 共用同一份 task schema;新增项包括 `async_http_user`(httpx,可开 HTTP/2)、`sse_user`、`sql_user`、`redis_user`、`kafka_user`、`mongo_user`,以及 gRPC streaming(`rpc: "server_stream"` / `"client_stream"` / `"bidi"`)和 mTLS(task 内加 `"cert"`)。
+参见英文 README,41 个 user type 共用同一份 task schema;除 HTTP 系列外还包括 `async_http_user`(httpx,可开 HTTP/2)、`http3_user`、`sse_user`、`sql_user`、`redis_user`、`kafka_user`、`mongo_user`,以及 AMQP、NATS、Pulsar、Cassandra、Elasticsearch、Modbus、OPC-UA、LDAP、SNMP、SMTP/IMAP、FTP/SFTP 等协议;gRPC streaming(`rpc: "server_stream"` / `"client_stream"` / `"bidi"`)和 mTLS(task 内加 `"cert"`)同样通用。
 
 ## 参数解析器
 
@@ -649,6 +649,8 @@ python -m je_load_density run FILE
 python -m je_load_density run-dir DIR
 python -m je_load_density run-str JSON
 python -m je_load_density init PATH
+python -m je_load_density bench URL [--users N]   # 无 Locust 的 asyncio HTTP 基准测试
+python -m je_load_density shell                    # 预先 import ld 的交互式 REPL
 python -m je_load_density serve [--host ...]
 ```
 

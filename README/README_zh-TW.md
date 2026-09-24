@@ -70,7 +70,7 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步擴展為完整的�
 
 ## 亮點
 
-- **一個 executor,十二種 user template。** HTTP、FastHttp、**Async HTTP/2 (httpx)**、WebSocket、SSE、gRPC(unary 與 server/client/bidi 串流)、MQTT、原生 TCP/UDP、SQL(SQLAlchemy)、Redis、Kafka、**MongoDB** — 全部透過同一個 `LD_start_test` 以 `user_detail_dict["user"]` 切換派發。
+- **一個 executor,41 種 user type。** HTTP、FastHttp、**Async HTTP/2 (httpx)**、HTTP/3、WebSocket、SSE、gRPC(unary 與 server/client/bidi 串流)、MQTT、原生 TCP/UDP、SQL(SQLAlchemy)、Redis、Kafka、**MongoDB**,以及更多協定(AMQP、NATS、Pulsar、Cassandra、Elasticsearch、Modbus、OPC-UA、LDAP、SNMP、SMTP/IMAP、FTP/SFTP 等)— 全部透過同一個 `LD_start_test` 以 `user_detail_dict["user"]` 切換派發。
 - **動作 JSON 即契約。** 每個指令皆由 `Executor.event_dict` 解析;不論手寫、HAR 匯入、控制 socket 傳送或 MCP 工具呼叫,動作列表格式相同。
 - **參數解析器處處可用。** `${var.NAME}`、`${env.NAME}`、`${csv.SOURCE.COL}`、`${db.SOURCE.COL}`、`${faker.method}`,以及內建 `${uuid()}`、`${now()}`、`${randint(min,max)}`;從前一個回應擷取的值可餵給下一個 task 的 URL、header、body 或斷言。
 - **無需寫 Python 的情境流程。** task 流程以 `sequence`(預設)、`weighted`、`conditional`(`run_if`/`skip_if`)宣告;per-task `think_time`、`throttle.rps`、`retry`(`{transient, flaky, permanent}` 預算)直接控制節奏與韌性。
@@ -91,7 +91,7 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步擴展為完整的�
 - **硬化控制 socket。** 4-byte big-endian 長度前綴 framing(上限 1 MiB)、選用 TLS、共享密鑰 token(環境變數或參數),並保留與 PyBreeze 等工具相容的 legacy 模式。
 - **安全 executor。** 動作 JSON 內 `eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 一律封鎖。
 - **即時 GUI。** 選用的 PySide6 GUI 含即時統計面板(RPS、平均、p95、失敗),翻譯為英文、繁中、日文、韓文。
-- **CLI 子指令。** `run`/`run-dir`/`run-str`/`init`/`serve`,並保留舊式單旗標形式以相容下游工具。
+- **CLI 子指令。** `run`/`run-dir`/`run-str`/`init`/`bench`/`shell`/`serve`,並保留舊式單旗標形式以相容下游工具。
 - **跨平台。** Windows 10/11、macOS、Ubuntu/Linux、Raspberry Pi(3B+ 以上),Python 3.10+。
 
 ## 安裝
@@ -252,7 +252,7 @@ flowchart TB
 ```
 je_load_density/
 ├── __init__.py                       # 公開 API re-export
-├── __main__.py                       # CLI: run / run-dir / run-str / init / serve
+├── __main__.py                       # CLI: run / run-dir / run-str / init / bench / shell / serve
 ├── action_lsp/                       # 動作 JSON 的 LSP 伺服器
 ├── mcp_server/                       # MCP server(13 個給 Claude 的工具)
 ├── tools/                            # CLI 工具(pre-commit linter 等)
@@ -478,7 +478,7 @@ add_command_to_executor({"LD_slack_notify": slack_notify})
 
 ## 使用者模板
 
-所有 user template 透過 `start_test(user_detail_dict={"user": "<key>"})` 註冊;task 共用相同 schema,僅協定欄位不同。十二個 template 的詳細欄位與範例,請見英文 README 對應段落(本節結構相同,僅就重點列出新增者)。
+所有 user type 透過 `start_test(user_detail_dict={"user": "<key>"})` 註冊;task 共用相同 schema,僅協定欄位不同。41 種 user type 的詳細欄位與範例,請見英文 README 對應段落(本節結構相同,僅就重點列出)。
 
 * `fast_http_user` / `http_user` — 預設 HTTP 壓測,task 支援 `cert` 走 mTLS。
 * `async_http_user` — httpx 後端,可開 HTTP/2:`start_test(user="async_http_user", http2=True, ...)`。
@@ -880,6 +880,8 @@ python -m je_load_density run FILE              # 執行單一 action JSON
 python -m je_load_density run-dir DIR           # 執行目錄下所有 .json
 python -m je_load_density run-str JSON          # 執行內嵌 JSON 字串
 python -m je_load_density init PATH             # 建立專案骨架
+python -m je_load_density bench URL [--users N] # 無 Locust 的 asyncio HTTP 基準測試
+python -m je_load_density shell                 # 預先 import ld 的互動式 REPL
 python -m je_load_density serve [--host ...]    # 啟動控制 socket
 ```
 
