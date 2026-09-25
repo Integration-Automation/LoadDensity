@@ -921,10 +921,10 @@ PR 的 *Files Changed* 视图中直接看到它们。
 
 ## 示例与本地实验环境
 
-* [`examples/`](examples/) 提供 12 个可执行的 recipe(smoke、auth flow、
+* [`examples/`](../examples/) 提供 12 个可执行的 recipe(smoke、auth flow、
   weighted mix、WebSocket、MQTT、Redis、spike shape、SLA gate、HAR /
   Postman / OpenAPI 导入)。
-* [`docker/`](docker/) 以一个 `docker compose up -d` 带起 httpbin、Mosquitto(MQTT)、Redis、
+* [`docker/`](../docker/) 以一个 `docker compose up -d` 带起 httpbin、Mosquitto(MQTT)、Redis、
   Kafka 与 Prometheus。
 
 ## 可靠度
