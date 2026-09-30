@@ -132,6 +132,16 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
   (`test_pioneer/executor/run/utils.py`) after setting `LOCUST_SKIP_MONKEY_PATCH=1`. `parallel_run`
   spawns `python -m je_load_density --execute_file <script>` (`parallel_run.py`). Anyone embedding
   this package must keep gevent patching in mind; the socket server calls `monkey.patch_all()`.
+- **APITestka (subprocess)**: `apitestka load run` / `AT_run_load_test`
+  (`APITestka/je_api_testka/integrations/load_density_runner.py`) runs `python -m je_load_density --execute_file <file>`
+  with the file's folder as cwd and reads the result back from the summary, not from the exit code. It relies on:
+  the `{"load_density": [...]}` file shape; `LD_start_test` with `user_detail_dict.user` (`fast_http_user`,
+  `http_user`), `tasks: {"mode": "sequence"|"weighted", "tasks": [...]}`, `user_count`, `spawn_rate`, `test_time`;
+  the task keys `method`, `request_url` (absolute), `name`, `params`, `headers`, `cookies`, `json`, `data`,
+  `timeout`, `allow_redirects`, `verify` and `assertions: [{"type": "status_code", "value": N}]`
+  (`APITestka/je_api_testka/integrations/load_density.py`); and `LD_generate_summary_report(report_name)`
+  writing `<report_name>.json` with `totals.requests`, `totals.failure_rate` and `latency_overall.p95_ms`.
+  Renaming any of these breaks APITestka silently; change its bridge in the same round.
 - **Sibling executors** share the action-list shape and the `Return_Data_Over_JE` terminator. Builtins
   policy is now the same allowlist here, in MailThunder and in WebRunner (`SAFE_BUILTINS`, 22 names);
   APITestka, FileAutomation, AutoControlGUI and TestPioneer register no builtins at all
