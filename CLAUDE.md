@@ -24,6 +24,7 @@ Load & Stress Automation Framework built on top of Locust.
 - `editors/` - VS Code, Chrome and JetBrains extensions
 - `deploy/` - Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates
 - `load_density_driver/` - prebuilt driver
+- `scripts/` - `dev_release.py`, the release helper CI runs for the dev channel (standard library only)
 - `test/` - pytest test suite; `test/test_doc_counts.py` fails when a count quoted in `README.md`, `CLAUDE.md` or `architecture.md` no longer matches the code
 - `docs/` - Sphinx documentation (`docs/updates/` is the update log, not built)
 
@@ -147,6 +148,7 @@ Code must pass static analysis with no new issues introduced. Follow these rules
 - Use conventional commit style: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
 - Keep subject line under 72 characters
 - Use imperative mood ("add feature" not "added feature")
+- Both branches publish to PyPI from CI: a push to `main` that passes `CI Stable` releases `je_load_density` (`publish-pypi.yml`), and a push to `dev` that passes the tests and changes what the package ships releases `je_load_density_dev` (the `publish-dev` job of `ci-dev.yml`, `scripts/dev_release.py`). Never bump a version by hand; the version in `dev.toml` is only a floor
 
 ## Documentation
 

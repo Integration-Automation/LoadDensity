@@ -40,6 +40,7 @@ persistence all read from that record.
 | `deploy/` | Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates |
 | `docker/`, `action.yml`, `.pre-commit-hooks.yaml`, `examples/` | docker-compose test stack, composite GitHub Action, pre-commit hook, sample actions and scripts |
 | `load_density_driver/` | Prebuilt driver (script plus Windows and Linux binaries) |
+| `scripts/dev_release.py` | Release helper of the dev channel, standard library only: the next version from PyPI and the changed-wheel check. The `publish-dev` job of `.github/workflows/ci-dev.yml` runs it |
 | `test/`, `docs/source/` | pytest suite; Sphinx docs (`En/`, `Zh/`, `api/`) |
 
 ## 3. Entry points and public interfaces
@@ -73,6 +74,14 @@ persistence all read from that record.
   embeddable `je_load_density.gui.main_widget.LoadDensityWidget`.
 - **Packaging**: `pyproject.toml` (stable) and `dev.toml` (`je_load_density_dev`) differ only in name and
   version; `test/test_dev_toml_parity.py` keeps the scripts, extras, dependencies and tool settings in step.
+- **Release channels**, both published to PyPI by CI:
+  - stable, `je_load_density`: `publish-pypi.yml` runs after `CI Stable` passes on a push to `main`. It bumps
+    the patch version in `pyproject.toml`, uploads, pushes the bump to `main`, tags it and creates the GitHub
+    release;
+  - dev, `je_load_density_dev`: the `publish-dev` job of `ci-dev.yml` runs after `test` on a push to `dev`. It
+    builds from `dev.toml` and uploads when the commit is still the tip of `dev` and the wheel differs from
+    the newest published one. `scripts/dev_release.py` takes the version from PyPI (newest release plus one
+    patch), so nothing is committed back and the version in `dev.toml` is only a floor.
 
 ## 4. Main flows
 
