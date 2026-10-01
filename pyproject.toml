@@ -41,8 +41,10 @@ Code = "https://github.com/Integration-Automation/LoadDensity"
 file = "README.md"
 content-type = "text/markdown"
 
+# Only the package goes into the wheel. Without "include", setuptools takes every directory with an
+# __init__.py, which installs test/ as a top-level "test" package (test/test_wheel_packages.py).
 [tool.setuptools.packages]
-find = { namespaces = false }
+find = { namespaces = false, include = ["je_load_density", "je_load_density.*"] }
 
 [project.optional-dependencies]
 gui = ["PySide6==6.11.2", "qt-material"]
