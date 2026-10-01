@@ -149,7 +149,9 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
     `executor_data_error`, plain record keys, `PrintReporter` (a failure's repr and action to stderr, every record to
     stdout);
   - **registry**: functions only, refused with `LoadDensityTestExecuteException`;
-  - **package manager**: bare member names, functions only, ASCII dotted names, gate off, errors printed;
+  - **package manager**: bare member names, functions only, ASCII dotted names, gate on (refusals raise
+    `LoadDensityTestExecuteException`; `executor.allow_packages` / `set_allow_arbitrary_packages` are the
+    Python-only switches), errors printed;
   - **callback executor**: legacy checks, errors printed and raised;
   - **JSON files**: every error wrapped.
 

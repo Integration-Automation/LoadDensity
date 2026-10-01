@@ -1,14 +1,16 @@
 """
 ``LD_add_package_to_executor``: je_action_core's package manager with LoadDensity's settings (functions only,
-registered under their bare names, ASCII dotted names only, problems printed to stderr).
+registered under their bare names, ASCII dotted names only, problems printed to stderr, the package gate on).
 """
 from inspect import isfunction
 from sys import stderr
 from types import ModuleType
 from typing import Any, Optional
 
-from je_action_core import MemberNaming, PackageGate, PackageManagerSettings, is_module_name
+from je_action_core import MemberNaming, PackageManagerSettings, is_module_name
 from je_action_core import PackageManager as _CorePackageManager
+
+from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
 
 
 def _print_error(message: str) -> None:
@@ -19,8 +21,7 @@ _SETTINGS = PackageManagerSettings(
     naming=MemberNaming.BARE,
     predicates=(isfunction,),
     name_check=is_module_name,
-    # The package gate (workspace X-12) is not switched on here yet.
-    gate=PackageGate.OFF,
+    refused=LoadDensityTestExecuteException,
     log_error=_print_error,
 )
 

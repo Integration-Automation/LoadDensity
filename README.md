@@ -413,7 +413,9 @@ The action executor maps a string command name to a Python callable. Every backe
 | Reliability | `LD_install_failure_budget`, `LD_uninstall_failure_budget`, `LD_install_network_conditioner`, `LD_uninstall_network_conditioner` |
 | Dashboard / notify | `LD_start_dashboard`, `LD_stop_dashboard`, `LD_post_slack_summary`, `LD_post_teams_summary` |
 
-Safe Python built-ins (`print`, `len`, `range`, …) are also accepted; `eval`, `exec`, `compile`, `__import__`, `breakpoint`, `open`, and `input` are explicitly blocked.
+Only an allowlist of side-effect-free Python built-ins is a command as well (`SAFE_BUILTINS`, 22 names such as `print`, `len`, `sorted`); anything that runs code, reaches attributes or touches files (`eval`, `exec`, `compile`, `__import__`, `open`, `input`, `getattr`, …) is not.
+
+**Package gate.** Because `LD_add_package_to_executor` can load `os` or `subprocess`, an action file or socket client that names them could run anything. The host program decides what may load: `executor.allow_packages("name", …)` lists the packages (submodules included) and `executor.set_allow_arbitrary_packages(False)` refuses the rest before importing them; neither is an action command, so an action file cannot open its own gate. A refused package is recorded as a `LoadDensityTestExecuteException` in that action's result. Until the host calls either switch, any package still loads but raises a `DeprecationWarning`: a future release will refuse unlisted packages by default.
 
 ### Custom commands
 

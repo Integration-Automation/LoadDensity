@@ -413,7 +413,9 @@ from je_load_density import (
 | 可靠度 | `LD_install_failure_budget`、`LD_uninstall_failure_budget`、`LD_install_network_conditioner`、`LD_uninstall_network_conditioner` |
 | Dashboard / 通知 | `LD_start_dashboard`、`LD_stop_dashboard`、`LD_post_slack_summary`、`LD_post_teams_summary` |
 
-安全的 Python 內建(`print`、`len`、`range` 等)也可接受;`eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 則被明確封鎖。
+另外只有一份無副作用的 Python 內建函式允許清單也是命令(`SAFE_BUILTINS`,22 個,例如 `print`、`len`、`sorted`);會執行程式碼、存取屬性或碰檔案的(`eval`、`exec`、`compile`、`__import__`、`open`、`input`、`getattr` 等)都不是。
+
+**套件閘門。** `LD_add_package_to_executor` 能載入 `os` 或 `subprocess`,所以只要 action 檔或 socket 用戶端寫得出這些名字,就能執行任何東西。哪些套件可以載入,由宿主程式決定:`executor.allow_packages("name", …)` 列出可以載入的套件(含子模組),`executor.set_allow_arbitrary_packages(False)` 會在匯入前拒絕其他套件;這兩個都不是 action 命令,所以 action 檔不能自己打開閘門。被拒絕的套件會以 `LoadDensityTestExecuteException` 記錄在該動作的結果裡。宿主程式呼叫任一個開關之前,任何套件仍會載入,但會發出 `DeprecationWarning`:之後的版本會預設拒絕清單以外的套件。
 
 ### 自訂指令
 

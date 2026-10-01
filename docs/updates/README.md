@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261001-05 | 2026-10-01 | Package gate in front of LD_add_package_to_executor | #done #security #X-12 | [2026-10](2026-10.md) |
 | U-20261001-04 | 2026-10-01 | je_action_core pin moves to 19bfe0a | #build #L-6 | [2026-10](2026-10.md) |
 | U-20261001-03 | 2026-10-01 | Executor and its helpers move to je_action_core | #migration #executor #L-6 | [2026-10](2026-10.md) |
 | U-20261001-02 | 2026-10-01 | Every workflow job has a timeout | #ci #tests | [2026-10](2026-10.md) |
@@ -112,5 +113,5 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-10.md](2026-10.md) | 2026-10 | 4 |
+| [2026-10.md](2026-10.md) | 2026-10 | 5 |
 | [2026-09.md](2026-09.md) | 2026-09 | 45 |

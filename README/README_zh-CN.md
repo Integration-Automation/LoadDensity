@@ -413,7 +413,9 @@ from je_load_density import (
 | 可靠度 | `LD_install_failure_budget`、`LD_uninstall_failure_budget`、`LD_install_network_conditioner`、`LD_uninstall_network_conditioner` |
 | Dashboard / 通知 | `LD_start_dashboard`、`LD_stop_dashboard`、`LD_post_slack_summary`、`LD_post_teams_summary` |
 
-安全的 Python 内置(`print`、`len`、`range` 等)也可接受;`eval`、`exec`、`compile`、`__import__`、`breakpoint`、`open`、`input` 则被明确封锁。
+另外只有一份无副作用的 Python 内置函数允许清单也是命令(`SAFE_BUILTINS`,22 个,例如 `print`、`len`、`sorted`);会执行代码、访问属性或碰文件的(`eval`、`exec`、`compile`、`__import__`、`open`、`input`、`getattr` 等)都不是。
+
+**包闸门。** `LD_add_package_to_executor` 能加载 `os` 或 `subprocess`,所以只要 action 文件或 socket 客户端写得出这些名字,就能执行任何东西。哪些包可以加载,由宿主程序决定:`executor.allow_packages("name", …)` 列出可以加载的包(含子模块),`executor.set_allow_arbitrary_packages(False)` 会在导入前拒绝其他包;这两个都不是 action 命令,所以 action 文件不能自己打开闸门。被拒绝的包会以 `LoadDensityTestExecuteException` 记录在该动作的结果里。宿主程序调用任一个开关之前,任何包仍会加载,但会发出 `DeprecationWarning`:之后的版本会默认拒绝清单以外的包。
 
 ### 自定义命令
 

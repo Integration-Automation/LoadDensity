@@ -535,6 +535,20 @@ class Executor(ActionExecutor):
 
         self.event_dict.update(safe_builtin_commands())
 
+    @staticmethod
+    def set_allow_arbitrary_packages(enabled: bool) -> None:
+        """
+        Allow (True) or refuse (False) ``LD_add_package_to_executor`` for packages outside the allowlist.
+        Python only, never an action command, so an action file cannot open its own gate. Until it is
+        called, any package loads with a ``DeprecationWarning``.
+        """
+        package_manager.set_allow_arbitrary_packages(enabled)
+
+    @staticmethod
+    def allow_packages(*packages: str) -> None:
+        """Add packages, and their submodules, to the allowlist of ``LD_add_package_to_executor``."""
+        package_manager.allow_packages(*packages)
+
 
 executor = Executor()
 package_manager.executor = executor
