@@ -17,6 +17,7 @@ permissions:
 jobs:
   vscode:
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # about 3x the slowest recent run, at least 15
     defaults:
       run:
         working-directory: editors/vscode
@@ -38,6 +39,7 @@ jobs:
 
   chrome:
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # about 3x the slowest recent run, at least 15
     defaults:
       run:
         working-directory: editors/chrome-extension
@@ -68,6 +70,7 @@ jobs:
 
   jetbrains:
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # about 3x the slowest recent run, at least 15
     defaults:
       run:
         working-directory: editors/jetbrains
