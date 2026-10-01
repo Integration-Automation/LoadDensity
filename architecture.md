@@ -83,8 +83,11 @@ persistence all read from that record.
     the newest published one. `scripts/dev_release.py` takes the version from PyPI (newest release plus one
     patch), so nothing is committed back and the version in `dev.toml` is only a floor;
   - both jobs hold the PyPI token and install nothing but `.github/requirements/publish.txt` (`build`, `twine`,
-    and `tomlkit` for the stable bump): wheels only, at locked hashes, generated from `publish.in` beside it.
-    `test/test_workflow_actions.py` fails when either job runs any other `pip install`.
+    `tomlkit` for the stable bump, and the build backend `setuptools`): wheels only, at locked hashes,
+    generated from `publish.in` beside it. They build with `python -m build --no-isolation`, so the backend is
+    the locked `setuptools` and not a fresh download. `test/test_workflow_actions.py` fails when either job
+    runs any other `pip install` or an isolated build, or when the lock no longer satisfies
+    `build-system.requires` in `pyproject.toml` or `dev.toml`.
 
 ## 4. Main flows
 

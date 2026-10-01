@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261001-12 | 2026-10-01 | Publish jobs build with the locked setuptools | #ci #security #X-13 | [2026-10](2026-10.md) |
 | U-20261001-11 | 2026-10-01 | Publish jobs install hash-locked build tooling | #done #ci #security #X-13 | [2026-10](2026-10.md) |
 | U-20261001-10 | 2026-10-01 | The sdist carries no tests | #done #packaging #X-13 | [2026-10](2026-10.md) |
 | U-20261001-09 | 2026-10-01 | Wheels install only je_load_density | #done #packaging | [2026-10](2026-10.md) |
@@ -119,5 +120,5 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-10.md](2026-10.md) | 2026-10 | 11 |
+| [2026-10.md](2026-10.md) | 2026-10 | 12 |
 | [2026-09.md](2026-09.md) | 2026-09 | 45 |

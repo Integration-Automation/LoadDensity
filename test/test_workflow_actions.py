@@ -7,8 +7,8 @@ which is what Dependabot reads and updates. Pinning also keeps Node 20 actions
 from lingering unnoticed: GitHub removed Node 20 from its runners on 2026-09-23.
 
 The rest of the workflow supply chain is guarded here too: Dependabot's
-settings, checkout credentials, job timeouts, and the hash-locked tooling of
-the jobs that hold the PyPI token.
+settings, checkout credentials, job timeouts, and the hash-locked tooling and
+build backend of the jobs that hold the PyPI token.
 """
 from __future__ import annotations
 
@@ -17,6 +17,12 @@ import sys
 from pathlib import Path
 
 import pytest
+from packaging.requirements import Requirement
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python 3.10: pytest depends on the tomli backport there
+    import tomli as tomllib
 
 _ROOT = next(p for p in Path(__file__).resolve().parents if (p / ".github" / "workflows").is_dir())
 _WORKFLOWS = sorted((_ROOT / ".github" / "workflows").glob("*.yml"))
@@ -142,6 +148,11 @@ _REQUIREMENTS = _ROOT / ".github" / "requirements"
 _LOCKED_INSTALL = "python -m pip install --require-hashes --only-binary :all: -r .github/requirements/publish.txt"
 _PIP_INSTALL = re.compile(r"(?:python3? -m )?\bpip3? install\b.*")
 _RUN_OR_IMPORT = re.compile(r"python3? -m ([A-Za-z_]\w*)|^\s*import ([A-Za-z_]\w*)", re.MULTILINE)
+_BUILD = re.compile(r"\bpython3? -m build\b.*")
+_PIN = re.compile(r"^([A-Za-z0-9][\w.-]*)==(\S+)", re.MULTILINE)
+# What the publish jobs build from: publish-pypi.yml builds pyproject.toml, and publish-dev builds
+# dev.toml written over it by scripts/dev_release.py.
+_METADATA_FILES = ["pyproject.toml", "dev.toml"]
 
 
 def _publish_jobs() -> list[tuple[str, str]]:
@@ -175,6 +186,30 @@ def _requirements(name: str) -> set[str]:
     return {_distribution(found) for found in re.findall(r"^([A-Za-z0-9][\w.-]*)", text, re.MULTILINE)}
 
 
+def _build_requires(metadata: str) -> list[Requirement]:
+    """Return ``build-system.requires`` of a metadata file the publish jobs build from."""
+    with (_ROOT / metadata).open("rb") as handle:
+        return [Requirement(item) for item in tomllib.load(handle)["build-system"]["requires"]]
+
+
+def _backend_distributions() -> set[str]:
+    """Return the distributions ``build-system.requires`` names in any of the metadata files."""
+    return {_distribution(requirement.name)
+            for metadata in _METADATA_FILES for requirement in _build_requires(metadata)}
+
+
+def _locked_versions() -> dict[str, str]:
+    """Return ``{distribution: version}`` for every pin in ``publish.txt``."""
+    text = (_REQUIREMENTS / "publish.txt").read_text(encoding="utf-8")
+    return {_distribution(name): version for name, version in _PIN.findall(text)}
+
+
+def _is_locked(requirement: Requirement, locked: dict[str, str]) -> bool:
+    """Return whether ``publish.txt`` pins a version of ``requirement`` that its specifier accepts."""
+    version = locked.get(_distribution(requirement.name))
+    return version is not None and requirement.specifier.contains(version)
+
+
 def test_the_jobs_that_hold_the_pypi_token_are_the_two_publish_jobs():
     assert [name for name, _body in _PUBLISH_JOBS] == ["ci-dev.yml:publish-dev", "publish-pypi.yml:publish"]
 
@@ -187,10 +222,30 @@ def test_publish_job_installs_only_the_hash_locked_tooling(body):
     assert [command.strip() for command in _PIP_INSTALL.findall(body)] == [_LOCKED_INSTALL]
 
 
-def test_publish_in_lists_exactly_the_tools_the_jobs_run():
+def test_publish_in_lists_exactly_the_tools_the_jobs_run_and_the_build_backend():
     # A tool a job starts using has to be locked first, or the release fails at that step.
+    # No step names the backend: "python -m build --no-isolation" imports it from the job's
+    # environment, so it is required here by what build-system.requires asks for.
     used = set().union(*(_tools(body) for _name, body in _PUBLISH_JOBS))
-    assert used == _requirements("publish.in")
+    assert used | _backend_distributions() == _requirements("publish.in")
+
+
+@pytest.mark.parametrize("body", [body for _name, body in _PUBLISH_JOBS], ids=[name for name, _body in _PUBLISH_JOBS])
+def test_publish_job_builds_without_isolation(body):
+    # An isolated build downloads the newest setuptools into its own environment, outside the
+    # lock, in the job that is about to upload with the token.
+    builds = _BUILD.findall(body)
+    assert builds and all("--no-isolation" in command.split() for command in builds)
+
+
+@pytest.mark.parametrize("metadata", _METADATA_FILES)
+def test_publish_lock_satisfies_build_system_requires(metadata):
+    # --no-isolation checks the requirement instead of installing it. A floor raised in the
+    # metadata (Dependabot edits these files) without regenerating the lock has to fail here,
+    # not in the publish job.
+    locked = _locked_versions()
+    required = _build_requires(metadata)
+    assert required and [str(item) for item in required if not _is_locked(item, locked)] == []
 
 
 def test_publish_lock_pins_every_tool_of_publish_in():
