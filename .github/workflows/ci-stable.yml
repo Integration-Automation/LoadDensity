@@ -36,5 +36,11 @@ jobs:
           python -m pip install --upgrade pip wheel
           pip install -r requirements.txt
 
+      # je_action_core has no dependencies and is not on PyPI yet (ActionCore progress.md #1); install it from
+      # GitHub at a fixed commit until it is.
+      - name: Install je_action_core
+        run: |
+          pip install --no-deps "je_action_core @ git+https://github.com/Integration-Automation/ActionCore@b08d46a94be4fdfe2d8ee167c911c2c1f8e6eadf"
+
       - name: Run tests
         run: python -m pytest test/ -v

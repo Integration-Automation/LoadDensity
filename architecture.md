@@ -23,7 +23,7 @@ persistence all read from that record.
 | `je_load_density/wrapper/proxy/` | `locust_wrapper_proxy` (`LocustUserProxy.user_dict`) holds each user type's configuration, one `user/<type>_user_proxy.py` per type |
 | `je_load_density/wrapper/user_template/` | Locust user classes (`HttpUserWrapper`, `FastHttpUserWrapper`, …) and the task engine `request_executor.py` / `scenario_runner.py`. `_protocol_base.py` and `_common.py` are the shared helpers of the protocol templates |
 | `je_load_density/wrapper/event/request_hook.py` | Locust request listener that writes into `test_record_instance` |
-| `je_load_density/utils/executor/` | `Executor.event_dict` (`LD_*` commands plus the `SAFE_BUILTINS` allowlist), `execute_action`, `execute_files`, `add_command_to_executor` |
+| `je_load_density/utils/executor/` | `Executor` (je_action_core's `ActionExecutor` with LoadDensity's settings): `event_dict` (`LD_*` commands plus je_action_core's `SAFE_BUILTINS` allowlist), `execute_action`, `execute_files`, `add_command_to_executor` |
 | `je_load_density/utils/test_record/` | `test_record_instance` and SQLite run persistence |
 | `je_load_density/utils/generate_report/` | HTML, JSON, XML, CSV, JUnit, summary and chart reports. Also Allure, cost, CycloneDX, Excel, histogram, PDF, SARIF and service-map generators |
 | `je_load_density/utils/{parameterization,load_shapes,throttle,reliability,sla,regression,schema,linter,graphql,auth}/` | Variables and CSV sources, load shapes, RPS throttle, retry / failure budget / network conditioner, SLA gates (`evaluate_sla`, `assert_sla`), run diff, action JSON schema, action linter, GraphQL tasks, SigV4 / JWT / OAuth2 helpers |
@@ -142,6 +142,19 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
   (`APITestka/je_api_testka/integrations/load_density.py`); and `LD_generate_summary_report(report_name)`
   writing `<report_name>.json` with `totals.requests`, `totals.failure_rate` and `latency_overall.p95_ms`.
   Renaming any of these breaks APITestka silently; change its bridge in the same round.
+- **ActionCore (this repo depends on it)**: `je_action_core` (Integration-Automation/ActionCore) holds the executor,
+  registry, package manager, callback executor and action-file reading and writing. LoadDensity configures them as
+  follows:
+  - **executor**: document key `load_density`, `executor_list_error` for every bad list, `LegacyActionParser` with
+    `executor_data_error`, plain record keys, `PrintReporter` (a failure's repr and action to stderr, every record to
+    stdout);
+  - **registry**: functions only, refused with `LoadDensityTestExecuteException`;
+  - **package manager**: bare member names, functions only, ASCII dotted names, gate off, errors printed;
+  - **callback executor**: legacy checks, errors printed and raised;
+  - **JSON files**: every error wrapped.
+
+  The gevent socket server and `get_dir_files_as_list` stay here. Until the package is on PyPI, `[tool.uv.sources]`
+  and the CI install it from GitHub at a fixed commit (`progress.md` #22). ActionCore lists LoadDensity in its own §6.
 - **Sibling executors** share the action-list shape and the `Return_Data_Over_JE` terminator. Builtins
   policy is now the same allowlist here, in MailThunder and in WebRunner (`SAFE_BUILTINS`, 22 names);
   APITestka, FileAutomation, AutoControlGUI and TestPioneer register no builtins at all

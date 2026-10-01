@@ -1,5 +1,7 @@
-import typing
 from sys import stderr
+
+from je_action_core import CallbackErrorPolicy, CallbackSettings, CommandRegistry
+from je_action_core import CallbackFunctionExecutor as _CoreCallbackExecutor
 
 from je_load_density.utils.exception.exception_tags import (
     get_bad_trigger_function,
@@ -21,7 +23,20 @@ from je_load_density.utils.generate_report.generate_xml_report import (
 from je_load_density.wrapper.start_wrapper.start_test import start_test
 
 
-class CallbackFunctionExecutor:
+def _print_error(message: str) -> None:
+    print(message, file=stderr)
+
+
+_SETTINGS = CallbackSettings(
+    error=CallbackExecutorException,
+    unknown_trigger_message=get_bad_trigger_function,
+    bad_method_message=get_bad_trigger_method,
+    on_error=CallbackErrorPolicy.RAISE,  # the error is printed to stderr, then raised
+    log_error=_print_error,
+)
+
+
+class CallbackFunctionExecutor(_CoreCallbackExecutor):
     """
     回呼函式執行器
     Callback Function Executor
@@ -33,9 +48,10 @@ class CallbackFunctionExecutor:
     """
 
     def __init__(self) -> None:
+        super().__init__(CommandRegistry(), _SETTINGS)
         # 事件字典，定義可觸發的函式
         # Event dictionary, defines available trigger functions
-        self.event_dict: dict[str, typing.Callable] = {
+        self.event_dict = {
             "user_test": start_test,
             "LD_generate_html": generate_html,
             "LD_generate_html_report": generate_html_report,
@@ -44,53 +60,6 @@ class CallbackFunctionExecutor:
             "LD_generate_xml": generate_xml,
             "LD_generate_xml_report": generate_xml_report,
         }
-
-    def callback_function(
-        self,
-        trigger_function_name: str,
-        callback_function: typing.Callable,
-        callback_function_param: typing.Optional[typing.Union[dict, list]] = None,
-        callback_param_method: str = "kwargs",
-        **kwargs,
-    ) -> typing.Any:
-        """
-        執行事件函式並呼叫回呼函式
-        Execute trigger function and then call callback function
-
-        :param trigger_function_name: 事件函式名稱 (must exist in event_dict)
-        :param callback_function: 回呼函式 (callback function to execute)
-        :param callback_function_param: 回呼函式參數 (dict for kwargs, list for args)
-        :param callback_param_method: 參數傳遞方式 ("kwargs" or "args")
-        :param kwargs: 傳給事件函式的參數 (parameters for trigger function)
-        :return: 事件函式的回傳值 (return value of trigger function)
-        """
-        try:
-            # 檢查事件函式是否存在
-            # Validate trigger function existence
-            if trigger_function_name not in self.event_dict:
-                raise CallbackExecutorException(get_bad_trigger_function)
-
-            # 執行事件函式
-            # Execute trigger function
-            execute_return_value = self.event_dict[trigger_function_name](**kwargs)
-
-            # 執行回呼函式
-            # Execute callback function
-            if callback_function_param is not None:
-                if callback_param_method not in ["kwargs", "args"]:
-                    raise CallbackExecutorException(get_bad_trigger_method)
-                if callback_param_method == "kwargs":
-                    callback_function(**callback_function_param)
-                else:
-                    callback_function(*callback_function_param)
-            else:
-                callback_function()
-
-            return execute_return_value
-
-        except Exception as error:
-            print(repr(error), file=stderr)
-            raise
 
 
 # 建立全域執行器實例

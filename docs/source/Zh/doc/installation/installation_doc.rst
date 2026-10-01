@@ -32,7 +32,8 @@
 
     pip install je_load_density
 
-僅引入 `Locust <https://locust.io/>`_ 與 ``defusedxml`` — 其餘皆為選用。
+僅引入 `Locust <https://locust.io/>`_、``defusedxml`` 與 ``je_action_core`` (共用的 action 執行器，本身沒有
+相依套件) — 其餘皆為選用。
 
 選用 extras
 -----------

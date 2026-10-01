@@ -16,6 +16,7 @@ license-files = ["LICENSE"]
 dependencies = [
     "locust",
     "defusedxml>=0.7.1",
+    "je_action_core",
     "tomli>=2.0; python_version < '3.11'",
 ]
 classifiers = [
@@ -161,3 +162,7 @@ exclude_dirs = ["test", "tests", ".venv", "build", "dist"]
 
 [tool.bandit.assert_used]
 skips = ["**/test_*.py", "**/*_test.py", "**/conftest.py"]
+
+# je_action_core is not on PyPI yet (ActionCore progress.md #1): uv resolves it from GitHub at this commit.
+[tool.uv.sources]
+je-action-core = { git = "https://github.com/Integration-Automation/ActionCore", rev = "b08d46a94be4fdfe2d8ee167c911c2c1f8e6eadf" }

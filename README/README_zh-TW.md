@@ -108,7 +108,7 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步成長為完整的�
 pip install je_load_density
 ```
 
-引入 [Locust](https://locust.io/) 與 `defusedxml`,別無其他。
+引入 [Locust](https://locust.io/)、`defusedxml` 與 `je_action_core`(和 APITestka、MailThunder、FileAutomation 共用的 action 執行器,本身沒有相依套件),別無其他。
 
 ### 選用 extras
 
@@ -151,7 +151,7 @@ pip install -e ".[all]"
 pip install -r requirements.txt
 ```
 
-硬性需求:Python **3.10+**、`locust`、`defusedxml`。
+硬性需求:Python **3.10+**、`locust`、`defusedxml`、`je_action_core`。
 
 ## 架構
 

@@ -1,15 +1,98 @@
-import builtins
-import sys
-import types
-from typing import Any, Union
+from typing import Any
 
+from je_action_core import (
+    SAFE_BUILTINS,
+    ActionExecutor,
+    ActionListRules,
+    CommandPolicy,
+    CommandRegistry,
+    ExecutorSettings,
+    LegacyActionParser,
+    PrintReporter,
+    safe_builtin_commands,
+)
+
+from je_load_density.utils.action_generator.generate import (
+    generate_from_curls,
+    generate_from_openapi,
+)
+from je_load_density.utils.ai.auto_baseline import calibrate_sla
+from je_load_density.utils.ai.root_cause import (
+    build_root_cause_prompt,
+    render_prompt_text,
+)
+from je_load_density.utils.ai.smart_shape import find_breaking_point
+from je_load_density.utils.chaos.chaos_mesh import (
+    apply_manifest as chaos_apply_manifest,
+)
+from je_load_density.utils.chaos.chaos_mesh import (
+    build_network_delay as chaos_network_delay,
+)
+from je_load_density.utils.chaos.chaos_mesh import (
+    delete_manifest as chaos_delete_manifest,
+)
+from je_load_density.utils.chaos.toxiproxy import (
+    add_toxic as toxiproxy_add_toxic,
+)
+from je_load_density.utils.chaos.toxiproxy import (
+    create_proxy as toxiproxy_create_proxy,
+)
+from je_load_density.utils.chaos.toxiproxy import (
+    install_bandwidth as toxiproxy_install_bandwidth,
+)
+from je_load_density.utils.chaos.toxiproxy import (
+    install_latency as toxiproxy_install_latency,
+)
+from je_load_density.utils.chaos.toxiproxy import (
+    list_proxies as toxiproxy_list_proxies,
+)
+from je_load_density.utils.chaos.toxiproxy import (
+    remove_proxies as toxiproxy_remove_proxies,
+)
+from je_load_density.utils.chaos.toxiproxy import (
+    remove_toxic as toxiproxy_remove_toxic,
+)
+from je_load_density.utils.chaos.toxiproxy import (
+    reset_all as toxiproxy_reset_all,
+)
+from je_load_density.utils.ci_annotations.canary_analysis import canary_verdict
+from je_load_density.utils.ci_annotations.github_actions import emit_github_annotations
+from je_load_density.utils.dashboard.live_dashboard import (
+    start_dashboard,
+    stop_dashboard,
+)
+from je_load_density.utils.data.db_fixtures import apply_fixture as apply_db_fixture
+from je_load_density.utils.data.db_fixtures import run_teardown as run_db_teardown
+from je_load_density.utils.data.factory import build_user, build_user_pool
+from je_load_density.utils.data.pii_anonymizer import scrub as pii_scrub
+from je_load_density.utils.data.pii_anonymizer import scrub_string as pii_scrub_string
 from je_load_density.utils.exception.exception_tags import (
     add_command_exception_tag,
     executor_data_error,
     executor_list_error,
 )
 from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
-from je_load_density.utils.generate_report.generate_csv_report import generate_csv_report
+from je_load_density.utils.generate_report.generate_allure_report import (
+    generate_allure_report,
+)
+from je_load_density.utils.generate_report.generate_chart_report import (
+    generate_chart_report,
+)
+from je_load_density.utils.generate_report.generate_cost_report import (
+    generate_cost_report,
+)
+from je_load_density.utils.generate_report.generate_csv_report import (
+    generate_csv_report,
+)
+from je_load_density.utils.generate_report.generate_cyclonedx_report import (
+    generate_cyclonedx_report,
+)
+from je_load_density.utils.generate_report.generate_excel_report import (
+    generate_excel_report,
+)
+from je_load_density.utils.generate_report.generate_histogram_report import (
+    generate_histogram_report,
+)
 from je_load_density.utils.generate_report.generate_html_report import (
     generate_html,
     generate_html_report,
@@ -18,42 +101,40 @@ from je_load_density.utils.generate_report.generate_json_report import (
     generate_json,
     generate_json_report,
 )
-from je_load_density.utils.generate_report.generate_junit_report import generate_junit_report
-from je_load_density.utils.generate_report.generate_summary_report import (
-    build_summary,
-    generate_summary_report,
-)
-from je_load_density.utils.generate_report.generate_allure_report import (
-    generate_allure_report,
-)
-from je_load_density.utils.generate_report.generate_chart_report import (
-    generate_chart_report,
-)
-from je_load_density.utils.generate_report.generate_histogram_report import (
-    generate_histogram_report,
+from je_load_density.utils.generate_report.generate_junit_report import (
+    generate_junit_report,
 )
 from je_load_density.utils.generate_report.generate_pdf_report import (
     generate_pdf_report,
+)
+from je_load_density.utils.generate_report.generate_sarif_report import (
+    generate_sarif_report,
+)
+from je_load_density.utils.generate_report.generate_service_map import (
+    generate_service_map,
+)
+from je_load_density.utils.generate_report.generate_summary_report import (
+    build_summary,
+    generate_summary_report,
 )
 from je_load_density.utils.generate_report.generate_xml_report import (
     generate_xml,
     generate_xml_report,
 )
-from je_load_density.utils.chaos.chaos_mesh import (
-    apply_manifest as chaos_apply_manifest,
-    build_network_delay as chaos_network_delay,
-    delete_manifest as chaos_delete_manifest,
+from je_load_density.utils.governance.audit_log import (
+    append_audit_entry,
+    read_audit_log,
 )
-from je_load_density.utils.chaos.toxiproxy import (
-    add_toxic as toxiproxy_add_toxic,
-    create_proxy as toxiproxy_create_proxy,
-    install_bandwidth as toxiproxy_install_bandwidth,
-    install_latency as toxiproxy_install_latency,
-    list_proxies as toxiproxy_list_proxies,
-    remove_proxies as toxiproxy_remove_proxies,
-    remove_toxic as toxiproxy_remove_toxic,
-    reset_all as toxiproxy_reset_all,
+from je_load_density.utils.governance.run_tagging import (
+    list_tags,
+    search_runs_by_tag,
+    tag_run,
 )
+from je_load_density.utils.governance.share_link import (
+    issue_share_link,
+    verify_share_link,
+)
+from je_load_density.utils.governance.test_catalog import index_catalog, search_catalog
 from je_load_density.utils.json.json_file.json_file import read_action_json
 from je_load_density.utils.json.json_file.toml_file import (
     read_action_toml,
@@ -63,17 +144,19 @@ from je_load_density.utils.json.json_file.yaml_file import (
     read_action_yaml,
     write_action_yaml,
 )
-from je_load_density.utils.stub_server.stub_server import (
-    start_stub_server,
-    stop_stub_server,
+from je_load_density.utils.linter.action_formatter import (
+    format_action_document,
+    format_action_file,
+    format_action_string,
+)
+from je_load_density.utils.linter.action_linter import lint_action, lint_action_file
+from je_load_density.utils.metrics.datadog_apm_exporter import (
+    start_datadog_apm_exporter,
+    stop_datadog_apm_exporter,
 )
 from je_load_density.utils.metrics.influxdb_sink import (
     start_influxdb_sink,
     stop_influxdb_sink,
-)
-from je_load_density.utils.metrics.datadog_apm_exporter import (
-    start_datadog_apm_exporter,
-    stop_datadog_apm_exporter,
 )
 from je_load_density.utils.metrics.opentelemetry_exporter import (
     start_opentelemetry_exporter,
@@ -87,18 +170,16 @@ from je_load_density.utils.metrics.prometheus_exporter import (
     start_prometheus_exporter,
     stop_prometheus_exporter,
 )
+from je_load_density.utils.metrics.statsd_sink import (
+    start_statsd_sink,
+    stop_statsd_sink,
+)
+from je_load_density.utils.notifier.gitlab import post_gitlab_mr_summary
+from je_load_density.utils.notifier.opsgenie import post_opsgenie_alert
+from je_load_density.utils.notifier.pagerduty import post_pagerduty_event
+from je_load_density.utils.notifier.slack import post_slack_summary
+from je_load_density.utils.notifier.teams import post_teams_summary
 from je_load_density.utils.package_manager.package_manager_class import package_manager
-from je_load_density.utils.ci_annotations.github_actions import emit_github_annotations
-from je_load_density.utils.action_generator.generate import (
-    generate_from_curls,
-    generate_from_openapi,
-)
-from je_load_density.utils.linter.action_formatter import (
-    format_action_document,
-    format_action_file,
-    format_action_string,
-)
-from je_load_density.utils.linter.action_linter import lint_action, lint_action_file
 from je_load_density.utils.parameterization import (
     parameter_resolver,
     register_csv_source,
@@ -108,11 +189,13 @@ from je_load_density.utils.parameterization import (
     register_variable,
     register_variables,
 )
-from je_load_density.utils.regression.diff import diff_runs
-from je_load_density.utils.regression.error_clustering import cluster_errors
-from je_load_density.utils.regression.multi_run_trend import trend_runs
-from je_load_density.utils.schema.action_schema import export_schema
-from je_load_density.utils.sla.sla_gates import assert_sla, evaluate_sla
+from je_load_density.utils.recording.cdp_capture import (
+    capture_cdp_session,
+    capture_cdp_to_har,
+)
+from je_load_density.utils.recording.cdp_capture import (
+    discover_targets as cdp_discover_targets,
+)
 from je_load_density.utils.recording.curl_importer import curl_to_task
 from je_load_density.utils.recording.har_importer import (
     har_to_action_json,
@@ -139,6 +222,9 @@ from je_load_density.utils.recording.postman_importer import (
     postman_to_action_json,
     postman_to_tasks,
 )
+from je_load_density.utils.regression.diff import diff_runs
+from je_load_density.utils.regression.error_clustering import cluster_errors
+from je_load_density.utils.regression.multi_run_trend import trend_runs
 from je_load_density.utils.reliability.failure_budget import (
     install_failure_budget,
     uninstall_failure_budget,
@@ -147,54 +233,12 @@ from je_load_density.utils.reliability.network_conditioner import (
     install_network_conditioner,
     uninstall_network_conditioner,
 )
-from je_load_density.utils.ai.auto_baseline import calibrate_sla
-from je_load_density.utils.ai.root_cause import build_root_cause_prompt, render_prompt_text
-from je_load_density.utils.ai.smart_shape import find_breaking_point
-from je_load_density.utils.ci_annotations.canary_analysis import canary_verdict
-from je_load_density.utils.dashboard.live_dashboard import (
-    start_dashboard,
-    stop_dashboard,
+from je_load_density.utils.schema.action_schema import export_schema
+from je_load_density.utils.security.fuzz import (
+    expand_task_fuzz,
+    mutate_json,
+    mutate_string,
 )
-from je_load_density.utils.data.db_fixtures import apply_fixture as apply_db_fixture
-from je_load_density.utils.data.db_fixtures import run_teardown as run_db_teardown
-from je_load_density.utils.data.factory import build_user, build_user_pool
-from je_load_density.utils.data.pii_anonymizer import scrub as pii_scrub
-from je_load_density.utils.data.pii_anonymizer import scrub_string as pii_scrub_string
-from je_load_density.utils.generate_report.generate_cost_report import (
-    generate_cost_report,
-)
-from je_load_density.utils.generate_report.generate_cyclonedx_report import (
-    generate_cyclonedx_report,
-)
-from je_load_density.utils.generate_report.generate_excel_report import (
-    generate_excel_report,
-)
-from je_load_density.utils.generate_report.generate_sarif_report import (
-    generate_sarif_report,
-)
-from je_load_density.utils.generate_report.generate_service_map import (
-    generate_service_map,
-)
-from je_load_density.utils.governance.audit_log import (
-    append_audit_entry,
-    read_audit_log,
-)
-from je_load_density.utils.governance.run_tagging import (
-    list_tags,
-    search_runs_by_tag,
-    tag_run,
-)
-from je_load_density.utils.governance.share_link import (
-    issue_share_link,
-    verify_share_link,
-)
-from je_load_density.utils.governance.test_catalog import index_catalog, search_catalog
-from je_load_density.utils.recording.cdp_capture import (
-    capture_cdp_session,
-    capture_cdp_to_har,
-    discover_targets as cdp_discover_targets,
-)
-from je_load_density.utils.security.fuzz import expand_task_fuzz, mutate_json, mutate_string
 from je_load_density.utils.security.graphql_checks import (
     build_alias_batching_attack,
     build_depth_attack,
@@ -204,9 +248,11 @@ from je_load_density.utils.security.graphql_checks import (
 from je_load_density.utils.security.jwt_attacks import (
     craft_alg_confusion_token,
     craft_alg_none_token,
-    craft_attack_pack as craft_jwt_attack_pack,
     craft_expired_token,
     craft_kid_traversal_token,
+)
+from je_load_density.utils.security.jwt_attacks import (
+    craft_attack_pack as craft_jwt_attack_pack,
 )
 from je_load_density.utils.security.owasp_checks import run_owasp_checks
 from je_load_density.utils.security.rate_limit_probe import probe_rate_limit
@@ -221,15 +267,11 @@ from je_load_density.utils.security.ssrf_checks import (
     find_metadata_leak,
     render_ssrf_tasks,
 )
-from je_load_density.utils.metrics.statsd_sink import (
-    start_statsd_sink,
-    stop_statsd_sink,
+from je_load_density.utils.sla.sla_gates import assert_sla, evaluate_sla
+from je_load_density.utils.stub_server.stub_server import (
+    start_stub_server,
+    stop_stub_server,
 )
-from je_load_density.utils.notifier.gitlab import post_gitlab_mr_summary
-from je_load_density.utils.notifier.opsgenie import post_opsgenie_alert
-from je_load_density.utils.notifier.pagerduty import post_pagerduty_event
-from je_load_density.utils.notifier.slack import post_slack_summary
-from je_load_density.utils.notifier.teams import post_teams_summary
 from je_load_density.utils.test_record.sqlite_persistence import (
     fetch_run_records,
     list_runs,
@@ -238,16 +280,19 @@ from je_load_density.utils.test_record.sqlite_persistence import (
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 from je_load_density.wrapper.start_wrapper.start_test import start_test
 
-# Allowlist, not a blocklist: registering "everything except the dangerous ones"
-# hands action JSON whatever a future Python adds, and the earlier list still let
-# `getattr` / `setattr` / `vars` / `globals` through, which walk to anything the
-# process can reach. These are the same names MailThunder's executor allows, so an
-# action list behaves the same across the workspace's frameworks (workspace X-12).
-SAFE_BUILTINS = frozenset({
-    "abs", "all", "any", "ascii", "bin", "callable", "chr", "divmod",
-    "format", "hash", "hex", "len", "max", "min", "oct", "ord", "pow",
-    "print", "repr", "round", "sorted", "sum",
-})
+# Builtins: je_action_core's SAFE_BUILTINS allowlist, the same names every workspace framework registers
+# (workspace X-12). The name stays exported here.
+__all__ = ["SAFE_BUILTINS", "Executor", "add_command_to_executor", "execute_action", "execute_files", "executor"]
+
+# The document key and error texts; the dispatch is je_action_core's (workspace L-6). Records are printed:
+# a failure's repr and action to stderr, then every record's key and value to stdout.
+_SETTINGS = ExecutorSettings(
+    rules=ActionListRules("load_density", error=LoadDensityTestExecuteException, missing_message=executor_list_error,
+                          not_list_message=executor_list_error, empty_message=executor_list_error),
+    parser=LegacyActionParser(error=LoadDensityTestExecuteException, message=executor_data_error),
+    reporter=PrintReporter(),
+    read_json=read_action_json,
+)
 
 
 def _clear_records() -> dict:
@@ -267,14 +312,17 @@ def _lazy_start_socket_server(*args, **kwargs):
     return start_load_density_socket_server(*args, **kwargs)
 
 
-class Executor:
+class Executor(ActionExecutor):
     """
     執行器 (Executor)
-    Event-driven executor that runs LD_* actions plus safe builtins.
+    Event-driven executor that runs LD_* actions plus safe builtins (je_action_core's executor).
     """
 
     def __init__(self) -> None:
-        self.event_dict: dict[str, Any] = {
+        super().__init__(_SETTINGS, CommandRegistry(
+            policy=CommandPolicy.FUNCTIONS_ONLY,
+            rejection=lambda _name: LoadDensityTestExecuteException(add_command_exception_tag)))
+        self.event_dict = {
             # Core
             "LD_start_test": start_test,
             "LD_execute_action": self.execute_action,
@@ -485,51 +533,7 @@ class Executor:
             "LD_probe_rate_limit": probe_rate_limit,
         }
 
-        for name in sorted(SAFE_BUILTINS):
-            self.event_dict[name] = getattr(builtins, name)
-
-    def _execute_event(self, action: list) -> Any:
-        event = self.event_dict.get(action[0])
-        if event is None:
-            raise LoadDensityTestExecuteException(executor_data_error + " " + str(action))
-
-        if len(action) == 2:
-            if isinstance(action[1], dict):
-                return event(**action[1])
-            return event(*action[1])
-        if len(action) == 1:
-            return event()
-        raise LoadDensityTestExecuteException(executor_data_error + " " + str(action))
-
-    def execute_action(self, action_list: Union[list, dict]) -> dict[str, Any]:
-        if isinstance(action_list, dict):
-            action_list = action_list.get("load_density", None)
-            if action_list is None:
-                raise LoadDensityTestExecuteException(executor_list_error)
-
-        if not isinstance(action_list, list) or len(action_list) == 0:
-            raise LoadDensityTestExecuteException(executor_list_error)
-
-        execute_record_dict: dict[str, Any] = {}
-        for action in action_list:
-            try:
-                event_response = self._execute_event(action)
-                execute_record = f"execute: {action}"
-                execute_record_dict[execute_record] = event_response
-            except Exception as error:
-                print(repr(error), file=sys.stderr)
-                print(action, file=sys.stderr)
-                execute_record = f"execute: {action}"
-                execute_record_dict[execute_record] = repr(error)
-
-        for key, value in execute_record_dict.items():
-            print(key)
-            print(value)
-
-        return execute_record_dict
-
-    def execute_files(self, execute_files_list: list[str]) -> list[dict[str, Any]]:
-        return [self.execute_action(read_action_json(path)) for path in execute_files_list]
+        self.event_dict.update(safe_builtin_commands())
 
 
 executor = Executor()
@@ -537,11 +541,8 @@ package_manager.executor = executor
 
 
 def add_command_to_executor(command_dict: dict[str, Any]) -> None:
-    for command_name, command in command_dict.items():
-        if isinstance(command, (types.MethodType, types.FunctionType)):
-            executor.event_dict[command_name] = command
-        else:
-            raise LoadDensityTestExecuteException(add_command_exception_tag)
+    """Add functions or methods as commands; the first other value raises (the ones before it stay)."""
+    executor.add_command_to_executor(command_dict)
 
 
 def execute_action(action_list: list) -> dict[str, Any]:

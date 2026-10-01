@@ -6,3 +6,4 @@ Cross-repo and workspace items live in `D:\Codes\progress.md` (relevant here: X-
 
 ## Open
 
+- **#22** [BLOCKED: je_action_core on PyPI, ActionCore `progress.md` #1] Install `je_action_core` from PyPI instead of the GitHub pin: remove `[tool.uv.sources]` from `pyproject.toml` and `dev.toml` and run `uv lock`, then drop the "Install je_action_core" step from `ci-dev.yml` and `ci-stable.yml`. Until then, do not release `main`: the published metadata requires `je_action_core`, which PyPI does not have yet.
