@@ -1,8 +1,8 @@
 Socket Server API
 =================
 
-A gevent-based TCP listener that runs LoadDensity action JSON over the
-wire. The hardened protocol adds 4-byte big-endian length-prefix
+je_action_core's threaded TCP action server, run under gevent, that runs LoadDensity action JSON
+over the wire. The hardened protocol adds 4-byte big-endian length-prefix
 framing (1 MiB cap), optional TLS, and a shared-secret token; the
 legacy unauthenticated mode is preserved for downstream tools such as
 PyBreeze.
@@ -19,7 +19,7 @@ start_load_density_socket_server()
         token: Optional[str] = None,
         certfile: Optional[str] = None,
         keyfile: Optional[str] = None,
-    ) -> "TCPServer"
+    ) -> "ActionTCPServer"
 
 **Parameters:**
 
@@ -55,7 +55,9 @@ start_load_density_socket_server()
      - PEM cert and key on disk. Both must be set to enable TLS
        (``ssl.create_default_context``, TLS 1.2+ minimum).
 
-**Returns:** ``TCPServer`` — running server instance.
+**Returns:** ``ActionTCPServer`` (je_action_core) — the server, once a client has stopped it. The call blocks
+until then. ``socket_server_settings(framed, token, certfile, keyfile)`` builds the same settings for
+embedding the server elsewhere.
 
 Modes
 -----

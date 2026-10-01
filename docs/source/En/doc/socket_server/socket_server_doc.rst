@@ -4,7 +4,7 @@ TCP Control Socket Server
 Overview
 --------
 
-The control socket server is a gevent-based TCP listener that runs
+The control socket server is je_action_core's threaded TCP action server, run under gevent, that runs
 LoadDensity action JSON sent over the wire. The hardened protocol adds
 length-prefix framing, optional TLS, and a shared-secret token; the
 legacy unauthenticated mode is preserved for backwards compatibility.

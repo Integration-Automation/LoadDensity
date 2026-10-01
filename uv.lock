@@ -2035,11 +2035,11 @@ wheels = [
 
 [[package]]
 name = "je-action-core"
-version = "0.0.1"
+version = "0.0.2"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ed/8a/7e4e4a165e4b78456109904a72c1c352949504f6835251c73f920c5c8dc6/je_action_core-0.0.1.tar.gz", hash = "sha256:84361b5b9bfa4489c15b3e5715c6e6d080f4fa25e1a10112806525bf00df241e", size = 29714, upload-time = "2026-10-01T05:33:56.836Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/99/5c/415ea7a3a92b3973d92d82f76cc7255eb11a728d032217ad1321a7a93de8/je_action_core-0.0.2.tar.gz", hash = "sha256:2d0fb27fc6136992e6c390cc0335182fa3fa8787831dc166b3d8f08fed386195", size = 36137, upload-time = "2026-10-01T06:18:16.447Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/0e/74/b07d9438e7a6c962ec219f16da28b072fa85c1cc6d8ba35e710eaf1c7499/je_action_core-0.0.1-py3-none-any.whl", hash = "sha256:6d1bc94e793f2e682bfae536824dfcff3322f0049dce5109df18fdd440a31f94", size = 22910, upload-time = "2026-10-01T05:33:55.704Z" },
+    { url = "https://files.pythonhosted.org/packages/7b/fb/c4eba22af3dcee96249eebfb111212fe4bfbeb21578ba0d281f741658b1e/je_action_core-0.0.2-py3-none-any.whl", hash = "sha256:be696455a8bb3b792b0d7865b5f73210e84ff32a002a2c739290d3c1bb6e0c69", size = 27266, upload-time = "2026-10-01T06:18:15.349Z" },
 ]
 
 [[package]]
@@ -2284,7 +2284,7 @@ requires-dist = [
     { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.60" },
     { name = "httpx", extras = ["http2"], marker = "extra == 'all'", specifier = ">=0.27" },
     { name = "httpx", extras = ["http2"], marker = "extra == 'http2'", specifier = ">=0.27" },
-    { name = "je-action-core", specifier = ">=0.0.1" },
+    { name = "je-action-core", specifier = ">=0.0.2" },
     { name = "kafka-python", marker = "extra == 'all'", specifier = ">=2.3.2" },
     { name = "kafka-python", marker = "extra == 'kafka'", specifier = ">=2.3.2" },
     { name = "kopf", marker = "extra == 'all'", specifier = ">=1.37" },

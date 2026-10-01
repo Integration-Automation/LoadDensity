@@ -1,191 +1,70 @@
-import hmac
-import json
-import os
-import ssl
-import struct
-import sys
-from socket import AF_INET, SOCK_STREAM
-from typing import Any, Optional
+"""
+LoadDensity's TCP control server (port 9940): je_action_core's action server in LoadDensity's dialect.
 
-import gevent
+- Requests are raw (one 8 KiB ``recv``) or, with ``framed=True``, 4-byte big-endian length-prefixed; every reply
+  line is then its own frame.
+- With a token (argument or ``LOAD_DENSITY_SOCKET_TOKEN``), only ``{"token": ..., "command": [...]}`` runs and
+  ``{"token": ..., "op": "quit"}`` stops the server. Tokens are compared in constant time.
+- ``certfile`` and ``keyfile`` wrap every connection in TLS 1.2 or later.
+- Replies: one line per record, then ``Return_Data_Over_JE``; failures are ``Error: <text>``. The log line names
+  only the request's size, never its text (it may hold the token).
+"""
+import os
+import sys
+from typing import Optional
+
 from gevent import monkey
-from gevent import socket
+from je_action_core import (
+    ActionTCPServer,
+    EnvelopeTokenRequestHandler,
+    Framing,
+    ReplyMessages,
+    SocketServerSettings,
+    server_tls_context,
+    start_action_socket_server,
+)
 
 from je_load_density.utils.executor.action_executor import execute_action
 
-_MAX_PAYLOAD_BYTES = 1 << 20  # 1 MiB
-_FRAME_HEADER = struct.Struct("!I")
-_RESPONSE_TERMINATOR = b"Return_Data_Over_JE\n"
-_AUTH_FAILED = object()
+TOKEN_ENVIRONMENT_VARIABLE = "LOAD_DENSITY_SOCKET_TOKEN"  # noqa: S105 - a variable name, not a value
+_MESSAGES = ReplyMessages(
+    record="{value}",
+    error="Error: {error}",
+    quit="Server shutting down",
+    auth_required="Error: token required",
+    auth_refused="Error: unauthorised",
+    log_command="Command received: {size} bytes",
+)
 
 
-class TCPServer:
+def _print_info(message: str) -> None:
+    print(message, flush=True)
+
+
+def _print_error(message: str) -> None:
+    print(message, file=sys.stderr)
+
+
+def socket_server_settings(
+    framed: bool = False,
+    token: Optional[str] = None,
+    certfile: Optional[str] = None,
+    keyfile: Optional[str] = None,
+) -> SocketServerSettings:
     """
-    基於 gevent 的 TCP 伺服器
-    TCP server based on gevent.
-
-    Modes:
-        legacy   - single recv up to 8 KiB, raw JSON line, no auth
-        framed   - 4-byte big-endian length prefix + JSON body
-        framed+tls - wrap socket with TLS (cert/key required)
-
-    Auth:
-        Optional shared secret token compared via hmac. Required to
-        execute privileged commands (quit_server) and any payload
-        once a token is configured.
+    LoadDensity 伺服器的設定
+    The server settings for LoadDensity's dialect (see the module docstring).
     """
-
-    def __init__(
-        self,
-        framed: bool = False,
-        token: Optional[str] = None,
-        certfile: Optional[str] = None,
-        keyfile: Optional[str] = None,
-    ) -> None:
-        self.close_flag: bool = False
-        self.framed: bool = framed
-        self.token: Optional[str] = token
-        self.certfile = certfile
-        self.keyfile = keyfile
-        self.server: socket.socket = socket.socket(AF_INET, SOCK_STREAM)
-        self._tls_context: Optional[ssl.SSLContext] = None
-        if certfile and keyfile:
-            # create_default_context(Purpose.CLIENT_AUTH) is the stdlib
-            # helper for a TLS server that may verify client certs; it
-            # ships hardened defaults (TLS 1.2+, secure cipher list, no
-            # compression). minimum_version is pinned explicitly as a
-            # belt-and-braces guard if the default ever loosens.
-            self._tls_context = ssl.create_default_context(ssl.Purpose.CLIENT_AUTH)  # NOSONAR S4423 - hardened defaults pinned below
-            self._tls_context.minimum_version = ssl.TLSVersion.TLSv1_2
-            self._tls_context.load_cert_chain(certfile=certfile, keyfile=keyfile)
-
-    def socket_server(self, host: str, port: int) -> None:
-        self.server.bind((host, port))
-        self.server.listen()
-        print(f"Server started on {host}:{port}", flush=True)
-
-        while not self.close_flag:
-            try:
-                connection, _ = self.server.accept()
-                if self._tls_context is not None:
-                    try:
-                        connection = self._tls_context.wrap_socket(connection, server_side=True)
-                    except ssl.SSLError as error:
-                        print(f"TLS handshake failed: {error}", file=sys.stderr)
-                        connection.close()
-                        continue
-                gevent.spawn(self.handle, connection)
-            except Exception as error:
-                print(f"Server error: {error}", file=sys.stderr)
-                break
-
-        self.server.close()
-        print("Server shutdown complete", flush=True)
-
-    def _read_frame(self, connection) -> Optional[bytes]:
-        if not self.framed:
-            data = connection.recv(8192)
-            return data or None
-        header = self._read_exact(connection, _FRAME_HEADER.size)
-        if header is None:
-            return None
-        (length,) = _FRAME_HEADER.unpack(header)
-        if length == 0 or length > _MAX_PAYLOAD_BYTES:
-            return None
-        return self._read_exact(connection, length)
-
-    @staticmethod
-    def _read_exact(connection, size: int) -> Optional[bytes]:
-        buffer = bytearray()
-        while len(buffer) < size:
-            chunk = connection.recv(size - len(buffer))
-            if not chunk:
-                return None
-            buffer.extend(chunk)
-        return bytes(buffer)
-
-    def _send_frame(self, connection, payload: bytes) -> None:
-        if self.framed:
-            connection.sendall(_FRAME_HEADER.pack(len(payload)) + payload)
-        else:
-            connection.sendall(payload)
-
-    def _check_token(self, supplied: Any) -> bool:
-        if self.token is None:
-            return True
-        if not isinstance(supplied, str):
-            return False
-        return hmac.compare_digest(self.token, supplied)
-
-    def handle(self, connection) -> None:
-        try:
-            raw = self._read_frame(connection)
-            if not raw:
-                return
-
-            command_string = raw.strip().decode("utf-8", errors="replace")
-            print(f"Command received: {len(command_string)} bytes", flush=True)
-
-            if command_string == "quit_server":
-                self._handle_legacy_quit(connection)
-                return
-
-            command = self._authorise_payload(connection, command_string)
-            if command is _AUTH_FAILED:
-                return
-            if command is None:
-                self._send_frame(connection, _RESPONSE_TERMINATOR)
-                return
-
-            self._dispatch_command(connection, command)
-        finally:
-            connection.close()
-
-    def _handle_legacy_quit(self, connection) -> None:
-        if self.token is not None:
-            self._send_frame(connection, b"Error: token required\n")
-            return
-        self.close_flag = True
-        self._send_frame(connection, b"Server shutting down\n")
-        print("Now quit server", flush=True)
-
-    def _authorise_payload(self, connection, command_string: str):
-        """
-        Decode the JSON envelope, enforce the token, and return the
-        actual command to execute. Returns ``_AUTH_FAILED`` when the
-        client has already been answered (bad JSON, missing/bad token,
-        or a quit op was honoured).
-        """
-        try:
-            payload = json.loads(command_string)
-        except json.JSONDecodeError as error:
-            self._send_frame(connection, f"Error: {error}\n".encode("utf-8"))
-            self._send_frame(connection, _RESPONSE_TERMINATOR)
-            return _AUTH_FAILED
-
-        if isinstance(payload, dict) and ("token" in payload or "command" in payload):
-            if not self._check_token(payload.get("token")):
-                self._send_frame(connection, b"Error: unauthorised\n")
-                return _AUTH_FAILED
-            if payload.get("op") == "quit":
-                self.close_flag = True
-                self._send_frame(connection, b"Server shutting down\n")
-                return _AUTH_FAILED
-            return payload.get("command")
-
-        if self.token is not None:
-            self._send_frame(connection, b"Error: token required\n")
-            return _AUTH_FAILED
-
-        return payload
-
-    def _dispatch_command(self, connection, command) -> None:
-        try:
-            for execute_return in execute_action(command).values():
-                self._send_frame(connection, f"{execute_return}\n".encode("utf-8"))
-        except Exception as error:
-            self._send_frame(connection, f"Error: {error}\n".encode("utf-8"))
-        self._send_frame(connection, _RESPONSE_TERMINATOR)
+    return SocketServerSettings(
+        execute=execute_action,
+        framing=Framing.LENGTH_PREFIX if framed else Framing.RAW,
+        decode_errors="replace",
+        messages=_MESSAGES,
+        secret=token,
+        tls_context=server_tls_context(certfile, keyfile) if certfile and keyfile else None,
+        log_info=_print_info,
+        log_error=_print_error,
+    )
 
 
 def start_load_density_socket_server(
@@ -195,17 +74,23 @@ def start_load_density_socket_server(
     token: Optional[str] = None,
     certfile: Optional[str] = None,
     keyfile: Optional[str] = None,
-) -> TCPServer:
+) -> ActionTCPServer:
     """
     啟動 LoadDensity TCP 伺服器
-    Start LoadDensity TCP server.
+    Start LoadDensity's TCP server and block until a client stops it, then return the stopped server.
 
-    The token may also come from the LOAD_DENSITY_SOCKET_TOKEN
-    environment variable so secrets are not embedded in callers.
+    gevent patches the standard library first (``monkey.patch_all()``), so connections run on greenlets.
+    The token may also come from the ``LOAD_DENSITY_SOCKET_TOKEN`` environment variable so secrets are not
+    embedded in callers.
     """
     monkey.patch_all()
     if token is None:
-        token = os.environ.get("LOAD_DENSITY_SOCKET_TOKEN")
-    server = TCPServer(framed=framed, token=token, certfile=certfile, keyfile=keyfile)
-    server.socket_server(host, port)
+        token = os.environ.get(TOKEN_ENVIRONMENT_VARIABLE)
+    settings = socket_server_settings(framed=framed, token=token, certfile=certfile, keyfile=keyfile)
+    server = start_action_socket_server(host, port, settings, EnvelopeTokenRequestHandler)
+    print(f"Server started on {host}:{port}", flush=True)
+    server.close_event.wait()
+    server.shutdown()
+    server.server_close()
+    print("Server shutdown complete", flush=True)
     return server

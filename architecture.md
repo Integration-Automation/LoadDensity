@@ -153,10 +153,15 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
     `LoadDensityTestExecuteException`; `executor.allow_packages` / `set_allow_arbitrary_packages` are the
     Python-only switches), errors printed;
   - **callback executor**: legacy checks, errors printed and raised;
-  - **JSON files**: every error wrapped.
+  - **JSON files**: every error wrapped;
+  - **socket server**: `EnvelopeTokenRequestHandler` with `socket_server_settings(framed, token, certfile, keyfile)`.
+    It is raw or 4-byte length-prefixed, compares the envelope token in constant time, and wraps TLS 1.2 or later.
+    Replies are one line per record, `Error: <text>` failures and `Server shutting down`; the log line names only
+    the request's size. `start_load_density_socket_server` calls `monkey.patch_all()`, then blocks on
+    `close_event`.
 
-  The gevent socket server and `get_dir_files_as_list` stay here. It is a PyPI dependency (`je_action_core>=0.0.1`,
-  also in `requirements.txt` / `dev_requirements.txt`, which the CI installs). ActionCore lists LoadDensity in its own §6.
+  `get_dir_files_as_list` stays here. It is a PyPI dependency (`je_action_core>=0.0.2`, also in `requirements.txt`
+  / `dev_requirements.txt`, which the CI installs). ActionCore lists LoadDensity in its own §6.
 - **Sibling executors** share the action-list shape and the `Return_Data_Over_JE` terminator. Builtins
   policy is now the same allowlist here, in MailThunder and in WebRunner (`SAFE_BUILTINS`, 22 names);
   APITestka, FileAutomation, AutoControlGUI and TestPioneer register no builtins at all

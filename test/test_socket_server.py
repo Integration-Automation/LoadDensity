@@ -9,12 +9,15 @@ import json
 import struct
 
 import pytest
+from je_action_core import EnvelopeTokenRequestHandler
 
 from je_load_density.utils.executor.action_executor import add_command_to_executor
-from je_load_density.utils.socket_server.load_density_socket_server import TCPServer
+from je_load_density.utils.socket_server.load_density_socket_server import (
+    socket_server_settings,
+)
 
 END = b"Return_Data_Over_JE\n"
-TOKEN = "s3cret"
+TOKEN = "s3cret"  # noqa: S105 - a test value, not a credential
 _FRAME = struct.Struct("!I")
 
 
@@ -40,8 +43,17 @@ class _FakeConnection:
     def sendall(self, data: bytes) -> None:
         self.sent.extend(data)
 
-    def close(self) -> None:
-        """The handler closes the connection when it is done."""
+    def settimeout(self, _value) -> None:
+        """The server sets no timeout."""
+
+
+class _FakeServer:
+    def __init__(self, settings) -> None:
+        self.settings = settings
+        self.close_flag = False
+
+    def request_stop(self) -> None:
+        self.close_flag = True
 
 
 def _frame(body: bytes) -> bytes:
@@ -49,13 +61,10 @@ def _frame(body: bytes) -> bytes:
 
 
 def _exchange(request: bytes, framed: bool = False, token=None):
-    server = TCPServer(framed=framed, token=token)
-    try:
-        connection = _FakeConnection(request)
-        server.handle(connection)
-        return bytes(connection.sent), server.close_flag
-    finally:
-        server.server.close()
+    server = _FakeServer(socket_server_settings(framed=framed, token=token))
+    connection = _FakeConnection(request)
+    EnvelopeTokenRequestHandler(connection, ("127.0.0.1", 0), server)
+    return bytes(connection.sent), server.close_flag
 
 
 def _echo(value: str) -> bytes:
@@ -125,3 +134,12 @@ def test_framed_request_gets_one_frame_per_line():
 @pytest.mark.parametrize("header", [_FRAME.pack(0), _FRAME.pack((1 << 20) + 1)])
 def test_framed_request_with_a_bad_length_gets_no_reply(header):
     assert _exchange(header, framed=True) == (b"", False)
+
+
+def test_settings_wrap_tls_only_with_both_files(monkeypatch):
+    from je_load_density.utils.socket_server import load_density_socket_server as module
+    contexts = []
+    monkeypatch.setattr(module, "server_tls_context", lambda cert, key: contexts.append((cert, key)) or "ctx")
+    assert socket_server_settings(certfile="c.pem").tls_context is None
+    assert socket_server_settings(certfile="c.pem", keyfile="k.pem").tls_context == "ctx"
+    assert contexts == [("c.pem", "k.pem")]
