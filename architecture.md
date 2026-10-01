@@ -81,7 +81,10 @@ persistence all read from that record.
   - dev, `je_load_density_dev`: the `publish-dev` job of `ci-dev.yml` runs after `test` on a push to `dev`. It
     builds from `dev.toml` and uploads when the commit is still the tip of `dev` and the wheel differs from
     the newest published one. `scripts/dev_release.py` takes the version from PyPI (newest release plus one
-    patch), so nothing is committed back and the version in `dev.toml` is only a floor.
+    patch), so nothing is committed back and the version in `dev.toml` is only a floor;
+  - both jobs hold the PyPI token and install nothing but `.github/requirements/publish.txt` (`build`, `twine`,
+    and `tomlkit` for the stable bump): wheels only, at locked hashes, generated from `publish.in` beside it.
+    `test/test_workflow_actions.py` fails when either job runs any other `pip install`.
 
 ## 4. Main flows
 
