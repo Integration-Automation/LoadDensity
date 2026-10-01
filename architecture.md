@@ -155,8 +155,8 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
   - **callback executor**: legacy checks, errors printed and raised;
   - **JSON files**: every error wrapped.
 
-  The gevent socket server and `get_dir_files_as_list` stay here. Until the package is on PyPI, `[tool.uv.sources]`
-  and the CI install it from GitHub at a fixed commit (`progress.md` #22). ActionCore lists LoadDensity in its own §6.
+  The gevent socket server and `get_dir_files_as_list` stay here. It is a PyPI dependency (`je_action_core>=0.0.1`,
+  also in `requirements.txt` / `dev_requirements.txt`, which the CI installs). ActionCore lists LoadDensity in its own §6.
 - **Sibling executors** share the action-list shape and the `Return_Data_Over_JE` terminator. Builtins
   policy is now the same allowlist here, in MailThunder and in WebRunner (`SAFE_BUILTINS`, 22 names);
   APITestka, FileAutomation, AutoControlGUI and TestPioneer register no builtins at all

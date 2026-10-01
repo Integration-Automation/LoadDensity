@@ -1,5 +1,6 @@
 je_load_density_dev
 defusedxml>=0.7.1
+je_action_core>=0.0.1
 sphinx
 twine
 sphinx-rtd-theme
