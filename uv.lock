@@ -2036,7 +2036,7 @@ wheels = [
 [[package]]
 name = "je-action-core"
 version = "0.0.0"
-source = { git = "https://github.com/Integration-Automation/ActionCore?rev=b08d46a94be4fdfe2d8ee167c911c2c1f8e6eadf#b08d46a94be4fdfe2d8ee167c911c2c1f8e6eadf" }
+source = { git = "https://github.com/Integration-Automation/ActionCore?rev=19bfe0a7c907af00c6a59af3de04448999b42e44#19bfe0a7c907af00c6a59af3de04448999b42e44" }
 
 [[package]]
 name = "je-load-density"
@@ -2280,7 +2280,7 @@ requires-dist = [
     { name = "grpcio", marker = "extra == 'grpc'", specifier = ">=1.60" },
     { name = "httpx", extras = ["http2"], marker = "extra == 'all'", specifier = ">=0.27" },
     { name = "httpx", extras = ["http2"], marker = "extra == 'http2'", specifier = ">=0.27" },
-    { name = "je-action-core", git = "https://github.com/Integration-Automation/ActionCore?rev=b08d46a94be4fdfe2d8ee167c911c2c1f8e6eadf" },
+    { name = "je-action-core", git = "https://github.com/Integration-Automation/ActionCore?rev=19bfe0a7c907af00c6a59af3de04448999b42e44" },
     { name = "kafka-python", marker = "extra == 'all'", specifier = ">=2.3.2" },
     { name = "kafka-python", marker = "extra == 'kafka'", specifier = ">=2.3.2" },
     { name = "kopf", marker = "extra == 'all'", specifier = ">=1.37" },

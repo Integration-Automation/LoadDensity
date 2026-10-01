@@ -40,7 +40,7 @@ jobs:
       # GitHub at a fixed commit until it is.
       - name: Install je_action_core
         run: |
-          pip install --no-deps "je_action_core @ git+https://github.com/Integration-Automation/ActionCore@b08d46a94be4fdfe2d8ee167c911c2c1f8e6eadf"
+          pip install --no-deps "je_action_core @ git+https://github.com/Integration-Automation/ActionCore@19bfe0a7c907af00c6a59af3de04448999b42e44"
 
       - name: Run tests
         run: python -m pytest test/ -v

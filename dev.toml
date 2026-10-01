@@ -165,4 +165,4 @@ skips = ["**/test_*.py", "**/*_test.py", "**/conftest.py"]
 
 # je_action_core is not on PyPI yet (ActionCore progress.md #1): uv resolves it from GitHub at this commit.
 [tool.uv.sources]
-je-action-core = { git = "https://github.com/Integration-Automation/ActionCore", rev = "b08d46a94be4fdfe2d8ee167c911c2c1f8e6eadf" }
+je-action-core = { git = "https://github.com/Integration-Automation/ActionCore", rev = "19bfe0a7c907af00c6a59af3de04448999b42e44" }
