@@ -35,6 +35,9 @@ checkout wheel, runs `pip check`, checks its declared capability without skippin
 and runs the six base smoke tests. GUI cells install Qt system libraries and use
 `QT_QPA_PLATFORM=offscreen`. These installation probes use local codecs, stubbed
 SDK calls and client configuration; live protocol checks run separately.
+Dependencies require wheels except `http-ece`, whose upstream distribution is a
+source archive used by Web Push. That explicit exception is built only in the
+isolated image. Runtime probes run as uid/gid 65534.
 
 ```bash
 python -m build --wheel --no-isolation

@@ -132,14 +132,12 @@ def mqtt() -> None:
 
 
 def nats() -> None:
-    import asyncio
-
     from nats.aio.client import Client
 
     client = Client()
-    if client.is_connected:
-        raise RuntimeError("A new NATS client unexpectedly connects")
-    asyncio.run(client.close())
+    first, second = client.new_inbox(), client.new_inbox()
+    if not first.startswith("_INBOX.") or first == second:
+        raise RuntimeError("NATS request/reply inbox generation failed")
 
 
 def neo4j() -> None:

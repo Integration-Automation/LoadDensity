@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261002-08 | 2026-10-02 | Repair Qt Web Push and NATS installation probes | #done #ci #extras | [2026-10](2026-10.md) |
 | U-20261002-07 | 2026-10-02 | Align CI install paths and isolate smoke container permissions | #done #ci | [2026-10](2026-10.md) |
 | U-20261002-06 | 2026-10-02 | Gate publishing on Docker extras and protocol smoke checks | #done #ci #extras | [2026-10](2026-10.md) |
 | U-20261002-05 | 2026-10-02 | Exercise installed wheels and propagate failed SLA status | #done #smoke | [2026-10](2026-10.md) |
