@@ -781,6 +781,15 @@ python -m je_load_density serve [--host ...]    # start the control socket
 
 ## 测试记录
 
+Canonical request 记录是可选 API，需要提供 `je_action_core.request_context` 的 ActionCore 版本
+或协调的开发工作树。原记录列表与报告仍支持现有依赖下限。从
+`je_load_density.utils.test_record.run_context` 创建
+`RunContext(source="loaddensity", phase="load", engine="asyncio")`，以 `run_context` 传给
+`run_async_load`，再用 `context.to_json()` 输出版本化结果。Locust 可将 `run_context` 传给
+`start_test`／`prepare_env`／`create_env`；context 绑定隔离的 environment 事件，覆盖 greenlet 的请求。
+`use_run_context(context)` 也可捕获当前范围的直接 request 事件。新格式使用数字／null 状态码、
+实测毫秒、结构化错误与 run 标识；默认不保存完整响应内容。Async 返回摘要只计算本次调用。
+
 `test_record_instance.test_record_list` 与 `error_record_list` 收集每次请求,内含 `Method`、`test_url`、`name`、`status_code`、`response_time_ms`、`response_length`、`start_time`(epoch 秒,因此报告可跨两份 list 还原请求顺序),失败时还带 `error`。报告与 SQLite sink 直接从这些 list 读取。
 
 ## 异常处理

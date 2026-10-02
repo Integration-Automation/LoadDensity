@@ -1,8 +1,10 @@
+from functools import partial
 from typing import Any, Dict, List, Optional
 
 import gevent
 from locust import User, events
 from locust.env import Environment
+from locust.event import Events
 from locust.log import setup_logging
 from locust.stats import stats_history, stats_printer
 
@@ -36,6 +38,10 @@ def prepare_env(
     master_host = kwargs.pop("master_host", "127.0.0.1")
     master_port = kwargs.pop("master_port", 5557)
     expected_workers = kwargs.pop("expected_workers", 0)
+    run_context = kwargs.pop("run_context", None)
+    if run_context is None:
+        from je_load_density.utils.test_record.contract import get_optional_run_context
+        run_context = get_optional_run_context()
 
     load_density_logger.info(
         f"prepare_env mode={runner_mode}, user_class={user_class}, user_count={user_count}, "
@@ -46,7 +52,7 @@ def prepare_env(
     env = create_env(user_class, runner_mode=runner_mode,
                      master_bind_host=master_bind_host, master_bind_port=master_bind_port,
                      master_host=master_host, master_port=master_port,
-                     load_shape=load_shape, shape_config=shape_config)
+                     load_shape=load_shape, shape_config=shape_config, run_context=run_context)
 
     if runner_mode == "worker":
         env.runner.greenlet.join()
@@ -81,6 +87,7 @@ def create_env(
     master_port: int = 5557,
     load_shape: Optional[str] = None,
     shape_config: Optional[Dict[str, Any]] = None,
+    **kwargs,
 ):
     """
     建立 Locust Environment 並依模式建立 runner。
@@ -90,6 +97,13 @@ def create_env(
         f"create_env mode={runner_mode}, user_class={user_class}, another_event={another_event}"
     )
     shape_class = _resolve_shape(load_shape, shape_config)
+    run_context = kwargs.pop("run_context", None)
+    if run_context is not None:
+        from je_load_density.wrapper.event.request_hook import request_hook
+        if another_event is not events:
+            raise ValueError("a canonical run context requires an isolated default event environment")
+        another_event = Events()
+        another_event.request.add_listener(partial(request_hook, record_run=run_context))
     env = Environment(user_classes=[user_class], events=another_event,
                       shape_class=shape_class)
 

@@ -37,3 +37,14 @@ SQLite 持久化
 -------------
 
 見 :doc:`../sqlite_persistence/sqlite_persistence_doc`。
+
+隔離的 canonical 執行紀錄
+-------------------------
+
+選用模組 ``utils.test_record.run_context`` 提供 ActionCore 的 ``RunContext`` 與
+``use_run_context``，需要協調的 core request-record API；原套件 import 與清單維持舊版本相容。
+建立 context 時指定 ``source="loaddensity"``、``phase="load"`` 與引擎。
+以 ``run_context=context`` 傳給 ``run_async_load`` 或 ``start_test``；Locust 將 context
+綁定隔離的 environment 事件，greenlet 不依賴 ContextVar 繼承。
+``context.to_json()`` 輸出 v1 紀錄，包含識別、數字／null 狀態碼與結構化錯誤。
+預設不擷取完整內容；async 回傳摘要不納入前次呼叫的紀錄。

@@ -45,3 +45,15 @@ SQLite persistence
 ------------------
 
 See :doc:`../../../En/doc/sqlite_persistence/sqlite_persistence_doc`.
+
+Canonical run-scoped results
+---------------------------
+
+The opt-in ``utils.test_record.run_context`` module re-exports ActionCore's
+``RunContext`` and ``use_run_context``. It requires the coordinated core request-record API;
+legacy package imports and lists remain compatible with earlier core releases.
+Create a context with ``source="loaddensity"``, ``phase="load"`` and the chosen engine.
+Pass ``run_context=context`` to ``run_async_load`` or ``start_test``. Locust binds the context
+to isolated environment events so greenlets do not depend on ContextVar inheritance.
+``context.to_json()`` exports v1 records with identities, numeric/null status and structured errors.
+Payload capture is disabled by default. Async summaries exclude previous invocations' records.

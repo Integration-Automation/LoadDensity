@@ -135,6 +135,13 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
 
 ## 6. Cross-project boundaries
 
+Canonical request records are an opt-in contract supplied by ActionCore's ``request_record``/
+``request_context`` APIs. ``utils/test_record/contract.py`` adapts legacy results and
+``run_context.py`` exposes explicit run scopes. Locust environments bind the selected context
+to isolated events; asyncio propagates it to its tasks. Canonical APIs require the coordinated
+core release/checkouts, while existing imports and legacy report shapes remain compatible with
+the published dependency floor. The old action-executor record contract is separate and unchanged.
+
 - **PyBreeze (subprocess)** runs `python -m je_load_density --execute_str <json>` or `--execute_file <path>`
   (`PyBreeze/pybreeze/extend/process_executor/python_task_process_manager.py`; the package name is in
   `.../process_executor/load_density/load_density_process.py`). The hidden legacy flags and the

@@ -781,6 +781,17 @@ Legacy single-flag form (`-e/-d/-c/--execute_str`) is still accepted for backwar
 
 ## Test Record
 
+Canonical request records are available as an opt-in API with an ActionCore release that provides
+`je_action_core.request_context` (or the coordinated development checkout). Legacy record lists and reports
+continue to work with the existing dependency floor. Create
+`RunContext(source="loaddensity", phase="load", engine="asyncio")` from
+`je_load_density.utils.test_record.run_context`, pass it as `run_context` to `run_async_load`, and call
+`context.to_json()` for versioned results. For Locust, pass `run_context` to `start_test`/`prepare_env`/`create_env`;
+the context is bound to isolated environment events, including requests fired by greenlets.
+`use_run_context(context)` also captures direct request events in the current scope.
+Canonical records use numeric/null status, measured milliseconds, structured errors and run identities;
+full response payloads are disabled by default. Async return summaries count only their own invocation.
+
 `test_record_instance.test_record_list` and `error_record_list` collect every request with `Method`, `test_url`, `name`, `status_code`, `response_time_ms`, `response_length`, `start_time` (epoch seconds, so reports can restore request order across the two lists), and (for failures) `error`. Reports and the SQLite sink read directly from these lists.
 
 ## Exception Handling
