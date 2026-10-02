@@ -91,3 +91,6 @@ Smoke tests and failure exit codes
 ``run``, ``run-dir``, ``run-str`` and legacy execute flags return a nonzero exit code when an action (including an SLA gate) fails. Actions in a file still run in order and produce their usual reports. The Python executor return format is preserved. Base installation includes httpx for the native async benchmark; HTTP/2 needs the ``http2`` extra.
 
 Run ``python -m unittest discover -s test/smoke -p "test_*.py"`` from a checkout. The stdlib harness starts a separate local HTTP server and subprocesses to verify real Locust/async requests, summary/JSON/JUnit files, SQLite, SLA failures, dashboard JSON/SSE and MCP initialization. Docker runs the same harness outside the source tree against an installed wheel.
+
+
+The reusable extras workflow tests an installed checkout wheel in Docker: every declared extra on Python 3.12 and base on 3.10/3.14 for pull requests; all supported Python minors for scheduled runs. Missing capabilities fail rather than skip. Separate Compose health checks exercise Redis/MQTT adapters and a local SQLite query. The etcd extra uses etcd3gw without downgrading protobuf; existing step formats and legacy etcd3 installations remain supported.

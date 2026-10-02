@@ -12,6 +12,11 @@ permissions:
   contents: read
 
 jobs:
+  extras:
+    uses: ./.github/workflows/extras.yml
+    with:
+      event-name: ${{ github.event_name }}
+
   test:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15  # about 3x the slowest recent run, at least 15

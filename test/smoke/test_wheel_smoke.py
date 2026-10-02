@@ -67,7 +67,7 @@ class WheelSmoke(unittest.TestCase):
     def actions(self, endpoint: str, *, failed_gate: bool = False) -> list[list[object]]:
         definitions = [
             {"LD_start_test": {"user_detail_dict": {"user": "http_user"}, "user_count": 1,
-                               "spawn_rate": 10, "test_time": 1,
+                               "spawn_rate": 10, "test_time": 3,
                                "tasks": {"get": {"request_url": self.url + endpoint}}}},
             {"LD_generate_summary_report": {"report_name": "summary"}},
             {"LD_generate_json_report": {"json_file_name": "records"}},

@@ -785,6 +785,8 @@ python -m je_load_density serve [--host ...]    # start the control socket
 
 在 checkout 执行 `python -m unittest discover -s test/smoke -p "test_*.py"`。标准库 harness 启动独立本机 HTTP 服务及子进程，验证真实 Locust／async 请求、summary／JSON／JUnit、SQLite、SLA 失败、dashboard JSON／SSE 与 MCP 初始化。Docker 在源码树外使用同一 harness 验证已安装 wheel。
 
+Dev／Stable CI 构建 checkout wheel，在独立 Docker 容器验证 base、每个声明的 extra 与 all。PR 在 Python 3.12 覆盖所有 extras，另验证 3.10／3.14 的 base；定时任务覆盖所有支持的 Python 次版本。每个 cell 执行 `pip check`、不会跳过失败的能力探测与六项烟雾测试。独立 Compose job 等待 Redis／MQTT 健康后验证真实 adapter 请求，SQLite 在本机验证。`etcd` extra 使用 `etcd3gw`（etcd v3 HTTP gateway），保留既有步骤并支持手动安装的旧 etcd3。参见 [Docker 检查](../docker/README.md)。
+
 ## 测试记录
 
 Canonical SQLite 导出使用 `utils.test_record.sqlite_persistence` 的 `persist_canonical_records(database_path, context)` 与 `fetch_canonical_records(database_path, run_id)`。独立的 `request_runs_v1`／`request_records_v1` 表保留旧记录。写入验证 snapshot、去除同一 run 内相同 ID 的重复项、拒绝冲突重送，失败时回滚整批；读取重新验证保存的记录。JSON 导出为 `context.to_json()`。

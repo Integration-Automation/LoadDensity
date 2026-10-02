@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261002-06 | 2026-10-02 | Gate publishing on Docker extras and protocol smoke checks | #done #ci #extras | [2026-10](2026-10.md) |
 | U-20261002-05 | 2026-10-02 | Exercise installed wheels and propagate failed SLA status | #done #smoke | [2026-10](2026-10.md) |
 | U-20261002-04 | 2026-10-02 | Scope persisted request IDs to their run | #done #records | [2026-10](2026-10.md) |
 | U-20261002-03 | 2026-10-02 | Persist canonical request records transactionally | #done #records | [2026-10](2026-10.md) |

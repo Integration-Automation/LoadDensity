@@ -785,6 +785,8 @@ Legacy single-flag form (`-e/-d/-c/--execute_str`) is still accepted for backwar
 
 Run `python -m unittest discover -s test/smoke -p "test_*.py"` from a checkout. The stdlib harness starts a separate local HTTP server and subprocesses to verify real Locust/async requests, summary/JSON/JUnit files, SQLite, SLA failures, dashboard JSON/SSE and MCP initialization. Docker runs the same harness outside the source tree against an installed wheel.
 
+Dev and Stable CI build the checkout wheel and test base, each declared extra and all in separate Docker containers. Pull requests cover every extra on Python 3.12 plus base on 3.10/3.14; scheduled runs cover all supported Python minors. Each cell runs `pip check`, a non-skipping capability probe and the six smoke tests. A separate Compose job waits for healthy Redis/MQTT services and checks real adapter requests; SQLite is checked locally. The `etcd` extra uses `etcd3gw` (etcd v3 HTTP gateway), preserving existing steps and supporting legacy manually installed etcd3. See [Docker checks](docker/README.md).
+
 ## Test Record
 
 Canonical SQLite export uses `persist_canonical_records(database_path, context)` and `fetch_canonical_records(database_path, run_id)` from `utils.test_record.sqlite_persistence`. Separate `request_runs_v1` / `request_records_v1` tables preserve legacy runs. Writes validate snapshots, deduplicate identical IDs within each run, reject conflicting retries and roll back the entire batch on failure. Reads revalidate stored records. JSON export is `context.to_json()`.
