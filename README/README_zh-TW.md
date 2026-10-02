@@ -1080,6 +1080,8 @@ diagnostics。以 `npm install && npm run package` 建置,再安裝
 
   選項:`--method`、`--body`、`--http2`、`--max-in-flight`。
 - **Cloud workers**(`aws`、`gcp`、`azure` 或 `cloud` extras):`cloud.aws_fargate.launch_fargate_workers`、`cloud.aws_lambda.invoke_lambda_workers`(以 `lambda_worker_handler` 作為函式進入點)、`cloud.azure_aci.launch_aci_workers` 與 `cloud.gcp_cloud_run.run_cloud_run_job` 為分散式跑法啟動遠端 worker。
+
+雲端 launcher 在聯絡 provider 前驗證數量／資源參數。`cloud.CloudLaunchError` 保留先前接受的回應、失敗 worker 索引及可取得的失敗回應，並串接 provider 例外。Fargate 拒絕部分失敗／格式錯誤的提交。Lambda 區分執行成功、Event 接受與 DryRun 驗證，關閉 payload stream 並保留 FunctionError payload。Cloud Run 每次刷新 credentials；`parallelism` 請設定於部署的 Job，每次執行可覆寫 `task_count`，但拒絕 `parallelism`。ACI 等待 provisioning 並回傳唯一 `name`、`status="Succeeded"` 與 `resource_id`。Launcher 不回滾已接受的資源，也不重試啟動請求。
 - **Chaos 輔助工具**:`utils.chaos.toxiproxy` 在 Toxiproxy 執行個體上新增與移除 latency 或 bandwidth toxic(`install_latency`、`install_bandwidth`、`reset_all`);`utils.chaos.chaos_mesh` 建構並套用 Chaos Mesh manifest(`build_network_delay`、`apply_manifest`、`delete_manifest`)。
 - **Stub server**:`utils.stub_server.start_stub_server` / `stop_stub_server` 供應罐頭回應,讓情境能對一個假後端執行。它從一個執行緒供應,可與 Locust 的 gevent 使用者並存;對 asyncio 引擎則要在獨立行程啟動它,因為引擎自己行程裡的伺服器執行緒永遠得不到排程。
 - **更多報告格式**,在上述七種之外:Allure、cost、CycloneDX、Excel、latency histogram、PDF(`pdf` extra)、SARIF 與一張 service map,各自對應 `utils/generate_report/` 下一個 `generate_*_report.py` 模組。

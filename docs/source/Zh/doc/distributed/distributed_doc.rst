@@ -4,6 +4,17 @@
 概觀
 ----
 
+雲端 adapter 在聯絡 provider 前驗證 worker／資源設定。
+``je_load_density.cloud.CloudLaunchError`` 保留先前接受的回應、失敗 worker 索引與失敗回應細節，
+並串接 provider 例外。Fargate 拒絕部分失敗或格式錯誤的提交。Lambda 區分執行成功、Event 接受與
+DryRun 驗證，保留 FunctionError payload 並關閉 payload stream。ACI 等待 provisioning，
+回傳唯一 ``name``、``status="Succeeded"`` 與 ``resource_id``。
+Cloud Run 每次刷新 credentials；parallelism 請設定於部署的 Job，執行覆寫支援 ``task_count``，
+但拒絕 ``parallelism``。Launcher 不重試啟動，也不回滾已接受的資源。
+
+必要契約測試使用可控 SDK double 與本機 HTTP；選用 cloud extra 測試另驗證官方 SDK serializer／stub，
+不建立真實資源。接受啟動不代表 worker 已就緒或負載執行成功。
+
 LoadDensity 透過 ``start_test`` / ``prepare_env`` 的 ``runner_mode`` 參數開放 Locust 的分散式 runner。三種模式：
 
 * ``local`` — 單一程序（預設）。

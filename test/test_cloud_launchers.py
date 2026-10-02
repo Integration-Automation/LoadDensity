@@ -27,7 +27,8 @@ class _FakeBoto3:
 
 def test_fargate_runs_one_task_per_worker_with_its_index(monkeypatch):
     calls = []
-    ecs = SimpleNamespace(run_task=lambda **kwargs: calls.append(kwargs) or {"tasks": [{}]})
+    ecs = SimpleNamespace(run_task=lambda **kwargs: calls.append(kwargs) or {
+        "tasks": [{"taskArn": "arn:aws:ecs:region:account:task/cluster/task-id"}], "failures": []})
     boto3 = _FakeBoto3(ecs)
     monkeypatch.setattr(aws_fargate, "_import_boto3", lambda: boto3)
     responses = aws_fargate.launch_fargate_workers(
@@ -48,7 +49,7 @@ def test_lambda_results_come_back_in_worker_order(monkeypatch):
         payload = json.loads(Payload)
         # Later workers answer first, so completion order is the reverse of worker order.
         time.sleep(0.05 * (3 - payload["worker_index"]))
-        return {"Payload": io.BytesIO(json.dumps({"worker": payload["worker_index"],
+        return {"StatusCode": 200, "Payload": io.BytesIO(json.dumps({"worker": payload["worker_index"],
                                                   "of": payload["worker_count"],
                                                   "url": payload["url"]}).encode("utf-8"))}
 
@@ -59,7 +60,7 @@ def test_lambda_results_come_back_in_worker_order(monkeypatch):
 
 
 def test_lambda_non_json_payload_is_returned_raw(monkeypatch):
-    fake = SimpleNamespace(invoke=lambda **_kwargs: {"Payload": b"not json"})
+    fake = SimpleNamespace(invoke=lambda **_kwargs: {"StatusCode": 200, "Payload": b"not json"})
     monkeypatch.setattr(aws_lambda, "_import_boto3", lambda: _FakeBoto3(fake))
     assert aws_lambda.invoke_lambda_workers("f", workers=1, payload_template={}) == [{"raw": "not json"}]
 
@@ -98,11 +99,11 @@ def test_cloud_run_posts_overrides_with_a_bearer_token(monkeypatch):
 
     monkeypatch.setattr(gcp_cloud_run, "_bearer_token", lambda _scopes: "tok")
     monkeypatch.setattr(gcp_cloud_run.urllib.request, "urlopen", fake_urlopen)
-    result = gcp_cloud_run.run_cloud_run_job("proj", "asia-east1", "ld/job?x", parallelism=4, task_count=8)
+    result = gcp_cloud_run.run_cloud_run_job("proj", "asia-east1", "ld/job?x", task_count=8)
     assert result == {"name": "operations/1"}
     assert sent["url"] == "https://run.googleapis.com/v2/projects/proj/locations/asia-east1/jobs/ld%2Fjob%3Fx:run"
     assert sent["headers"]["Authorization"] == "Bearer tok"
-    assert sent["body"] == {"overrides": {"parallelism": 4, "taskCount": 8}}
+    assert sent["body"] == {"overrides": {"taskCount": 8}}
 
 
 def test_aci_creates_one_group_per_worker(monkeypatch):
@@ -112,7 +113,9 @@ def test_aci_creates_one_group_per_worker(monkeypatch):
     def record(**kwargs):
         with lock:
             created.append(kwargs)
-        return object()
+        return SimpleNamespace(result=lambda: SimpleNamespace(
+            id="/subscriptions/sub/resourceGroups/rg/containerGroups/" + kwargs["container_group_name"],
+            provisioning_state="Succeeded"))
 
     class _Model:
         def __init__(self, **kwargs):
@@ -129,7 +132,10 @@ def test_aci_creates_one_group_per_worker(monkeypatch):
     monkeypatch.setattr(azure_aci, "_import_azure", lambda: fake)
     responses = azure_aci.launch_aci_workers("sub", "rg", "eastasia", "ld:latest", workers=2,
                                              overrides_env={"TARGET": "https://x"})
-    assert [response["name"] for response in responses] == ["loaddensity-worker-0", "loaddensity-worker-1"]
+    assert responses[0]["name"].startswith("loaddensity-worker-")
+    assert responses[0]["name"].endswith("-0") and responses[1]["name"].endswith("-1")
+    assert responses[0]["name"] != responses[1]["name"]
+    assert all(response["status"] == "Succeeded" for response in responses)
     group = created[1]["container_group"]
     assert created[1]["resource_group_name"] == "rg"
     assert group.restart_policy == "Never" and group.os_type == "Linux"

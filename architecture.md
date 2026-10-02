@@ -194,6 +194,8 @@ the published dependency floor. The old action-executor record contract is separ
   APITestka, FileAutomation, AutoControlGUI and TestPioneer register no builtins at all
   (workspace `progress.md` X-12).
 
+Cloud launchers preflight counts/resources and distinguish accepted submissions from successful execution/provisioning. Public cloud.CloudLaunchError retains accepted worker responses and failure indices. Cloud Run per-run parallelism is rejected (configure the deployed Job); ACI waits its poller and returns unique names/resource IDs. No adapter retries or rolls back launches.
+
 ## 7. Design constraints
 
 - SOLID, composition over inheritance, patterns only where they reduce complexity (CLAUDE.md

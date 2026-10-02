@@ -66,3 +66,20 @@ Tips
   on master and workers — the master broadcasts the user class name.
 * If you parameterise tasks with ``${csv.X.col}``, register the same
   CSV files on every worker (they don't share state).
+
+Cloud launch contracts
+----------------------
+
+Cloud adapters validate worker/resource settings before contacting providers.
+``je_load_density.cloud.CloudLaunchError`` preserves prior accepted responses,
+failed worker indices and failed response details; provider exceptions remain chained.
+Fargate rejects partial and malformed submissions. Lambda distinguishes successful
+execution from Event acceptance and DryRun validation, retains FunctionError payloads,
+and closes payload streams. ACI waits for provisioning and returns unique ``name``,
+``status="Succeeded"`` and ``resource_id``. Cloud Run refreshes credentials per call;
+configure parallelism on the deployed Job, since per-run overrides accept
+``task_count`` and reject ``parallelism``. Launchers do not retry or roll back launches.
+
+Mandatory contract tests use controlled SDK doubles and local HTTP. Optional cloud
+extra tests also verify official SDK serialization/stubs; they create no resources.
+Accepted launch responses do not prove worker readiness or successful load completion.
