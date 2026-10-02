@@ -85,7 +85,7 @@ LoadDensity (`je_load_density`) started as a Locust wrapper and grew into a full
 - **SLA gates + regression diff.** `LD_assert_sla` fails CI when latency / failure-rate / request-count rules breach; `LD_diff_runs` compares two SQLite-persisted runs and flags per-name regressions over a tolerance.
 - **Seven report formats.** HTML, JSON, XML, CSV, JUnit XML, percentile-summary JSON, plus optional matplotlib **chart reports** (`latency-over-time` + `RPS-over-time` PNGs via `[charts]` extra).
 - **Four live exporters.** Prometheus HTTP endpoint, InfluxDB line-protocol UDP/HTTP sink, OpenTelemetry OTLP gRPC exporter, **Datadog DogStatsD UDP** sink — all lazily imported and gated by the matching install extra.
-- **Live web dashboard.** `start_dashboard()` boots a stdlib HTTP + SSE server that streams running RPS / avg / p95 / failure counts to any browser, per-name table included.
+- **Live web dashboard.** Responsive metric cards, separate latency/RPS charts with percentile bands, SSE connection status and a per-name table, served by `start_dashboard()`.
 - **Slack + Teams notifiers.** Block Kit + MessageCard summary posters keyed off the build_summary output (`LD_post_slack_summary`, `LD_post_teams_summary`).
 - **Assertions + extractors.** `status_code`, `contains`, `not_contains`, `json_path`, `header` assertions run under Locust's `catch_response`; extractors with sources `json_path` / `header` / `status_code` write back into the parameter resolver.
 - **Distributed runners.** `runner_mode="master"` / `"worker"` with a configurable healthy-worker startup gate, native heartbeat monitoring and virtual-user rebalancing after worker loss.
@@ -684,6 +684,25 @@ Finite-work leases and canonical worker-record aggregation remain pending.
 `stop_requested()` cooperatively cancels startup, ramp-up or execution. Callback
 errors propagate after cleanup. `prepare_env` owns runner/UI/RPC/auxiliary tasks;
 direct `create_env` callers must call `cleanup_env(env)` when finished.
+
+## Percentile charts and dashboard
+
+Qt, browser and `[charts]` PNG reports share request-start time buckets that include
+successful and failed requests. Charts show a p50 line, p50–p95 and p95–p99 bands,
+with RPS on a separate chart. Empty or unmeasured latency windows are gaps; timed
+requests still count toward throughput. Invalid/negative/nonfinite latency is
+excluded from latency statistics without dropping request counts.
+
+Live charts retain the newest 120 one-second buckets. PNG reports retain up to
+10,000 buckets by default; `generate_chart_report(..., bucket_size_seconds=1.0,
+max_buckets=10000)` controls the limits. Partial buckets use actual duration for
+RPS. Window percentiles use `round(p / 100 * (n - 1))` (Python ties-to-even);
+overall summary/card percentiles preserve linear interpolation. Report filenames,
+return keys and existing dashboard snapshot keys remain compatible;
+`latency_windows` adds bounded chart data. SSE clients can stream while other
+clients fetch snapshots, and stopping the dashboard closes the stream.
+
+The desktop GUI controls and execution lifecycle are still tracked separately.
 
 ## HAR Record / Replay
 

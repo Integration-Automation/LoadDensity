@@ -13,6 +13,7 @@ RUN if [ "$EXTRA" = "gui" ] || [ "$EXTRA" = "all" ]; then \
 COPY test/smoke /checks/smoke
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked python /checks/smoke/install_extra.py "$EXTRA"
 ENV LD_EXTRA=${EXTRA} QT_QPA_PLATFORM=offscreen AWS_EC2_METADATA_DISABLED=true
-USER 65534:65534
+RUN useradd --create-home --uid 10001 --user-group --shell /usr/sbin/nologin ld-smoke
+USER 10001:10001
 WORKDIR /tmp
 CMD ["python", "/checks/smoke/run_cell.py"]

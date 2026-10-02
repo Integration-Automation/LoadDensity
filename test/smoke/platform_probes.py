@@ -62,21 +62,26 @@ def cloud() -> None:
 
 
 def charts() -> None:
-    import matplotlib
+    from je_load_density.utils.generate_report.generate_chart_report import generate_chart_report
+    from je_load_density.utils.test_record.test_record_class import test_record_instance
 
-    matplotlib.use("Agg")
-    from matplotlib import pyplot
-
-    figure, axes = pyplot.subplots()
+    success = list(test_record_instance.test_record_list)
+    failures = list(test_record_instance.error_record_list)
     try:
-        axes.plot([0, 1], [10, 20])
-        axes.fill_between([0, 1], [10, 20], [30, 40])
-        output = io.BytesIO()
-        figure.savefig(output, format="png")
-        if not output.getvalue().startswith(b"\x89PNG\r\n\x1a\n"):
-            raise RuntimeError("Chart rendering failed")
+        test_record_instance.clear_records()
+        test_record_instance.test_record_list.append({"start_time": 10.1, "response_time_ms": 10})
+        test_record_instance.error_record_list.append({"start_time": 12.1, "response_time_ms": 50})
+        with tempfile.TemporaryDirectory() as directory:
+            outputs = generate_chart_report(str(Path(directory) / "smoke"))
+            if set(outputs) != {"latency", "rps"}:
+                raise RuntimeError("Chart report paths missing")
+            for path in outputs.values():
+                if not Path(path).read_bytes().startswith(b"\x89PNG\r\n\x1a\n"):
+                    raise RuntimeError("Chart rendering failed")
     finally:
-        pyplot.close(figure)
+        test_record_instance.clear_records()
+        test_record_instance.test_record_list.extend(success)
+        test_record_instance.error_record_list.extend(failures)
 
 
 def datadog() -> None:

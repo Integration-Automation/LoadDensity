@@ -2,8 +2,6 @@ import pytest
 
 from je_load_density.utils.generate_report.generate_chart_report import (
     ChartDependencyError,
-    _bucket_rps,
-    _collect_points,
     generate_chart_report,
 )
 from je_load_density.utils.test_record.test_record_class import test_record_instance
@@ -18,27 +16,6 @@ def _push_records(latencies):
             "status_code": "200", "response_time_ms": latency,
             "ts": float(i),
         })
-
-
-def test_collect_points_skips_records_without_latency():
-    test_record_instance.test_record_list.clear()
-    test_record_instance.error_record_list.clear()
-    test_record_instance.test_record_list.append({"Method": "GET"})
-    test_record_instance.test_record_list.append({"response_time_ms": 12.0, "ts": 1.0})
-    timestamps, latencies = _collect_points()
-    assert latencies == [12.0]
-    assert timestamps == [1.0]
-
-
-def test_bucket_rps_returns_counts_per_bucket():
-    xs, counts = _bucket_rps([0.0, 0.5, 1.5, 2.1], bucket_size=1.0)
-    assert counts == [2, 1, 1]
-    assert xs[0] == pytest.approx(0.0)
-    assert xs[1] == pytest.approx(1.0)
-
-
-def test_bucket_rps_empty():
-    assert _bucket_rps([]) == ([], [])
 
 
 def test_generate_chart_report_writes_png(tmp_path, monkeypatch):
@@ -57,3 +34,27 @@ def test_generate_chart_report_raises_when_no_records(tmp_path, monkeypatch):
     test_record_instance.error_record_list.clear()
     with pytest.raises(ChartDependencyError):
         generate_chart_report("charts")
+
+
+def test_latency_bands_include_failures_and_leave_empty_seconds_disconnected(tmp_path, monkeypatch):
+    pytest.importorskip("matplotlib")
+    from matplotlib.axes import Axes
+
+    _push_records([10])
+    test_record_instance.error_record_list.append({"start_time": 2.1, "response_time_ms": 80, "error": "500"})
+    bands = []
+    original = Axes.fill_between
+
+    def capture(axis, x, low, high, **kwargs):
+        bands.append((list(x), list(low), list(high)))
+        return original(axis, x, low, high, **kwargs)
+
+    monkeypatch.setattr(Axes, "fill_between", capture)
+    paths = generate_chart_report(str(tmp_path / "bands"))
+    assert len(bands) == 2
+    assert bands[0][1][0] == 10
+    assert bands[0][1][2] == 80
+    assert bands[0][1][1] != bands[0][1][1]  # NaN prevents connecting the empty bucket.
+    for path in paths.values():
+        with open(path, "rb") as image:
+            assert image.read(8) == b"\x89PNG\r\n\x1a\n"

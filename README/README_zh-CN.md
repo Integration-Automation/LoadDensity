@@ -85,7 +85,7 @@ LoadDensity(`je_load_density`)从 Locust 封装起步,逐步成长为完整的�
 - **SLA gate + 回归 diff。** 当 latency / failure-rate / request-count 规则破线时,`LD_assert_sla` 会让 CI 失败;`LD_diff_runs` 比对两个持久化到 SQLite 的 run,并标出超过容忍范围的 per-name 回归。
 - **七种报告格式。** HTML、JSON、XML、CSV、JUnit XML、百分位摘要 JSON,再加上可选的 matplotlib **chart 报告**(通过 `[charts]` extra 生成 `latency-over-time` 与 `RPS-over-time` PNG)。
 - **四种实时 exporter。** Prometheus HTTP 端点、InfluxDB line-protocol UDP/HTTP sink、OpenTelemetry OTLP gRPC exporter、**Datadog DogStatsD UDP** sink — 全部延迟导入,并由对应的安装 extra 控制。
-- **实时 web dashboard。** `start_dashboard()` 会启动一个 stdlib HTTP + SSE 服务器,把运行中的 RPS / avg / p95 / failure 计数流式推送到任意浏览器,并附上 per-name 表格。
+- **实时 web dashboard。** `start_dashboard()` 提供响应式指标卡片、分开的延迟／RPS 百分位数带状图、SSE 连接状态与 per-name 表格。
 - **Slack + Teams 通知。** 以 build_summary 的输出为基础的 Block Kit + MessageCard 摘要投递器(`LD_post_slack_summary`、`LD_post_teams_summary`)。
 - **断言 + 提取。** `status_code`、`contains`、`not_contains`、`json_path`、`header` 断言在 Locust 的 `catch_response` 下执行;来源为 `json_path` / `header` / `status_code` 的提取器会把值写回参数解析器。
 - **分布式 runner。** `runner_mode="master"` / `"worker"` 提供可配置的健康 worker 启动门槛、原生 heartbeat 监测与失联后的虚拟用户负载重新分配。
@@ -681,6 +681,22 @@ master 结果包含 `distributed_health`、观测容量与受影响 worker ID。
 `on_environment(env)` 在执行线程、启动前调用；`stop_requested()` 可协作取消启动、ramp 或执行，
 callback 错误在清理后传回。`prepare_env` 负责 runner／UI／RPC／辅助 task 的资源生命周期；
 直接调用 `create_env` 的用户须在完成后调用 `cleanup_env(env)`。
+
+## 百分位数图表与 Dashboard
+
+Qt、浏览器与 `[charts]` PNG 报告共用以请求开始时间分桶的统计，纳入成功与失败请求。
+延迟图显示 p50 线、p50–p95 与 p95–p99 带状区，RPS 使用独立图表。
+空窗或没有延迟测量的时间桶显示断点；有时间戳的请求仍计入 throughput。
+无效、负值或非有限延迟不列入延迟统计，但不删除请求计数。
+
+实时图保留最新 120 个一秒桶；PNG 默认保留最多 10,000 桶，
+可用 `generate_chart_report(..., bucket_size_seconds=1.0, max_buckets=10000)` 设置。
+部分时间桶依实际长度计算 RPS。时间窗百分位数使用 `round(p / 100 * (n - 1))`
+（Python ties-to-even）；整体 summary／卡片保留线性插值。
+报告文件名、返回键与原有 dashboard snapshot 键保持兼容，
+新增 `latency_windows` 提供有上限的图表数据。SSE 流不阻挡其他 snapshot 请求，停止 dashboard 时关闭流。
+
+桌面 GUI 的控制界面与执行生命周期仍另列待办。
 
 ## HAR 录制/重放
 

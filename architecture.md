@@ -135,6 +135,15 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
 
 ## 6. Cross-project boundaries
 
+`utils.test_record.window_statistics` supplies shared request-start buckets for
+Qt, browser and PNG percentile bands. It merges success/failure samples, leaves
+unmeasured windows null and counts timed requests using actual bucket duration.
+Window percentiles use rounded order statistics; existing aggregate summary keys
+and interpolation remain compatible. Dashboard snapshots add `latency_windows`
+and retain legacy keys. Live charts bound history to 120 buckets; offline defaults
+to 10,000. Protocol events convert monotonic duration clocks to epoch starts.
+The responsive dashboard uses SVG/text nodes and a threaded SSE server.
+
 Locust master/worker runs use scoped native heartbeat settings and rebalancing.
 Startup defaults to failing an unmet healthy ready-worker count; explicit degraded
 policy still requires one worker. Master results add `distributed_health`; this is

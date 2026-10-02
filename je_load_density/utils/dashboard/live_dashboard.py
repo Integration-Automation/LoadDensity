@@ -16,53 +16,20 @@ Endpoints:
 import json
 import threading
 import time
-from http.server import BaseHTTPRequestHandler, HTTPServer
-from typing import Any, Dict, List, Optional
+from functools import partial
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from itertools import chain
+from typing import Any, Dict, Optional
 
+from je_load_density.utils.dashboard.dashboard_html import HTML
+from je_load_density.utils.test_record.window_statistics import (
+    finite_number,
+    latency_mean,
+    latency_windows,
+    sample_time,
+)
 
-_HTML = """<!doctype html>
-<html><head><meta charset=utf-8><title>LoadDensity Live</title>
-<style>
-body{font-family:system-ui,sans-serif;margin:1.5rem;color:#222}
-h1{font-weight:600;margin:0 0 .5rem 0}
-section{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin:1rem 0}
-.card{background:#f5f6fa;padding:1rem;border-radius:8px}
-.card .v{font-size:2rem;font-weight:700}
-.card .l{color:#666;font-size:.85rem;text-transform:uppercase;letter-spacing:.05em}
-table{width:100%;border-collapse:collapse;margin-top:1rem;font-size:.9rem}
-th,td{padding:.4rem .5rem;text-align:left;border-bottom:1px solid #eee}
-</style></head>
-<body>
-<h1>LoadDensity Live</h1>
-<section>
-  <div class=card><div class=l>Total</div><div class=v id=total>0</div></div>
-  <div class=card><div class=l>RPS</div><div class=v id=rps>0</div></div>
-  <div class=card><div class=l>Avg ms</div><div class=v id=avg>0</div></div>
-  <div class=card><div class=l>P95 ms</div><div class=v id=p95>0</div></div>
-</section>
-<table><thead><tr><th>Name</th><th>Count</th><th>Mean</th><th>P95</th></tr></thead>
-<tbody id=tbody></tbody></table>
-<script>
-const es = new EventSource('/events');
-es.onmessage = (event) => {
-  const data = JSON.parse(event.data);
-  document.getElementById('total').textContent = data.totals.requests;
-  document.getElementById('rps').textContent = data.rps.toFixed(1);
-  document.getElementById('avg').textContent = data.avg_ms.toFixed(0);
-  document.getElementById('p95').textContent = data.latency_overall.p95_ms.toFixed(0);
-  const tbody = document.getElementById('tbody');
-  tbody.innerHTML = '';
-  for (const [name, stats] of Object.entries(data.per_name)) {
-    const row = document.createElement('tr');
-    row.innerHTML = `<td>${name}</td><td>${stats.count}</td>` +
-                    `<td>${stats.mean_ms.toFixed(0)}</td>` +
-                    `<td>${stats.p95_ms.toFixed(0)}</td>`;
-    tbody.appendChild(row);
-  }
-};
-</script>
-</body></html>
-"""
+_HTML = HTML
 
 
 def snapshot_metrics(window_seconds: float = 10.0) -> Dict[str, Any]:
@@ -87,13 +54,18 @@ def snapshot_metrics(window_seconds: float = 10.0) -> Dict[str, Any]:
                                        "p99_ms": 0, "max_ms": 0, "count": 0},
                    "per_name": {}}
 
-    records: List[Dict[str, Any]] = list(test_record_instance.test_record_list)
-    cutoff = time.time() - window_seconds
-    recent = [r for r in records if r.get("ts") is None or float(r["ts"]) >= cutoff]
-    latencies = [float(r.get("response_time_ms") or 0) for r in recent
-                 if r.get("response_time_ms") is not None]
-    rps = (len(recent) / window_seconds) if window_seconds > 0 else 0.0
-    avg_ms = (sum(latencies) / len(latencies)) if latencies else 0.0
+    duration = finite_number(window_seconds)
+    if duration is None or duration <= 0:
+        raise ValueError("window_seconds: expected a finite positive number")
+    now = time.time()
+    records = chain(test_record_instance.test_record_list, test_record_instance.error_record_list)
+    windows = latency_windows(records, start=int(now) - 120, end=now, max_buckets=120)
+    recent = [record for record in chain(test_record_instance.test_record_list, test_record_instance.error_record_list)
+              if (timestamp := sample_time(record)) is not None and now - duration <= timestamp <= now]
+    latencies = [latency for record in recent
+                 if (latency := finite_number(record.get("response_time_ms"))) is not None and latency >= 0]
+    rps = len(recent) / duration
+    avg_ms = latency_mean(latencies)
 
     return {
         "totals": summary["totals"],
@@ -101,7 +73,8 @@ def snapshot_metrics(window_seconds: float = 10.0) -> Dict[str, Any]:
         "per_name": summary["per_name"],
         "rps": rps,
         "avg_ms": avg_ms,
-        "ts": time.time(),
+        "ts": now,
+        "latency_windows": windows,
     }
 
 
@@ -113,71 +86,89 @@ class LiveDashboardServer:
         self.port = port
         self.refresh_seconds = refresh_seconds
         self.window_seconds = window_seconds
-        self._httpd: Optional[HTTPServer] = None
+        self._httpd: Optional[ThreadingHTTPServer] = None
         self._thread: Optional[threading.Thread] = None
+        self._stopping = threading.Event()
 
     def start(self) -> None:
-        handler = _build_handler(self.refresh_seconds, self.window_seconds)
-        self._httpd = HTTPServer((self.host, self.port), handler)
+        if self._httpd is not None:
+            raise RuntimeError("dashboard is already running")
+        for name in ("refresh_seconds", "window_seconds"):
+            value = finite_number(getattr(self, name))
+            if value is None or value <= 0:
+                raise ValueError(f"{name}: expected a finite positive number")
+        self._stopping.clear()
+        handler = _build_handler(self.refresh_seconds, self.window_seconds, self._stopping)
+        self._httpd = ThreadingHTTPServer((self.host, self.port), handler)
         self._thread = threading.Thread(target=self._httpd.serve_forever,
                                          daemon=True)
         self._thread.start()
 
     def stop(self) -> None:
+        self._stopping.set()
         if self._httpd is not None:
             self._httpd.shutdown()
             self._httpd.server_close()
             self._httpd = None
+        if self._thread is not None:
+            self._thread.join(timeout=2)
         self._thread = None
 
 
-def _build_handler(refresh_seconds: float, window_seconds: float):
+def _build_handler(refresh_seconds: float, window_seconds: float, stopping: threading.Event):
+    return partial(_DashboardHandler, refresh_seconds=refresh_seconds, window_seconds=window_seconds, stopping=stopping)
 
-    class _Handler(BaseHTTPRequestHandler):
-        # pylint: disable=redefined-builtin
-        def log_message(self, format, *args):  # noqa: A002 — match stdlib signature
-            # Silence stdlib request-log chatter; the dashboard already
-            # surfaces stats through SSE.
-            del format, args
 
-        def _write(self, status: int, body: bytes, content_type: str,
-                   extra_headers: Optional[Dict[str, str]] = None) -> None:
-            self.send_response(status)
-            self.send_header("Content-Type", content_type)
-            self.send_header("Content-Length", str(len(body)))
-            for key, value in (extra_headers or {}).items():
-                self.send_header(key, value)
-            self.end_headers()
-            self.wfile.write(body)
+class _DashboardHandler(BaseHTTPRequestHandler):
+    def __init__(self, *args, refresh_seconds, window_seconds, stopping):
+        self.refresh_seconds = refresh_seconds
+        self.window_seconds = window_seconds
+        self.stopping = stopping
+        super().__init__(*args)
 
-        def do_GET(self):  # noqa: N802 (BaseHTTPRequestHandler protocol)
-            if self.path == "/" or self.path == "/index.html":
-                self._write(200, _HTML.encode("utf-8"), "text/html; charset=utf-8")
-                return
-            if self.path == "/snapshot":
-                payload = json.dumps(snapshot_metrics(window_seconds)).encode("utf-8")
-                self._write(200, payload, "application/json")
-                return
-            if self.path == "/events":
-                self._serve_sse()
-                return
-            self._write(404, b"not found", "text/plain")
+    # pylint: disable=redefined-builtin
+    def log_message(self, format, *args):  # noqa: A002 — match stdlib signature
+        # Silence stdlib request-log chatter; the dashboard already
+        # surfaces stats through SSE.
+        del format, args
 
-        def _serve_sse(self) -> None:
-            self.send_response(200)
-            self.send_header("Content-Type", "text/event-stream")
-            self.send_header("Cache-Control", "no-cache")
-            self.end_headers()
-            try:
-                while True:
-                    payload = json.dumps(snapshot_metrics(window_seconds))
-                    self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
-                    self.wfile.flush()
-                    time.sleep(refresh_seconds)
-            except (BrokenPipeError, ConnectionResetError):
-                return
+    def _write(self, status: int, body: bytes, content_type: str,
+               extra_headers: Optional[Dict[str, str]] = None) -> None:
+        self.send_response(status)
+        self.send_header("Content-Type", content_type)
+        self.send_header("Content-Length", str(len(body)))
+        for key, value in (extra_headers or {}).items():
+            self.send_header(key, value)
+        self.end_headers()
+        self.wfile.write(body)
 
-    return _Handler
+    def do_GET(self):  # noqa: N802 (BaseHTTPRequestHandler protocol)
+        if self.path == "/" or self.path == "/index.html":
+            self._write(200, _HTML.encode("utf-8"), "text/html; charset=utf-8")
+            return
+        if self.path == "/snapshot":
+            payload = json.dumps(snapshot_metrics(self.window_seconds)).encode("utf-8")
+            self._write(200, payload, "application/json")
+            return
+        if self.path == "/events":
+            self._serve_sse()
+            return
+        self._write(404, b"not found", "text/plain")
+
+    def _serve_sse(self) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "text/event-stream")
+        self.send_header("Cache-Control", "no-cache")
+        self.end_headers()
+        try:
+            while not self.stopping.is_set():
+                payload = json.dumps(snapshot_metrics(self.window_seconds))
+                self.wfile.write(f"data: {payload}\n\n".encode("utf-8"))
+                self.wfile.flush()
+                self.stopping.wait(self.refresh_seconds)
+        except (BrokenPipeError, ConnectionResetError):
+            return
+
 
 
 _SERVER: Optional[LiveDashboardServer] = None
