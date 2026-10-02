@@ -57,3 +57,5 @@ Pass ``run_context=context`` to ``run_async_load`` or ``start_test``. Locust bin
 to isolated environment events so greenlets do not depend on ContextVar inheritance.
 ``context.to_json()`` exports v1 records with identities, numeric/null status and structured errors.
 Payload capture is disabled by default. Async summaries exclude previous invocations' records.
+
+Canonical SQLite export uses `persist_canonical_records(database_path, context)` and `fetch_canonical_records(database_path, run_id)` from `utils.test_record.sqlite_persistence`. Separate `request_runs_v1` / `request_records_v1` tables preserve legacy runs. Writes validate snapshots, deduplicate identical IDs, reject conflicting retries and roll back the entire batch on failure. Reads revalidate stored records. JSON export is `context.to_json()`.

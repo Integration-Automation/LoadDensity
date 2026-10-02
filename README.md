@@ -781,6 +781,8 @@ Legacy single-flag form (`-e/-d/-c/--execute_str`) is still accepted for backwar
 
 ## Test Record
 
+Canonical SQLite export uses `persist_canonical_records(database_path, context)` and `fetch_canonical_records(database_path, run_id)` from `utils.test_record.sqlite_persistence`. Separate `request_runs_v1` / `request_records_v1` tables preserve legacy runs. Writes validate snapshots, deduplicate identical IDs, reject conflicting retries and roll back the entire batch on failure. Reads revalidate stored records. JSON export is `context.to_json()`.
+
 Canonical request records are available as an opt-in API with an ActionCore release that provides
 `je_action_core.request_context` (or the coordinated development checkout). Legacy record lists and reports
 continue to work with the existing dependency floor. Create

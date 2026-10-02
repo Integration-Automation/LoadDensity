@@ -48,3 +48,5 @@ SQLite 持久化
 綁定隔離的 environment 事件，greenlet 不依賴 ContextVar 繼承。
 ``context.to_json()`` 輸出 v1 紀錄，包含識別、數字／null 狀態碼與結構化錯誤。
 預設不擷取完整內容；async 回傳摘要不納入前次呼叫的紀錄。
+
+Canonical SQLite 匯出使用 `utils.test_record.sqlite_persistence` 的 `persist_canonical_records(database_path, context)` 與 `fetch_canonical_records(database_path, run_id)`。獨立的版本化表保留舊紀錄。寫入驗證 snapshot、去除相同 ID 重複項、拒絕衝突重送，失敗時回復整批；讀取重新驗證保存的紀錄。JSON 匯出為 `context.to_json()`。

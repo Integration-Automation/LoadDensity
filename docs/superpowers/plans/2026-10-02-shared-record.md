@@ -1,6 +1,6 @@
 # Shared request record Implementation Plan
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [x]`) syntax for tracking.
 
 **Goal:** Publish a stdlib request-record contract and connect APITestka and LoadDensity without breaking legacy consumers.
 
@@ -36,11 +36,11 @@
 
 **Interfaces:** Produces `RequestRecord`, `RecordError`, `RequestRecordError`, `validate_request_record(record: Mapping[str, object]) -> RequestRecord`, `serialize_request_record(record: Mapping[str, object]) -> str` and `request_record_schema() -> dict[str, object]`.
 
-- [ ] Write tests proving missing/version/type/outcome/latency/time/assertion errors are rejected; complete success/failure records round-trip; nested bytes/datetime/timedelta serialize safely without arbitrary-object stringification. Hand-derived fixtures assert status 500 remains 500 and the contract has no client imports.
-- [ ] Run `D:/Codes/ActionCore/.venv/Scripts/python.exe -m pytest test/test_request_record.py -q`; expect missing-module failure before implementation.
-- [ ] Implement the TypedDict and validators, JSON conversion and schema in the named module. Keep individual validators focused and the public normalization surface independent of transport.
-- [ ] Run the new tests and `python -m pytest -q` with the ActionCore interpreter; expect all tests pass. Run static checks for the new module.
-- [ ] Document the new API and commit the ActionCore stage. Do not publish or change a version by hand.
+- [x] Write tests proving missing/version/type/outcome/latency/time/assertion errors are rejected; complete success/failure records round-trip; nested bytes/datetime/timedelta serialize safely without arbitrary-object stringification. Hand-derived fixtures assert status 500 remains 500 and the contract has no client imports.
+- [x] Run `D:/Codes/ActionCore/.venv/Scripts/python.exe -m pytest test/test_request_record.py -q`; expect missing-module failure before implementation.
+- [x] Implement the TypedDict and validators, JSON conversion and schema in the named module. Keep individual validators focused and the public normalization surface independent of transport.
+- [x] Run the new tests and `python -m pytest -q` with the ActionCore interpreter; expect all tests pass. Run static checks for the new module.
+- [x] Document the new API and commit the ActionCore stage. Do not publish or change a version by hand.
 
 ### Task 2: Run context and LoadDensity legacy adapters
 
@@ -48,11 +48,11 @@
 
 **Interfaces:** Consumes Task 1. Produces `RunContext(source='loaddensity', phase='load', engine='locust', worker_id=None)`, `RunContext.append(record: Mapping[str, object]) -> bool`, `RunContext.snapshot() -> list[RequestRecord]`, `RunContext.to_json() -> str`, `use_run_context(context)` and `get_run_context()`. Adapter: `from_legacy_record(record, context, outcome) -> RequestRecord`; legacy conversion never creates fake timestamps.
 
-- [ ] Test two contexts remain isolated, task-local nesting restores prior contexts, identical IDs deduplicate, conflicting IDs fail, input mutations cannot alter snapshots, and LoadDensity/APITestka legacy fixtures normalize status/time/bytes correctly.
-- [ ] Run `pytest test/test_record_contract.py -q` with the isolated ActionCore on PYTHONPATH; expect missing-module failure.
-- [ ] Implement the context/sink and source-specific adapters. Import the new core only when a canonical operation is called; missing API raises a clear upgrade error and does not break legacy imports.
-- [ ] Run the targeted suite; expect pass including malformed import positions, nullable unknown measurements and credential redaction.
-- [ ] Keep this task's commit together with Task 3 because its public adapter needs a real runner consumer and user documentation.
+- [x] Test two contexts remain isolated, task-local nesting restores prior contexts, identical IDs deduplicate, conflicting IDs fail, input mutations cannot alter snapshots, and LoadDensity/APITestka legacy fixtures normalize status/time/bytes correctly.
+- [x] Run `pytest test/test_record_contract.py -q` with the isolated ActionCore on PYTHONPATH; expect missing-module failure.
+- [x] Implement the context/sink and source-specific adapters. Import the new core only when a canonical operation is called; missing API raises a clear upgrade error and does not break legacy imports.
+- [x] Run the targeted suite; expect pass including malformed import positions, nullable unknown measurements and credential redaction.
+- [x] Keep this task's commit together with Task 3 because its public adapter needs a real runner consumer and user documentation.
 
 ### Task 3: Locust and async recording
 
@@ -60,11 +60,11 @@
 
 **Interfaces:** Consumes Task 2. Locust reads the active context; `run_async_load(..., run_context=None)` explicitly propagates the selected run to asyncio workers. Canonical records are separate from existing legacy lists.
 
-- [ ] Test a Locust response with status 500 and falsey truthiness retains status; async success/status failure/transport failure capture distinct records with real elapsed time; consecutive runs' return summaries exclude prior records; scoped recording leaves legacy report keys unchanged.
-- [ ] Run integration tests; expect failure on the currently missing context output and contaminated run summaries.
-- [ ] Route measured request outcomes to the context alongside the existing legacy append. Give run_async_load per-invocation counters and propagate cancellation. Keep existing return request/failure semantics.
-- [ ] Run new tests, existing asyncio/report/SLA/SQLite tests, then the full LoadDensity suite; expect pass.
-- [ ] Document opt-in canonical collection and commit the LoadDensity recording stage. Record remaining schema-release coordination in progress.md rather than inventing a released version.
+- [x] Test a Locust response with status 500 and falsey truthiness retains status; async success/status failure/transport failure capture distinct records with real elapsed time; consecutive runs' return summaries exclude prior records; scoped recording leaves legacy report keys unchanged.
+- [x] Run integration tests; expect failure on the currently missing context output and contaminated run summaries.
+- [x] Route measured request outcomes to the context alongside the existing legacy append. Give run_async_load per-invocation counters and propagate cancellation. Keep existing return request/failure semantics.
+- [x] Run new tests, existing asyncio/report/SLA/SQLite tests, then the full LoadDensity suite; expect pass.
+- [x] Document opt-in canonical collection and commit the LoadDensity recording stage. Record remaining schema-release coordination in progress.md rather than inventing a released version.
 
 ### Task 4: APITestka adapters and recording
 
@@ -72,11 +72,11 @@
 
 **Interfaces:** Same canonical context API as Task 2, with source='apitestka' and phase='functional'; context implementation is shared in ActionCore if it proves reusable rather than copied. `record_response(response_data, request, error, engine, elapsed_ms)` appends only when a context is active.
 
-- [ ] Add tests using real local requests/httpx calls and failures; assert native return values and failure pairs remain identical while canonical records retain response information and status. Test recording disabled and context cleanup.
-- [ ] Run those tests with the isolated core; expect missing-module/API failure.
-- [ ] Wire a scope-aware capture helper into all three wrappers, including before-response errors and clean_record behavior. Preserve caught-error behavior and record_request_info semantics.
-- [ ] Run the targeted tests, load bridge tests and full APITestka suite; expect pass. Separately run with released ActionCore to prove existing imports still work.
-- [ ] Document API and commit this repository independently.
+- [x] Add tests using real local requests/httpx calls and failures; assert native return values and failure pairs remain identical while canonical records retain response information and status. Test recording disabled and context cleanup.
+- [x] Run those tests with the isolated core; expect missing-module/API failure.
+- [x] Wire a scope-aware capture helper into all three wrappers, including before-response errors and clean_record behavior. Preserve caught-error behavior and record_request_info semantics.
+- [x] Run the targeted tests, load bridge tests and full APITestka suite; expect pass. Separately run with released ActionCore to prove existing imports still work.
+- [x] Document API and commit this repository independently.
 
 ### Task 5: Versioned JSON and SQLite export
 
@@ -84,11 +84,11 @@
 
 **Interfaces:** Consumes contexts. Produces `persist_canonical_records(database_path: str, context: RunContext) -> str`, `fetch_canonical_records(database_path: str, run_id: str) -> list[RequestRecord]`; existing tables and functions remain unchanged.
 
-- [ ] Test empty database and existing legacy database, JSON round-trip, multiple runs, duplicate/conflicting records and rollback on invalid records.
-- [ ] Run the new test; expect missing-function failure.
-- [ ] Add separate versioned canonical tables and parameterized transactional writes; never migrate or overwrite legacy data implicitly.
-- [ ] Run persistence and legacy regression tests; expect pass.
-- [ ] Document the explicit export APIs and commit the persistence stage.
+- [x] Test empty database and existing legacy database, JSON round-trip, multiple runs, duplicate/conflicting records and rollback on invalid records.
+- [x] Run the new test; expect missing-function failure.
+- [x] Add separate versioned canonical tables and parameterized transactional writes; never migrate or overwrite legacy data implicitly.
+- [x] Run persistence and legacy regression tests; expect pass.
+- [x] Document the explicit export APIs and commit the persistence stage.
 
 ### Task 6: Cross-project verification and release handoff
 
