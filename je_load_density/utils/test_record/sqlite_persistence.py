@@ -137,8 +137,9 @@ def fetch_run_records(database_path: str, run_id: int) -> Iterable[Dict[str, Any
 _CANONICAL_TABLES = (
     "CREATE TABLE IF NOT EXISTS request_runs_v1 (run_id TEXT PRIMARY KEY, schema_version INTEGER NOT NULL "
     "CHECK(schema_version = 1))",
-    "CREATE TABLE IF NOT EXISTS request_records_v1 (sequence INTEGER PRIMARY KEY, record_id TEXT UNIQUE NOT NULL, "
-    "run_id TEXT NOT NULL, record_json TEXT NOT NULL, FOREIGN KEY(run_id) REFERENCES request_runs_v1(run_id))",
+    "CREATE TABLE IF NOT EXISTS request_records_v1 (sequence INTEGER PRIMARY KEY, record_id TEXT NOT NULL, "
+    "run_id TEXT NOT NULL, record_json TEXT NOT NULL, UNIQUE(run_id, record_id), "
+    "FOREIGN KEY(run_id) REFERENCES request_runs_v1(run_id))",
     "CREATE INDEX IF NOT EXISTS idx_request_records_v1_run ON request_records_v1(run_id)",
 )
 
@@ -165,7 +166,7 @@ def _insert_canonical_row(connection: sqlite3.Connection, row: tuple[str, str, s
     from je_action_core.request_record import RequestRecordError
 
     previous = connection.execute(
-        "SELECT record_json FROM request_records_v1 WHERE record_id = ?", (row[0],)
+        "SELECT record_json FROM request_records_v1 WHERE run_id = ? AND record_id = ?", (row[1], row[0])
     ).fetchone()
     if previous is not None:
         if previous[0] != row[2]:

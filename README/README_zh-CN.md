@@ -781,7 +781,7 @@ python -m je_load_density serve [--host ...]    # start the control socket
 
 ## 测试记录
 
-Canonical SQLite 导出使用 `utils.test_record.sqlite_persistence` 的 `persist_canonical_records(database_path, context)` 与 `fetch_canonical_records(database_path, run_id)`。独立的 `request_runs_v1`／`request_records_v1` 表保留旧记录。写入验证 snapshot、去除相同 ID 的重复项、拒绝冲突重送，失败时回滚整批；读取重新验证保存的记录。JSON 导出为 `context.to_json()`。
+Canonical SQLite 导出使用 `utils.test_record.sqlite_persistence` 的 `persist_canonical_records(database_path, context)` 与 `fetch_canonical_records(database_path, run_id)`。独立的 `request_runs_v1`／`request_records_v1` 表保留旧记录。写入验证 snapshot、去除同一 run 内相同 ID 的重复项、拒绝冲突重送，失败时回滚整批；读取重新验证保存的记录。JSON 导出为 `context.to_json()`。
 
 Canonical request 记录是可选 API，需要提供 `je_action_core.request_context` 的 ActionCore 版本
 或协调的开发工作树。原记录列表与报告仍支持现有依赖下限。从

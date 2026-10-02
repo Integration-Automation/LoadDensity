@@ -135,7 +135,7 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
 
 ## 6. Cross-project boundaries
 
-Canonical persistence exports `persist_canonical_records(database_path, context)` and `fetch_canonical_records(database_path, run_id)` from `utils.test_record.sqlite_persistence`. Versioned tables are separate from legacy runs; transaction rollback, JSON-aware retry conflicts and read-time schema/identity validation preserve the shared contract.
+Canonical persistence exports `persist_canonical_records(database_path, context)` and `fetch_canonical_records(database_path, run_id)` from `utils.test_record.sqlite_persistence`. Versioned tables are separate from legacy runs; transaction rollback, run-scoped JSON-aware retry conflicts and read-time schema/identity validation preserve the shared contract.
 
 Canonical request records are an opt-in contract supplied by ActionCore's ``request_record``/
 ``request_context`` APIs. ``utils/test_record/contract.py`` adapts legacy results and

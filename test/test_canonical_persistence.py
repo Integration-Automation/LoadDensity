@@ -40,6 +40,17 @@ def test_round_trip_multiple_runs_and_empty_run(tmp_path):
     assert fetch_canonical_records(database, empty.run_id) == []
 
 
+def test_record_ids_are_unique_within_each_run(tmp_path):
+    database = str(tmp_path / "records.sqlite")
+    first, second = context(), context()
+    first_record = capture(first, record_id="request-1")
+    second_record = capture(second, record_id="request-1", status_code=201)
+    persist_canonical_records(database, first)
+    persist_canonical_records(database, second)
+    assert fetch_canonical_records(database, first.run_id) == [first_record]
+    assert fetch_canonical_records(database, second.run_id) == [second_record]
+
+
 def test_existing_legacy_database_is_preserved(tmp_path, monkeypatch):
     monkeypatch.setattr(test_record_instance, "test_record_list", [
         {"Method": "GET", "test_url": "http://legacy/", "status_code": "200", "response_time_ms": 12}

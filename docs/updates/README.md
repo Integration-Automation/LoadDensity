@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261002-04 | 2026-10-02 | Scope persisted request IDs to their run | #done #records | [2026-10](2026-10.md) |
 | U-20261002-03 | 2026-10-02 | Persist canonical request records transactionally | #done #records | [2026-10](2026-10.md) |
 | U-20261002-02 | 2026-10-02 | Capture canonical records in Locust and asyncio runs | #migration #records | [2026-10](2026-10.md) |
 | U-20261002-01 | 2026-10-02 | Testing platform design draft and outstanding work | #docs #design | [2026-10](2026-10.md) |
