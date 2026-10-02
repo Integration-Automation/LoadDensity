@@ -4,7 +4,8 @@ import sys
 from typing import List, Optional
 
 from je_load_density.utils.exception.exception_tags import argparse_get_wrong_data
-from je_load_density.utils.executor.action_executor import execute_action, execute_files
+from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
+from je_load_density.utils.executor.action_executor import executor
 from je_load_density.utils.file_process.get_dir_file_list import get_dir_files_as_list
 from je_load_density.utils.json.json_file.json_file import read_action_json
 from je_load_density.utils.project.create_project_structure import create_project_dir
@@ -13,12 +14,25 @@ from je_load_density.utils.socket_server.load_density_socket_server import (
 )
 
 
+def _execute_cli_actions(actions: object) -> None:
+    """Keep batch execution/reporting, then fail the CLI if an action raised."""
+    records, failed = executor.collect_action_results(actions)
+    executor.settings.reporter.on_records(records)
+    if failed:
+        raise LoadDensityTestExecuteException(f"{len(failed)} action(s) failed")
+
+
+def _execute_cli_files(directory: str) -> None:
+    for path in get_dir_files_as_list(directory):
+        _execute_cli_actions(read_action_json(path))
+
+
 def _cmd_run(args: argparse.Namespace) -> None:
-    execute_action(read_action_json(args.file))
+    _execute_cli_actions(read_action_json(args.file))
 
 
 def _cmd_run_dir(args: argparse.Namespace) -> None:
-    execute_files(get_dir_files_as_list(args.dir))
+    _execute_cli_files(args.dir)
 
 
 def _cmd_run_str(args: argparse.Namespace) -> None:
@@ -28,9 +42,9 @@ def _cmd_run_str(args: argparse.Namespace) -> None:
         if isinstance(first_pass, str):
             payload = first_pass
         else:
-            execute_action(first_pass)
+            _execute_cli_actions(first_pass)
             return
-    execute_action(json.loads(payload))
+    _execute_cli_actions(json.loads(payload))
 
 
 def _cmd_init(args: argparse.Namespace) -> None:
@@ -123,8 +137,8 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def _dispatch_legacy(args: argparse.Namespace) -> bool:
     legacy_map = {
-        "execute_file": lambda value: execute_action(read_action_json(value)),
-        "execute_dir": lambda value: execute_files(get_dir_files_as_list(value)),
+        "execute_file": lambda value: _execute_cli_actions(read_action_json(value)),
+        "execute_dir": _execute_cli_files,
         "execute_str": lambda value: _cmd_run_str(argparse.Namespace(json=value)),
         "create_project": create_project_dir,
     }

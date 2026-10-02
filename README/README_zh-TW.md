@@ -779,6 +779,12 @@ python -m je_load_density serve [--host ...]    # start the control socket
 
 舊式單旗標形式(`-e/-d/-c/--execute_str`)仍為與下游工具向後相容而接受。
 
+## 煙霧測試
+
+`run`、`run-dir`、`run-str` 與舊執行旗標在動作（包含 SLA gate）失敗時回傳非零 exit code。單一檔案的動作仍依序執行並產生原有報告；Python executor 的回傳格式保持相容。基本安裝包含原生 async benchmark 所需的 httpx，HTTP/2 需要 `http2` extra。
+
+在 checkout 執行 `python -m unittest discover -s test/smoke -p "test_*.py"`。標準函式庫 harness 啟動獨立本機 HTTP 服務與子行程，驗證實際 Locust／async 請求、summary／JSON／JUnit、SQLite、SLA 失敗、dashboard JSON／SSE 與 MCP 初始化。Docker 在原始碼樹外使用同一 harness 驗證已安裝 wheel。
+
 ## 測試紀錄
 
 Canonical SQLite 匯出使用 `utils.test_record.sqlite_persistence` 的 `persist_canonical_records(database_path, context)` 與 `fetch_canonical_records(database_path, run_id)`。獨立的 `request_runs_v1`／`request_records_v1` 表保留舊紀錄。寫入驗證 snapshot、去除同一 run 內相同 ID 的重複項、拒絕衝突重送，失敗時回復整批；讀取重新驗證保存的紀錄。JSON 匯出為 `context.to_json()`。

@@ -135,6 +135,8 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
 
 ## 6. Cross-project boundaries
 
+CLI execution retains legacy flags and Python executor return shapes, but now returns a nonzero process exit code after failed actions/SLA gates. `test/smoke` runs real HTTP/report/dashboard/MCP checks in subprocesses against source or an installed wheel. Native async HTTP benchmarking requires base httpx; the `http2` extra adds HTTP/2 support.
+
 Canonical persistence exports `persist_canonical_records(database_path, context)` and `fetch_canonical_records(database_path, run_id)` from `utils.test_record.sqlite_persistence`. Versioned tables are separate from legacy runs; transaction rollback, run-scoped JSON-aware retry conflicts and read-time schema/identity validation preserve the shared contract.
 
 Canonical request records are an opt-in contract supplied by ActionCore's ``request_record``/

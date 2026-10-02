@@ -84,3 +84,10 @@ Legacy flags
 The flat ``-e/-d/-c/--execute_str`` flags from previous releases are
 still accepted (suppressed in ``--help``) for backwards compatibility
 with tools such as PyBreeze. New scripts should use the subcommands.
+
+Smoke tests and failure exit codes
+----------------------------------
+
+``run``, ``run-dir``, ``run-str`` and legacy execute flags return a nonzero exit code when an action (including an SLA gate) fails. Actions in a file still run in order and produce their usual reports. The Python executor return format is preserved. Base installation includes httpx for the native async benchmark; HTTP/2 needs the ``http2`` extra.
+
+Run ``python -m unittest discover -s test/smoke -p "test_*.py"`` from a checkout. The stdlib harness starts a separate local HTTP server and subprocesses to verify real Locust/async requests, summary/JSON/JUnit files, SQLite, SLA failures, dashboard JSON/SSE and MCP initialization. Docker runs the same harness outside the source tree against an installed wheel.

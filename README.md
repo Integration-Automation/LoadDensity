@@ -779,6 +779,12 @@ python -m je_load_density serve [--host ...]    # start the control socket
 
 Legacy single-flag form (`-e/-d/-c/--execute_str`) is still accepted for backwards compatibility with downstream tools.
 
+## Smoke tests
+
+`run`, `run-dir`, `run-str` and legacy execute flags return a nonzero exit code when an action (including an SLA gate) fails. Actions in a file still run in order and produce their usual reports. The Python executor return format is preserved. Base installation includes httpx for the native async benchmark; HTTP/2 needs the `http2` extra.
+
+Run `python -m unittest discover -s test/smoke -p "test_*.py"` from a checkout. The stdlib harness starts a separate local HTTP server and subprocesses to verify real Locust/async requests, summary/JSON/JUnit files, SQLite, SLA failures, dashboard JSON/SSE and MCP initialization. Docker runs the same harness outside the source tree against an installed wheel.
+
 ## Test Record
 
 Canonical SQLite export uses `persist_canonical_records(database_path, context)` and `fetch_canonical_records(database_path, run_id)` from `utils.test_record.sqlite_persistence`. Separate `request_runs_v1` / `request_records_v1` tables preserve legacy runs. Writes validate snapshots, deduplicate identical IDs within each run, reject conflicting retries and roll back the entire batch on failure. Reads revalidate stored records. JSON export is `context.to_json()`.
