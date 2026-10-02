@@ -41,7 +41,20 @@ Master
         tasks=[...],
     )
 
-Master 在開始 ramp 前最多等待 60 秒，等待 ``expected_workers`` 個 worker 加入。若僅 N（N < expected）人加入，會記錄警告並照常啟動。
+Master 在 ramp 前等待健康且 ready 的 worker。設定包含 ``worker_startup_timeout``
+（預設 60 秒）、``worker_heartbeat_interval``（5 秒）、``worker_lost_timeout``（15 秒）
+與 ``worker_startup_policy``（``"fail"``）。人數不足時清理資源後拋出 ``TimeoutError``。
+明確選擇 ``"degraded"`` 可接受不足的人數，但至少須有一個 ready worker，
+即使 ``expected_workers=0`` 也適用。
+
+每個節點須使用相同 heartbeat 設定；原生失聯偵測依 interval tick 判定。
+Locust 在失聯／重連後重新分配虛擬使用者，所有 worker 失聯時終止執行。
+master 結果包含 ``distributed_health``、觀測容量與受影響 ID。
+有狀態流程可能重新開始；不重放請求。有限工作租約與 canonical worker record 彙整仍待實作。
+
+``on_environment(env)`` 在執行執行緒、啟動前呼叫；``stop_requested()`` 可協作取消啟動、ramp 或執行，
+callback 錯誤在清理後传回。``prepare_env`` 負責 runner／UI／RPC／輔助 task 的資源生命週期；
+直接呼叫 ``create_env`` 的使用者須在完成後呼叫 ``cleanup_env(env)``。
 
 Worker
 ------

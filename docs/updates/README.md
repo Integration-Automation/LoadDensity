@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261002-10 | 2026-10-02 | Monitor worker health and rebalance native load | #done #distributed | [2026-10](2026-10.md) |
 | U-20261002-09 | 2026-10-02 | Validate cloud launch outcomes and preserve partial failures | #done #cloud | [2026-10](2026-10.md) |
 | U-20261002-08 | 2026-10-02 | Repair Qt Web Push and NATS installation probes | #done #ci #extras | [2026-10](2026-10.md) |
 | U-20261002-07 | 2026-10-02 | Align CI install paths and isolate smoke container permissions | #done #ci | [2026-10](2026-10.md) |

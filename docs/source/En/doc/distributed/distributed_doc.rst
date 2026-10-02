@@ -33,9 +33,22 @@ Master
         tasks=[...],
     )
 
-The master waits up to 60 s for ``expected_workers`` workers to join
-before starting the load ramp. If only N workers (N < expected) join,
-it logs a warning and starts anyway.
+The master waits for healthy ready workers. Configure ``worker_startup_timeout``
+(default 60 s), ``worker_heartbeat_interval`` (5 s), ``worker_lost_timeout`` (15 s)
+and ``worker_startup_policy`` (``"fail"``). An unmet count raises ``TimeoutError``
+after cleanup. Explicit ``"degraded"`` policy permits a shortfall but requires at
+least one ready worker, including when ``expected_workers=0``.
+
+All nodes must use matching heartbeat settings; native detection follows interval
+ticks. Locust rebalances virtual-user capacity after loss/reconnection and all
+workers lost terminates the run. Master results include ``distributed_health``,
+observed capacity and affected IDs. Stateful journeys may restart; requests are
+not replayed. Finite-work leases and canonical worker-record aggregation remain pending.
+
+``on_environment(env)`` runs before startup in the execution thread;
+``stop_requested()`` cooperatively cancels startup, ramp-up or execution. Callback
+errors propagate after cleanup. ``prepare_env`` owns runner/UI/RPC/auxiliary tasks;
+direct ``create_env`` callers must call ``cleanup_env(env)`` when finished.
 
 Worker
 ------

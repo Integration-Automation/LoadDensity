@@ -88,7 +88,7 @@ LoadDensity (`je_load_density`) started as a Locust wrapper and grew into a full
 - **Live web dashboard.** `start_dashboard()` boots a stdlib HTTP + SSE server that streams running RPS / avg / p95 / failure counts to any browser, per-name table included.
 - **Slack + Teams notifiers.** Block Kit + MessageCard summary posters keyed off the build_summary output (`LD_post_slack_summary`, `LD_post_teams_summary`).
 - **Assertions + extractors.** `status_code`, `contains`, `not_contains`, `json_path`, `header` assertions run under Locust's `catch_response`; extractors with sources `json_path` / `header` / `status_code` write back into the parameter resolver.
-- **Distributed runners.** `runner_mode="master"` / `"worker"` for cross-machine load with the same `start_test` API; master waits up to 60 s for the configured worker count before ramping.
+- **Distributed runners.** `runner_mode="master"` / `"worker"` with a configurable healthy-worker startup gate, native heartbeat monitoring and virtual-user rebalancing after worker loss.
 - **Six importers.** HAR (browser traffic), Postman v2.1 collections, OpenAPI 3.x specs, standalone cURL commands, **k6 scripts**, and **JMeter JMX** plans — each converts to action JSON or a single task ready for `LD_start_test`.
 - **Auth helpers.** Stdlib OAuth2 client (`client_credentials` / `password` / `refresh` with token cache), JWT signer (HS256/384/512 + RS256/384/512), AWS SigV4 request signer, plus mTLS client-cert support on every HTTP user template via `task["cert"]`.
 - **Persistent records.** Optional SQLite sink with `runs` / `records` / `metadata` schema, indexed for cross-run regression checks; works against an empty file out of the box.
@@ -669,7 +669,21 @@ start_test(
 )
 ```
 
-The master waits up to 60 s for `expected_workers` workers to register before starting the load ramp.
+The master waits for healthy ready workers before ramping. Defaults are
+`worker_startup_timeout=60`, `worker_heartbeat_interval=5`, `worker_lost_timeout=15`
+seconds and `worker_startup_policy="fail"`. An unmet worker count raises
+`TimeoutError` after cleanup. Explicit `"degraded"` policy permits a shortfall,
+but at least one ready worker is required, including when `expected_workers=0`.
+Use matching heartbeat settings on every node; loss detection follows interval ticks.
+Locust rebalances virtual-user capacity after loss/reconnection. All workers lost
+terminates the run; master results include `distributed_health`, observed capacity
+and affected worker IDs. Stateful journeys may restart; requests are not replayed.
+Finite-work leases and canonical worker-record aggregation remain pending.
+
+`on_environment(env)` runs before startup in the execution thread;
+`stop_requested()` cooperatively cancels startup, ramp-up or execution. Callback
+errors propagate after cleanup. `prepare_env` owns runner/UI/RPC/auxiliary tasks;
+direct `create_env` callers must call `cleanup_env(env)` when finished.
 
 ## HAR Record / Replay
 

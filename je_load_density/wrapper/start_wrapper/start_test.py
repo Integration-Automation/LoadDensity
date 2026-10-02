@@ -6,6 +6,10 @@ from je_load_density.wrapper.user_template.amqp_user_template import (
     AmqpUserWrapper,
     set_wrapper_amqp_user,
 )
+from je_load_density.wrapper.user_template.apns_user_template import (
+    ApnsUserWrapper,
+    set_wrapper_apns_user,
+)
 from je_load_density.wrapper.user_template.async_http_user_template import (
     AsyncHttpUserWrapper,
     set_wrapper_async_http_user,
@@ -18,13 +22,29 @@ from je_load_density.wrapper.user_template.coap_user_template import (
     CoapUserWrapper,
     set_wrapper_coap_user,
 )
+from je_load_density.wrapper.user_template.consul_user_template import (
+    ConsulUserWrapper,
+    set_wrapper_consul_user,
+)
+from je_load_density.wrapper.user_template.couchbase_user_template import (
+    CouchbaseUserWrapper,
+    set_wrapper_couchbase_user,
+)
 from je_load_density.wrapper.user_template.elasticsearch_user_template import (
     ElasticsearchUserWrapper,
     set_wrapper_elasticsearch_user,
 )
+from je_load_density.wrapper.user_template.etcd_user_template import (
+    EtcdUserWrapper,
+    set_wrapper_etcd_user,
+)
 from je_load_density.wrapper.user_template.fast_http_user_template import (
     FastHttpUserWrapper,
     set_wrapper_fasthttp_user,
+)
+from je_load_density.wrapper.user_template.fcm_user_template import (
+    FcmUserWrapper,
+    set_wrapper_fcm_user,
 )
 from je_load_density.wrapper.user_template.ftp_user_template import (
     FtpUserWrapper,
@@ -58,6 +78,18 @@ from je_load_density.wrapper.user_template.kafka_user_template import (
     KafkaUserWrapper,
     set_wrapper_kafka_user,
 )
+from je_load_density.wrapper.user_template.ldap_user_template import (
+    LdapUserWrapper,
+    set_wrapper_ldap_user,
+)
+from je_load_density.wrapper.user_template.memcached_user_template import (
+    MemcachedUserWrapper,
+    set_wrapper_memcached_user,
+)
+from je_load_density.wrapper.user_template.modbus_user_template import (
+    ModbusUserWrapper,
+    set_wrapper_modbus_user,
+)
 from je_load_density.wrapper.user_template.mongo_user_template import (
     MongoUserWrapper,
     set_wrapper_mongo_user,
@@ -69,6 +101,14 @@ from je_load_density.wrapper.user_template.mqtt_user_template import (
 from je_load_density.wrapper.user_template.nats_user_template import (
     NatsUserWrapper,
     set_wrapper_nats_user,
+)
+from je_load_density.wrapper.user_template.neo4j_user_template import (
+    Neo4jUserWrapper,
+    set_wrapper_neo4j_user,
+)
+from je_load_density.wrapper.user_template.opcua_user_template import (
+    OpcuaUserWrapper,
+    set_wrapper_opcua_user,
 )
 from je_load_density.wrapper.user_template.pulsar_user_template import (
     PulsarUserWrapper,
@@ -86,6 +126,14 @@ from je_load_density.wrapper.user_template.smtp_user_template import (
     SmtpUserWrapper,
     set_wrapper_smtp_user,
 )
+from je_load_density.wrapper.user_template.snmp_user_template import (
+    SnmpUserWrapper,
+    set_wrapper_snmp_user,
+)
+from je_load_density.wrapper.user_template.soap_user_template import (
+    SoapUserWrapper,
+    set_wrapper_soap_user,
+)
 from je_load_density.wrapper.user_template.socket_user_template import (
     SocketUserWrapper,
     set_wrapper_socket_user,
@@ -97,54 +145,6 @@ from je_load_density.wrapper.user_template.sql_user_template import (
 from je_load_density.wrapper.user_template.sse_user_template import (
     SseUserWrapper,
     set_wrapper_sse_user,
-)
-from je_load_density.wrapper.user_template.apns_user_template import (
-    ApnsUserWrapper,
-    set_wrapper_apns_user,
-)
-from je_load_density.wrapper.user_template.consul_user_template import (
-    ConsulUserWrapper,
-    set_wrapper_consul_user,
-)
-from je_load_density.wrapper.user_template.couchbase_user_template import (
-    CouchbaseUserWrapper,
-    set_wrapper_couchbase_user,
-)
-from je_load_density.wrapper.user_template.etcd_user_template import (
-    EtcdUserWrapper,
-    set_wrapper_etcd_user,
-)
-from je_load_density.wrapper.user_template.fcm_user_template import (
-    FcmUserWrapper,
-    set_wrapper_fcm_user,
-)
-from je_load_density.wrapper.user_template.ldap_user_template import (
-    LdapUserWrapper,
-    set_wrapper_ldap_user,
-)
-from je_load_density.wrapper.user_template.memcached_user_template import (
-    MemcachedUserWrapper,
-    set_wrapper_memcached_user,
-)
-from je_load_density.wrapper.user_template.modbus_user_template import (
-    ModbusUserWrapper,
-    set_wrapper_modbus_user,
-)
-from je_load_density.wrapper.user_template.neo4j_user_template import (
-    Neo4jUserWrapper,
-    set_wrapper_neo4j_user,
-)
-from je_load_density.wrapper.user_template.opcua_user_template import (
-    OpcuaUserWrapper,
-    set_wrapper_opcua_user,
-)
-from je_load_density.wrapper.user_template.snmp_user_template import (
-    SnmpUserWrapper,
-    set_wrapper_snmp_user,
-)
-from je_load_density.wrapper.user_template.soap_user_template import (
-    SoapUserWrapper,
-    set_wrapper_soap_user,
 )
 from je_load_density.wrapper.user_template.thrift_user_template import (
     ThriftUserWrapper,
@@ -166,7 +166,6 @@ from je_load_density.wrapper.user_template.zmq_user_template import (
     ZmqUserWrapper,
     set_wrapper_zmq_user,
 )
-
 
 _USER_REGISTRY: Dict[str, Dict[str, Any]] = {
     "fast_http_user": {"actually_user": FastHttpUserWrapper, "init": set_wrapper_fasthttp_user},
@@ -245,6 +244,10 @@ def _pop_distributed_config(kwargs: Dict[str, Any]) -> Dict[str, Any]:
         "master_host": kwargs.pop("master_host", "127.0.0.1"),
         "master_port": kwargs.pop("master_port", 5557),
         "expected_workers": kwargs.pop("expected_workers", 0),
+        "worker_startup_timeout": kwargs.pop("worker_startup_timeout", 60),
+        "worker_heartbeat_interval": kwargs.pop("worker_heartbeat_interval", 5),
+        "worker_lost_timeout": kwargs.pop("worker_lost_timeout", 15),
+        "worker_startup_policy": kwargs.pop("worker_startup_policy", "fail"),
     }
 
 
@@ -267,6 +270,13 @@ def start_test(
     ``master_host`` / ``master_port`` / ``expected_workers``) are
     accepted via ``**kwargs`` so the signature stays under the public
     API parameter budget.
+
+    Worker timing defaults are startup=60, heartbeat=5, lost=15 seconds.
+    ``worker_startup_policy="fail"`` rejects startup shortfalls; explicitly
+    selecting ``"degraded"`` allows fewer workers while requiring at least one.
+    ``stop_requested`` and ``on_environment`` are cooperative lifecycle callbacks.
+    Master results include ``distributed_health`` and affected worker journeys;
+    native rebalancing recreates capacity without replaying individual requests.
     """
     distributed = _pop_distributed_config(kwargs)
     load_density_logger.info(
@@ -285,7 +295,7 @@ def start_test(
 
     init_function(user_detail_dict, **kwargs)
 
-    prepare_env(
+    env = prepare_env(
         user_class=actually_user,
         user_count=user_count,
         spawn_rate=spawn_rate,
@@ -298,7 +308,7 @@ def start_test(
         **kwargs,
     )
 
-    return {
+    result = {
         "user_detail": user_detail_dict,
         "user_count": user_count,
         "spawn_rate": spawn_rate,
@@ -306,3 +316,6 @@ def start_test(
         "web_ui": web_ui_dict,
         "runner_mode": runner_mode,
     }
+    if getattr(env, "distributed_health", None) is not None:
+        result["distributed_health"] = env.distributed_health.snapshot()
+    return result

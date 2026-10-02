@@ -88,7 +88,7 @@ LoadDensity(`je_load_density`)从 Locust 封装起步,逐步成长为完整的�
 - **实时 web dashboard。** `start_dashboard()` 会启动一个 stdlib HTTP + SSE 服务器,把运行中的 RPS / avg / p95 / failure 计数流式推送到任意浏览器,并附上 per-name 表格。
 - **Slack + Teams 通知。** 以 build_summary 的输出为基础的 Block Kit + MessageCard 摘要投递器(`LD_post_slack_summary`、`LD_post_teams_summary`)。
 - **断言 + 提取。** `status_code`、`contains`、`not_contains`、`json_path`、`header` 断言在 Locust 的 `catch_response` 下执行;来源为 `json_path` / `header` / `status_code` 的提取器会把值写回参数解析器。
-- **分布式 runner。** `runner_mode="master"` / `"worker"` 以同一套 `start_test` API 进行跨机负载;master 会先等待配置的 worker 数量最多 60 秒,再开始 ramp。
+- **分布式 runner。** `runner_mode="master"` / `"worker"` 提供可配置的健康 worker 启动门槛、原生 heartbeat 监测与失联后的虚拟用户负载重新分配。
 - **六种导入器。** HAR(浏览器流量)、Postman v2.1 collection、OpenAPI 3.x spec、独立的 cURL 命令、**k6 脚本**,以及 **JMeter JMX** plan — 每一种都能转成动作 JSON 或一个可直接喂给 `LD_start_test` 的 task。
 - **Auth 辅助工具。** stdlib OAuth2 client(`client_credentials` / `password` / `refresh`,含 token cache)、JWT 签名器(HS256/384/512 + RS256/384/512)、AWS SigV4 请求签名器,再加上每个 HTTP 用户模板都能通过 `task["cert"]` 支持 mTLS client-cert。
 - **持久化记录。** 可选的 SQLite sink,采用 `runs` / `records` / `metadata` schema 并建立索引以便跨次回归检查;开箱即可对空文件运作。
@@ -669,7 +669,18 @@ start_test(
 )
 ```
 
-master 会等待最多 60 秒,让 `expected_workers` 个 worker 完成注册,再开始负载 ramp。
+master 在 ramp 前等待健康且 ready 的 worker。默认秒数为
+`worker_startup_timeout=60`、`worker_heartbeat_interval=5`、`worker_lost_timeout=15`，
+启动策略为 `worker_startup_policy="fail"`；人数不足时清理资源后抛出 `TimeoutError`。
+明确选择 `"degraded"` 可接受不足的人数，但至少要有一个 ready worker，
+即使 `expected_workers=0` 也适用。每个节点必须使用相同 heartbeat 设置；失联检测依 interval tick 判定。
+Locust 在失联／重连后重新分配虚拟用户；所有 worker 失联时终止执行。
+master 结果包含 `distributed_health`、观测容量与受影响 worker ID。
+有状态流程可能重新开始；不重放请求。有限工作租约与 canonical worker record 汇总仍待实现。
+
+`on_environment(env)` 在执行线程、启动前调用；`stop_requested()` 可协作取消启动、ramp 或执行，
+callback 错误在清理后传回。`prepare_env` 负责 runner／UI／RPC／辅助 task 的资源生命周期；
+直接调用 `create_env` 的用户须在完成后调用 `cleanup_env(env)`。
 
 ## HAR 录制/重放
 

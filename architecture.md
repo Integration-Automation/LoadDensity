@@ -135,6 +135,15 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
 
 ## 6. Cross-project boundaries
 
+Locust master/worker runs use scoped native heartbeat settings and rebalancing.
+Startup defaults to failing an unmet healthy ready-worker count; explicit degraded
+policy still requires one worker. Master results add `distributed_health`; this is
+infrastructure health, separate from target request outcomes. `prepare_env` owns
+runner/UI/RPC/auxiliary cleanup, including callback failures during ramp-up;
+direct `create_env` callers own `cleanup_env`. Lifecycle callbacks are
+`on_environment(env)` and `stop_requested()`. No finite-work leases, request replay
+or canonical worker-record aggregation are exposed.
+
 CLI execution retains legacy flags and Python executor return shapes, but now returns a nonzero process exit code after failed actions/SLA gates. `test/smoke` runs real HTTP/report/dashboard/MCP checks in subprocesses against source or an installed wheel. Native async HTTP benchmarking requires base httpx; the `http2` extra adds HTTP/2 support.
 CI derives its Docker installation matrix from declared extras, runs isolated installed-wheel capabilities and smoke checks, and gates publishing on the reusable extras workflow. Compose probes measure Redis/MQTT adapter calls after health checks. The etcd adapter prefers etcd3gw (v3 HTTP gateway) while retaining legacy etcd3 support; this avoids incompatible generated protobuf code in the old extra.
 
