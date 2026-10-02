@@ -46,12 +46,15 @@ def test_unsafe_extra_names_are_rejected_before_shell_parameters(tmp_path):
         load_matrix_module().build_matrix(path)
 
 
-def test_cli_writes_parseable_github_output(metadata, tmp_path):
+def test_cli_writes_checkout_matrix_independently_of_current_directory(tmp_path):
     destination = tmp_path / "github-output"
+    (tmp_path / "pyproject.toml").write_text('[project.optional-dependencies]\nattacker = []\n', encoding="utf-8")
     completed = subprocess.run([sys.executable, str(ROOT / "scripts/extras_matrix.py"),
-                                "--metadata", str(metadata), "--output", str(destination)],
-                               capture_output=True, text=True, timeout=10, check=False)
+                                "--output", str(destination)],
+                               cwd=tmp_path, capture_output=True, text=True, timeout=10, check=False)
     assert completed.returncode == 0, completed.stderr
     key, value = destination.read_text(encoding="utf-8").strip().split("=", 1)
     assert key == "matrix"
-    assert len(json.loads(value)["include"]) == 6
+    cells = json.loads(value)["include"]
+    assert any(cell["extra"] == "gui" for cell in cells)
+    assert not any(cell["extra"] == "attacker" for cell in cells)

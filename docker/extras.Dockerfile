@@ -1,7 +1,7 @@
 ARG PYTHON_VERSION=3.12
 FROM python:${PYTHON_VERSION}-slim
 COPY dist/*.whl /wheels/
-RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked python -m pip install /wheels/*.whl
+RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked python -m pip install --only-binary :all: /wheels/*.whl
 ARG EXTRA=base
 RUN if [ "$EXTRA" = "gui" ] || [ "$EXTRA" = "all" ]; then \
       apt-get update && apt-get install -y --no-install-recommends \
@@ -13,5 +13,6 @@ RUN if [ "$EXTRA" = "gui" ] || [ "$EXTRA" = "all" ]; then \
 COPY test/smoke /checks/smoke
 RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked python /checks/smoke/install_extra.py "$EXTRA"
 ENV LD_EXTRA=${EXTRA} QT_QPA_PLATFORM=offscreen AWS_EC2_METADATA_DISABLED=true
-WORKDIR /run
+USER 65534:65534
+WORKDIR /tmp
 CMD ["python", "/checks/smoke/run_cell.py"]

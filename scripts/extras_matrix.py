@@ -34,11 +34,11 @@ def build_matrix(metadata_path: Path, scheduled: bool = False) -> dict[str, list
 def main() -> None:
     """Emit JSON for GitHub Actions or a local matrix runner."""
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--metadata", type=Path, default=Path("pyproject.toml"))
     parser.add_argument("--event", default="pull_request")
     parser.add_argument("--output", type=Path, default=os.environ.get("GITHUB_OUTPUT"))
     arguments = parser.parse_args()
-    payload = json.dumps(build_matrix(arguments.metadata, scheduled=arguments.event == "schedule"))
+    metadata = Path(__file__).resolve().parents[1] / "pyproject.toml"
+    payload = json.dumps(build_matrix(metadata, scheduled=arguments.event == "schedule"))
     if arguments.output is not None:
         with arguments.output.open("a", encoding="utf-8") as handle:
             handle.write(f"matrix={payload}\n")
