@@ -18,7 +18,6 @@ from pathlib import Path
 
 import pytest
 
-
 # ---------- Security: JWT ---------------------------------------------------
 
 
@@ -52,7 +51,8 @@ def test_graphql_depth_attack_nests_correctly():
 
 def test_ssrf_targets_include_metadata():
     from je_load_density.utils.security.ssrf_checks import (
-        build_ssrf_targets, find_metadata_leak,
+        build_ssrf_targets,
+        find_metadata_leak,
     )
     targets = build_ssrf_targets()
     assert any("169.254.169.254" in t for t in targets)
@@ -170,7 +170,9 @@ def test_factory_builds_pool():
 
 def test_run_tagging_round_trip(tmp_path):
     from je_load_density.utils.governance.run_tagging import (
-        list_tags, search_runs_by_tag, tag_run,
+        list_tags,
+        search_runs_by_tag,
+        tag_run,
     )
 
     db_path = tmp_path / "runs.db"
@@ -196,7 +198,8 @@ def test_run_tagging_round_trip(tmp_path):
 
 def test_audit_log_appends(tmp_path):
     from je_load_density.utils.governance.audit_log import (
-        append_audit_entry, read_audit_log,
+        append_audit_entry,
+        read_audit_log,
     )
 
     log_path = tmp_path / "audit.jsonl"
@@ -208,7 +211,8 @@ def test_audit_log_appends(tmp_path):
 
 def test_share_link_round_trip():
     from je_load_density.utils.governance.share_link import (
-        issue_share_link, verify_share_link,
+        issue_share_link,
+        verify_share_link,
     )
 
     secret = "topsecret"
@@ -221,7 +225,8 @@ def test_share_link_round_trip():
 
 def test_share_link_rejects_bad_signature():
     from je_load_density.utils.governance.share_link import (
-        issue_share_link, verify_share_link,
+        issue_share_link,
+        verify_share_link,
     )
 
     url = issue_share_link("https://reports.example", "/r/123.html", "secret",
@@ -295,26 +300,28 @@ def test_canary_verdict_promotes_when_steady():
 # ---------- Asyncio engine + bench CLI --------------------------------------
 
 
-def test_asyncio_engine_returns_summary():
+def test_asyncio_engine_returns_summary(monkeypatch):
     """
     Verify the engine wiring — httpx invocation, error-record path, and
-    summary-dict return shape. Uses a non-routable port so every attempt
-    fails fast; we're asserting plumbing, not network behaviour.
+    summary-dict return shape with a deterministic connection failure. Other
+    tests verify native socket I/O in interpreters unpatched by Locust.
     """
     from je_load_density.engine.asyncio_engine import run_async_load
     from je_load_density.utils.test_record.test_record_class import test_record_instance
 
+    httpx = pytest.importorskip("httpx")
+    original = httpx.AsyncClient
+
+    def disconnected(request):
+        raise httpx.ConnectError("connection refused", request=request)
+
+    monkeypatch.setattr(httpx, "AsyncClient",
+                        lambda **kwargs: original(transport=httpx.MockTransport(disconnected), **kwargs))
     test_record_instance.clear_records()
-    try:
-        result = asyncio.run(run_async_load(
-            tasks=[{"method": "get",
-                    "request_url": "http://127.0.0.1:1/never",
-                    "timeout": 0.2}],
-            # Long enough that a loaded machine still sends at least one request before the deadline.
-            users=1, duration_seconds=2.0,
-        ))
-    except RuntimeError as error:
-        pytest.skip(f"httpx not installed: {error}")
+    result = asyncio.run(run_async_load(
+        tasks=[{"method": "get", "request_url": "http://127.0.0.1:1/never", "timeout": 0.2}],
+        users=1, duration_seconds=0.05,
+    ))
     assert "requests" in result and "failures" in result
     assert result["failures"] >= 1
 
@@ -323,7 +330,7 @@ def test_asyncio_engine_returns_summary():
 
 
 def test_i18n_translates_known_key():
-    from je_load_density.utils.dx.i18n import t, available_locales
+    from je_load_density.utils.dx.i18n import available_locales, t
 
     assert t("missing_locust", "zh-TW") != t("missing_locust", "en")
     assert "zh-TW" in available_locales()

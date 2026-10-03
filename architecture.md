@@ -1,7 +1,7 @@
 # LoadDensity Architecture
 
 > Short overview for people and agents.
-> Last verified: 2026-09-22 against `7cf7901` on `dev`.
+> Last verified: 2026-10-03 against the working tree on `feat/testing-platform`.
 
 ## 1. Purpose
 
@@ -213,6 +213,35 @@ the published dependency floor. The old action-executor record contract is separ
   (workspace `progress.md` X-12).
 
 Cloud launchers preflight counts/resources and distinguish accepted submissions from successful execution/provisioning. Public cloud.CloudLaunchError retains accepted worker responses and failure indices. Cloud Run per-run parallelism is rejected (configure the deployed Job); ACI waits its poller and returns unique names/resource IDs. No adapter retries or rolls back launches.
+
+Public package exports and executor command functions resolve their fixed module bindings
+on first use. Importing the package, CLI parser or native HTTP engine does not load Locust
+or patch socket/TLS/threading. Selecting a Locust environment registers its request hook.
+`get_resolver`, `use_resolver` and `register_session_variable` are public APIs. HTTP user
+templates fork variable/session state once per user; ContextVar scopes restore selection,
+while locked CSV/DB providers allocate one coherent row per recursive task resolution.
+CLI action failures are counted through a scoped reporter around public execute_action;
+report callbacks and settings restoration do not require the unreleased core collector API.
+
+The public start_test signature remains compatible and accepts engine through kwargs:
+locust defaults to the existing environment path, asyncio dispatches local native HTTP.
+AsyncRunHandle owns clients/tasks, user resolvers, run summary and cooperative callbacks;
+legacy record/report and canonical opt-in paths remain available. Unsupported protocols,
+distributed options and exporter integrations are retained as outstanding capabilities.
+The desktop Qt supervisor communicates with a fresh engine interpreter through bounded
+JSON frames and a unique cancellation file; no worker mutates Qt objects. Existing PyBreeze
+LoadDensityWidget controls and tab attributes remain available.
+The 128 KiB frame budget retains recent complete request rows; charts consume at most
+120 child-computed windows covering full measurements rather than the bounded row tail.
+
+Locust master opt-in DistributedRunContext composes public strict ActionCore worker contexts.
+Worker distributed_records delivery binds producer epochs/generations to master run identity,
+uses bounded sequenced batches with ACK retry and final drain, and preserves record IDs across
+reconnection. Master whole-batch validation and global deduplication feed legacy reports once.
+env.record_delivery exposes pending/incomplete diagnostics; failure cleanup preserves caller
+exceptions. No durable queue, finite shard replay, session migration or HTTP exactly-once promise
+is part of this native ongoing-load contract. Legacy start-wrapper imports now defer the Locust
+implementation to locust_start.py while preserving the original registry/import attributes.
 
 ## 7. Design constraints
 

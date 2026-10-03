@@ -141,7 +141,10 @@ def _apply_extractors(response: Any, extractors: Iterable[Dict[str, Any]]) -> No
         else:
             value = None
         if value is not None:
-            parameter_resolver.register_variable(var_name, value)
+            if extractor.get("scope", "var") == "session":
+                parameter_resolver.register_session_variable(var_name, value)
+            else:
+                parameter_resolver.register_variable(var_name, value)
 
 
 def _normalise_tasks(raw_tasks: Any) -> List[Dict[str, Any]]:

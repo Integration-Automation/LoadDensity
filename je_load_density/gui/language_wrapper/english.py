@@ -1,4 +1,23 @@
 english_word_dict = {
+    # Desktop lifecycle and settings
+    "settings": "Test settings",
+    "browse": "Browse…",
+    "action_file": "Action file",
+    "engine": "Engine",
+    "stop_button": "Stop",
+    "idle": "Idle",
+    "running": "Running",
+    "stopping": "Stopping",
+    "completed": "Completed",
+    "failed": "Failed",
+    "cancelled": "Cancelled",
+    "success": "Success",
+    "results": "Recent requests",
+    "request": "Request",
+    "latency": "Latency (ms)",
+    "result": "Result",
+    "failure_rate": "Failure rate",
+    "invalid_input": "Enter an HTTP target and positive load settings.",
     # Main
     "application_name": "LoadDensity",
     # Widget

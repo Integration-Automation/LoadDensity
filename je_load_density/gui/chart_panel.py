@@ -73,11 +73,29 @@ class LiveChartPanel(QWidget):
         self._timer.start()
 
     def reset_history(self, start_time: float | None = None) -> None:
+        self._snapshot_windows = None
         self._start_epoch = math.floor(time.time()) if start_time is None else start_time
         self._rps_series.clear()
         self._latency_chart.removeAllSeries()
         self._latency_lines.clear()
         self._band_series.clear()
+
+    def set_snapshot(self, snapshot: dict) -> None:
+        """Render complete child window aggregates independently of the bounded request table."""
+        windows = snapshot.get("windows")
+        self._snapshot_windows = list(windows[-_HISTORY_SECONDS:]) if windows is not None else None
+        self.refresh()
+
+    def _current_windows(self):
+        if self._snapshot_windows is not None:
+            end = self._start_epoch
+            if self._snapshot_windows:
+                last = self._snapshot_windows[-1]
+                end = last["start_time"] + last["duration_seconds"]
+            return self._snapshot_windows, max(end, self._start_epoch)
+        now = max(time.time(), self._start_epoch)
+        records = chain(test_record_instance.test_record_list, test_record_instance.error_record_list)
+        return latency_windows(records, start=self._start_epoch, end=now, max_buckets=_HISTORY_SECONDS), now
 
     def _add_latency(self, series) -> None:
         self._latency_chart.addSeries(series)
@@ -120,9 +138,7 @@ class LiveChartPanel(QWidget):
                         marker.setVisible(False)
 
     def refresh(self) -> None:
-        now = max(time.time(), self._start_epoch)
-        records = chain(test_record_instance.test_record_list, test_record_instance.error_record_list)
-        windows = latency_windows(records, start=self._start_epoch, end=now, max_buckets=_HISTORY_SECONDS)
+        windows, now = self._current_windows()
         self._rps_series.replace([QPointF(item["start_time"] - self._start_epoch, item["rps"]) for item in windows])
         self._render_latency(windows)
         left = windows[0]["start_time"] - self._start_epoch if windows else 0

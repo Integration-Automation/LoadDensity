@@ -30,14 +30,14 @@ def _by_name(records: Iterable[Dict[str, Any]]) -> Dict[str, List[float]]:
     return grouped
 
 
-def build_summary() -> Dict[str, Any]:
+def build_summary(success=None, failures=None) -> Dict[str, Any]:
     """
     彙整成功與失敗紀錄為統計摘要。
     Build a summary dict of success/failure counts and per-name
     latency percentiles for charting and regression checks.
     """
-    success = test_record_instance.test_record_list
-    failures = test_record_instance.error_record_list
+    success = test_record_instance.test_record_list if success is None else success
+    failures = test_record_instance.error_record_list if failures is None else failures
 
     all_latencies: List[float] = [
         latency

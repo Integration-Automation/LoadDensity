@@ -234,12 +234,14 @@ User 派發
    ``execute_action(...)`` 送進一份動作 JSON。
 #. ``Executor.execute_action`` 依 ``event_dict``(``LD_*`` + 安全
    builtins)派發每一步驟。
-#. 當步驟為 ``LD_start_test``,派發器選擇 user template(12 種其一),
+#. 當步驟為 ``LD_start_test``，派發器選擇引擎（預設 Locust，
+   明確選擇可用原生 asyncio HTTP），必要時再選擇 Locust user template，
    依 ``variables`` / ``csv_sources`` / ``db_sources`` 填入參數解析器,
    並依 ``load_shape`` / ``shape_config`` 構造可選的 ``LoadTestShape``,
    再呼叫 ``prepare_env``。
-#. ``prepare_env`` 以 local、master 或 worker 模式建立 Locust
-   ``Environment`` 並啟動執行。
+#. Locust ``prepare_env`` 以 local、master 或 worker 模式建立環境。
+   原生 ``AsyncRunHandle`` 管理 local HTTP 使用者、client、task 及
+   合作式取消，不載入 Locust。
 #. 每個 user 每 tick 執行 ``run_scenario``。對每個 ``execute_task``:
    throttle bucket → network conditioner → ``${...}`` 展開 → retry
    policy → 請求。

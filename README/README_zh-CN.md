@@ -556,6 +556,8 @@ register_csv_source("users", "users.csv")
 
 未知的占位符会原样保留,因此 dry run 时缺少的数据会显而易见。
 
+HTTP、FastHTTP 与 Locust HTTPX 用户各自保存独立的变量及 session。提取值只会写入当前用户的解析器；`scope: "session"` 对应 `${session.NAME}`。同一个 task 的 CSV／DB 字段使用同一行数据，跨用户取行则同步分配。Python 可用 `with use_resolver(get_resolver().fork()):` 选择独立状态。其他协议模板保留现有 scope。包、原生 async 与 executor 导入只会在选择 Locust API 时加载 Locust。
+
 ## 场景模式
 
 ```json
@@ -648,6 +650,8 @@ start_opentelemetry_exporter(endpoint="http://otel-collector:4317",
 
 ## 分布式 Master / Worker
 
+Canonical 聚合需明确启用：master 从 `je_load_density.utils.test_record.distributed_context` 导入并传入 `run_context=DistributedRunContext()`，每个 worker 设 `distributed_records=True`，需要协调中的 ActionCore record API。Master 验证 transport／run／worker 身份、按 record ID 去重，接受的记录只写入现有报告一次。`env.record_delivery.snapshot()` 显示 queue／传送诊断。默认每批 100 条／262,144 bytes、每条 65,536 bytes、待送 1,000 条／4,194,304 bytes、重试间隔 0.1 秒，最后 drain／acknowledgement 各最多 2 秒。超额或传送不完整会明确失败。Buffer 留在内存，已送历史须导出才能持久保存；持续负载重新分配只重建容量，不重播 HTTP 副作用、迁移 session 或承诺 exactly-once。
+
 ```python
 # master
 start_test(
@@ -696,7 +700,7 @@ Qt、浏览器与 `[charts]` PNG 报告共用以请求开始时间分桶的统�
 报告文件名、返回键与原有 dashboard snapshot 键保持兼容，
 新增 `latency_windows` 提供有上限的图表数据。SSE 流不阻挡其他 snapshot 请求，停止 dashboard 时关闭流。
 
-桌面 GUI 的控制界面与执行生命周期仍另列待办。
+桌面 GUI 提供引擎／负载设置、独立执行进程与 Start／Stop 生命周期。
 
 ## HAR 录制/重放
 
@@ -790,7 +794,9 @@ window.show()
 sys.exit(app.exec())
 ```
 
-GUI 内附英文、繁体中文、日文与韩文翻译,以及一个每秒轮询 `test_record_instance` 一次的实时统计面板(RPS、平均 / p95 latency、失败计数)。
+GUI 提供英文、繁体中文、日文与韩文翻译。左侧是设置，右侧是执行状态、Start／Stop、指标、图表与最近请求。每次 Locust／asyncio 执行都使用独立解释器；Stop 先协作式取消，三秒后仍未停止则终止子进程。完成／失败结果会保留，最近请求最多 200 条已清理数据，日志最多 500 段，现有持久化历史仍可查阅。动作文件保留负载参数与报告动作，所选引擎应用于 `LD_start_test`。
+
+GUI 消息限制为 128 KiB，必要时减少最近请求行数。图表接收最多 120 个以完整子进程记录计算的时间窗，不受最近请求列表长度影响。
 
 ## CLI 用法
 
@@ -1099,18 +1105,18 @@ diagnostics。以 `npm install && npm run package` 构建,再安装
 
 于 2026-05 扩充加入。每一个都延迟导入,且只需要它自己的 extra。
 
-- **Asyncio 引擎。** `je_load_density.engine.asyncio_engine.run_async_load` 不通过 Locust,直接以 asyncio 驱动一个 HTTP 目标,并写出与 Locust 用户相同的记录,4xx/5xx 一律计为失败。`bench` 子命令包装了它:
+- **Asyncio 引擎。** `start_test(..., engine="asyncio")` 与 `LD_start_test` 可选原生 HTTP 执行，默认仍是 Locust；现有 event loop 可用 `await run_async_load(...)`。支持请求参数、五种 HTTP 断言、提取、各用户独立 cookie／session、sequence／weighted／conditional、重试、think time、token bucket、ramp 与 stages／spike／soak。HTTP 4xx／5xx 计为失败，除非明确的 status-code 断言通过。请求前拒绝不支持的协议、分布式模式与无效设置。`AsyncRunHandle` 提供 `start`／`stop`／`wait`／`snapshot`；取消会关闭 client 与 task，不计为目标失败。每次返回独立的 `summary` 可供 SLA 评估，现有全局报告记录与可选 canonical 格式仍保留。`requests` 仍表示成功次数，`summary.totals.requests` 是所有测量次数。Exporter 与完整协议／分布式对等仍列待办。`bench` 子命令包装了它:
 
   ```bash
   python -m je_load_density bench https://api.example.com/health --users 10 --duration 10
   ```
 
-  选项:`--method`、`--body`、`--http2`、`--max-in-flight`。
+  选项:`--method`、`--body`、`--http2`、`--max-in-flight`。选择 Locust 后，该进程会应用 gevent patch；随后执行原生 I/O 时请使用新进程。CLI bench 与桌面 GUI 已提供此隔离，嵌入式进程的引擎切换仍列待办。
 - **Cloud workers**(`aws`、`gcp`、`azure` 或 `cloud` extras):`cloud.aws_fargate.launch_fargate_workers`、`cloud.aws_lambda.invoke_lambda_workers`(以 `lambda_worker_handler` 作为函数入口)、`cloud.azure_aci.launch_aci_workers` 与 `cloud.gcp_cloud_run.run_cloud_run_job` 为分布式跑法启动远端 worker。
 
 云端 launcher 在联系 provider 前验证数量／资源参数。`cloud.CloudLaunchError` 保留先前接受的响应、失败 worker 索引及可取得的失败响应，并链接 provider 异常。Fargate 拒绝部分失败／格式错误的提交。Lambda 区分执行成功、Event 接受与 DryRun 验证，关闭 payload stream 并保留 FunctionError payload。Cloud Run 每次刷新 credentials；`parallelism` 请设置于部署的 Job，每次执行可覆盖 `task_count`，但拒绝 `parallelism`。ACI 等待 provisioning 并返回唯一 `name`、`status="Succeeded"` 与 `resource_id`。Launcher 不回滚已接受的资源，也不重试启动请求。
 - **Chaos 辅助工具**:`utils.chaos.toxiproxy` 在 Toxiproxy 实例上新增与移除 latency 或 bandwidth toxic(`install_latency`、`install_bandwidth`、`reset_all`);`utils.chaos.chaos_mesh` 构建并套用 Chaos Mesh manifest(`build_network_delay`、`apply_manifest`、`delete_manifest`)。
-- **Stub server**:`utils.stub_server.start_stub_server` / `stop_stub_server` 供应罐头响应,让场景能对一个假后端执行。它从一个线程供应,可与 Locust 的 gevent 用户并存;对 asyncio 引擎则要在独立进程启动它,因为引擎自己进程里的服务器线程永远得不到调度。
+- **Stub server**:`utils.stub_server.start_stub_server` / `stop_stub_server` 供应罐头响应，让场景能对假后端执行。它使用线程；若测试进程已选择 Locust，原生 asyncio client 与 server 请使用新进程，避免 gevent 调度影响。
 - **更多报告格式**,在上述七种之外:Allure、cost、CycloneDX、Excel、latency histogram、PDF(`pdf` extra)、SARIF 与一张 service map,各自对应 `utils/generate_report/` 下一个 `generate_*_report.py` 模块。
 - **部署模板** 位于 `deploy/`:一份 Helm chart、一个 Kubernetes operator(`k8s` extra)、Terraform、一张 Grafana dashboard 与 CI 模板。
 

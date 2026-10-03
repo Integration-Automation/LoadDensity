@@ -54,8 +54,19 @@ Registering data
         {"name": "products", "file_path": "products.csv", "cycle": False},
     ])
 
-CSV files must have a header row. Each call to ``${csv.name.col}``
-returns the value at column ``col`` from the next row.
+CSV files must have a header row. One recursive ``resolve(task)`` uses one row
+per referenced CSV/DB source, so credentials in different fields stay paired.
+Separate calls advance the source; forked users share synchronized allocation.
+
+Virtual-user sessions
+---------------------
+
+HTTP, FastHTTP and Locust HTTPX users fork variable/session state once per user.
+Extracted values persist in that user's journey. ``scope: "session"`` writes to
+the separate ``${session.NAME}`` namespace; omitted scope uses ``${var.NAME}``.
+Other protocol templates retain the legacy resolver scope. Python callers can
+select explicit state with ``with use_resolver(get_resolver().fork()):``;
+nested scopes restore the previous resolver even after an exception.
 
 Action-JSON usage
 -----------------

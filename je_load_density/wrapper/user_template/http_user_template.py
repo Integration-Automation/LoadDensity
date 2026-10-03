@@ -3,8 +3,11 @@ from typing import Any, Dict
 from locust import HttpUser, between, task
 
 from je_load_density.utils.parameterization import (
+    parameter_resolver,
     register_csv_sources,
+    register_db_sources,
     register_variables,
+    use_resolver,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 from je_load_density.wrapper.user_template.scenario_runner import run_scenario
@@ -19,6 +22,8 @@ def set_wrapper_http_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
         register_variables(kwargs["variables"])
     if isinstance(kwargs.get("csv_sources"), list):
         register_csv_sources(kwargs["csv_sources"])
+    if isinstance(kwargs.get("db_sources"), list):
+        register_db_sources(kwargs["db_sources"])
 
     locust_wrapper_proxy.user_dict.get("http_user").configure(user_detail_dict, **kwargs)
     return HttpUserWrapper
@@ -35,6 +40,7 @@ class HttpUserWrapper(HttpUser):
 
     def __init__(self, environment):
         super().__init__(environment)
+        self._parameter_resolver = parameter_resolver.fork()
         self.method: Dict[str, Any] = {
             "get": self.client.get,
             "post": self.client.post,
@@ -50,4 +56,5 @@ class HttpUserWrapper(HttpUser):
         proxy_user = locust_wrapper_proxy.user_dict.get("http_user")
         if not proxy_user or not proxy_user.tasks:
             return
-        run_scenario(self.method, proxy_user.tasks)
+        with use_resolver(self._parameter_resolver):
+            run_scenario(self.method, proxy_user.tasks)

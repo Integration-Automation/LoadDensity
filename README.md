@@ -533,6 +533,7 @@ Placeholders are expanded automatically on every task:
 | Placeholder | Resolves to |
 |-------------|-------------|
 | `${var.NAME}` | Value passed to `register_variable(s)` |
+| `${session.NAME}` | Value extracted with `scope: "session"` in the current virtual user |
 | `${env.NAME}` | Environment variable `NAME` |
 | `${csv.SOURCE.COL}` | Next row from CSV source `SOURCE` (cycles by default) |
 | `${faker.METHOD}` | `Faker().METHOD()` (lazy import) |
@@ -555,6 +556,13 @@ Or from action JSON:
 ```
 
 Unknown placeholders are left in place so missing data is visible during a dry run.
+
+HTTP, FastHTTP and the Locust HTTPX user keep independent variable/session state for each
+virtual user. Extraction writes only to that user's resolver; `scope: "session"` selects
+`${session.NAME}`. CSV/DB fields in one resolved task use the same row, with synchronized
+row allocation across users. Python callers can select an explicit fork with
+`with use_resolver(get_resolver().fork()):`. Other protocol templates retain legacy scope.
+Package, native async and executor imports load Locust only when a Locust API is selected.
 
 ## Scenario Modes
 
@@ -648,6 +656,19 @@ All three are loaded lazily and gated by the matching install extra.
 
 ## Distributed Master / Worker
 
+Canonical aggregation is opt-in: the master passes
+`run_context=DistributedRunContext()` from
+`je_load_density.utils.test_record.distributed_context`; each worker sets
+`distributed_records=True`. This requires the coordinated ActionCore record API.
+The master validates transport/run/worker identity and deduplicates record IDs;
+accepted records populate legacy reports once. `env.record_delivery.snapshot()`
+exposes queue/delivery diagnostics. Defaults are 100 records / 262,144 bytes per
+batch, 65,536 bytes per record, 1,000 records / 4,194,304 queued bytes, 0.1-second
+retry and 2-second final drain/acknowledgement budgets. Overflow or incomplete
+delivery fails explicitly. Buffers are in memory; delivered history needs export
+for durable storage. Ongoing load rebalancing recreates capacity; it does not
+replay HTTP side effects, migrate sessions or promise exactly-once execution.
+
 ```python
 # master
 start_test(
@@ -702,7 +723,7 @@ return keys and existing dashboard snapshot keys remain compatible;
 `latency_windows` adds bounded chart data. SSE clients can stream while other
 clients fetch snapshots, and stopping the dashboard closes the stream.
 
-The desktop GUI controls and execution lifecycle are still tracked separately.
+The desktop GUI adds engine/load controls and isolated run processes with Start/Stop lifecycle.
 
 ## HAR Record / Replay
 
@@ -796,7 +817,14 @@ window.show()
 sys.exit(app.exec())
 ```
 
-The GUI ships English, Traditional Chinese, Japanese, and Korean translations and a live stats panel that polls `test_record_instance` once a second (RPS, average / p95 latency, failure count).
+The GUI ships English, Traditional Chinese, Japanese, and Korean translations. Settings appear
+left; run state, Start/Stop, metrics, charts and recent requests appear right. Each run uses an
+isolated interpreter for Locust or asyncio. Stop requests cooperative cancellation and escalates
+after three seconds. Completed/failed results remain visible; recent requests retain at most 200 sanitized
+rows and logs retain 500 blocks. Existing persisted history remains available. Action-file runs
+preserve workload settings and report actions; the selected engine applies to `LD_start_test`.
+Frames are limited to 128 KiB, retaining fewer request rows when needed. Charts receive
+up to 120 windows calculated from the complete child records, independently of the request tail.
 
 ## CLI Usage
 
@@ -1107,7 +1135,21 @@ Chrome extension and builds the JetBrains plugin on every change under `editors/
 
 Added in the 2026-05 expansion. Each one is imported lazily and needs only its own extra.
 
-- **Asyncio engine.** `je_load_density.engine.asyncio_engine.run_async_load` drives an HTTP target from asyncio without Locust and writes the same records as Locust users do, with a 4xx/5xx counted as a failure. The `bench` subcommand wraps it:
+- **Asyncio engine.** `start_test(..., engine="asyncio")` and `LD_start_test` select native HTTP
+  execution; Locust remains the default. `await run_async_load(...)` works in an existing event
+  loop. Native runs support request kwargs, all five HTTP assertion types, extractors, per-user
+  cookies/session variables, sequence/weighted/conditional scenarios, retry, think time, token
+  buckets, ramp and stages/spike/soak. HTTP 4xx/5xx fail unless an explicit passing status-code
+  assertion expects that response. Preflight rejects unsupported protocols, distributed modes
+  and malformed options before requests. `AsyncRunHandle` exposes `start`, `stop`, `wait` and
+  `snapshot`; cancellation closes clients and tasks without recording target failures. Each run
+  returns an isolated `summary` compatible with SLA gates; legacy global report records and
+  optional canonical recording remain available. `requests` retains its success-count meaning;
+  `summary.totals.requests` counts all measured attempts. Exporter and full protocol/distributed
+  parity remain outstanding. The `bench` subcommand wraps native execution:
+
+  Selecting Locust patches its interpreter. Run native I/O in a fresh interpreter
+  after Locust; CLI `bench` and the desktop supervisor provide this isolation.
 
   ```bash
   python -m je_load_density bench https://api.example.com/health --users 10 --duration 10
@@ -1118,7 +1160,7 @@ Added in the 2026-05 expansion. Each one is imported lazily and needs only its o
 
 Cloud launchers validate counts/resources before contacting providers. `cloud.CloudLaunchError` retains prior accepted responses, failed worker indices and available failed response details; provider exceptions remain chained. Fargate rejects partial/malformed submissions. Lambda distinguishes execution success from Event acceptance and DryRun validation, closes payload streams and preserves FunctionError payloads. Cloud Run refreshes credentials per call; configure `parallelism` on the deployed Job, since per-run overrides support `task_count` but reject `parallelism`. ACI waits for provisioning and returns unique `name`, `status="Succeeded"` and `resource_id`. Launchers do not roll back accepted resources or retry launch requests.
 - **Chaos helpers**: `utils.chaos.toxiproxy` adds and removes latency or bandwidth toxics on a Toxiproxy instance (`install_latency`, `install_bandwidth`, `reset_all`); `utils.chaos.chaos_mesh` builds and applies Chaos Mesh manifests (`build_network_delay`, `apply_manifest`, `delete_manifest`).
-- **Stub server**: `utils.stub_server.start_stub_server` / `stop_stub_server` serve canned responses so a scenario can run against a fake backend. It serves from a thread, which works beside Locust's gevent users; for the asyncio engine start it in a separate process, because a server thread in the engine's own process never gets scheduled.
+- **Stub server**: `utils.stub_server.start_stub_server` / `stop_stub_server` serve canned responses from a thread. If the test process has selected Locust, run the native asyncio client and server in fresh interpreters to avoid gevent scheduling changes.
 - **More report formats** next to the seven above: Allure, cost, CycloneDX, Excel, latency histogram, PDF (`pdf` extra), SARIF and a service map, one `generate_*_report.py` module each under `utils/generate_report/`.
 - **Deployment templates** in `deploy/`: a Helm chart, a Kubernetes operator (`k8s` extra), Terraform, a Grafana dashboard and CI templates.
 

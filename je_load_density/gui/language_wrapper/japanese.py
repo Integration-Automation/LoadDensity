@@ -1,4 +1,23 @@
 japanese_word_dict = {
+    # Desktop lifecycle and settings
+    "settings": "テスト設定",
+    "browse": "参照…",
+    "action_file": "アクションファイル",
+    "engine": "エンジン",
+    "stop_button": "停止",
+    "idle": "待機",
+    "running": "実行中",
+    "stopping": "停止中",
+    "completed": "完了",
+    "failed": "失敗",
+    "cancelled": "キャンセル済み",
+    "success": "成功",
+    "results": "最近のリクエスト",
+    "request": "リクエスト",
+    "latency": "遅延 (ms)",
+    "result": "結果",
+    "failure_rate": "失敗率",
+    "invalid_input": "HTTP URL と正の負荷設定を入力してください。",
     # Main
     "application_name": "LoadDensity",
     # Widget

@@ -51,9 +51,13 @@ def request_hook(
     entry.update(_response_fields(response, successful))
     entry.update(response_time_ms=float(response_time or 0), response_length=int(response_length or 0),
                  error=None if successful else str(exception), start_time=_epoch_seconds(start_time))
+    outcome = "passed" if successful else "failed"
+    sink = kwargs.get("record_sink")
+    if sink is not None:
+        sink.capture_legacy(entry, outcome)
+        return
     records = test_record_instance.test_record_list if successful else test_record_instance.error_record_list
     records.append(entry)
-    outcome = "passed" if successful else "failed"
     selected_run = kwargs.get("record_run")
     if selected_run is not None:
         from_legacy_record(entry, selected_run, outcome)

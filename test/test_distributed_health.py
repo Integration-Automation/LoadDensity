@@ -195,6 +195,7 @@ def test_native_loss_during_ramp_retains_total_and_spawn_constraint(master, monk
     _until(lambda: master.runner.user_count >= 2)
     active.remove("second")
     ramp.get(timeout=5)
+    _until(lambda: master.runner.spawning_completed and master.runner.user_count == 6, timeout=5)
     assert master.runner.user_count == 6
     assert master.runner.target_user_count == 6
     assert master.runner.spawn_rate == 2
@@ -237,7 +238,8 @@ def test_shape_changes_native_target_and_finishes_without_hanging(monkeypatch):
         monkeypatch.setattr(env.shape_class, "get_run_time", lambda: next(shape_time))
         env.events.spawning_complete.add_listener(lambda **_kw: seen.append(env.runner.target_user_count))
     with gevent.Timeout(5):
-        env = wrapper.prepare_env(IdleUser, runner_mode="master", expected_workers=2, test_time=None,
+        env = wrapper.prepare_env(IdleUser, runner_mode="master", master_bind_port=0,
+                                  expected_workers=2, test_time=None,
                                   worker_heartbeat_interval=0.02, worker_lost_timeout=0.06,
                                   load_shape="stages", shape_config={"stages": [
                                       {"duration": 1, "users": 2, "spawn_rate": 100},
@@ -355,7 +357,7 @@ def test_master_stop_callback_error_propagates_and_restores_settings(monkeypatch
         return False
     with gevent.Timeout(2):
         with pytest.raises(RuntimeError, match="master stop callback failed"):
-            wrapper.prepare_env(IdleUser, runner_mode="master", expected_workers=2,
+            wrapper.prepare_env(IdleUser, runner_mode="master", master_bind_port=0, expected_workers=2,
                                 user_count=2, spawn_rate=100, test_time=None,
                                 on_environment=created, stop_requested=broken_stop)
     assert seen[0].runner.server.socket.closed
@@ -375,7 +377,7 @@ def test_master_stop_callback_error_interrupts_slow_ramp(monkeypatch):
         return False
     with gevent.Timeout(2):
         with pytest.raises(RuntimeError, match="ramp callback failed"):
-            wrapper.prepare_env(IdleUser, runner_mode="master", expected_workers=2,
+            wrapper.prepare_env(IdleUser, runner_mode="master", master_bind_port=0, expected_workers=2,
                                 user_count=10, spawn_rate=1, test_time=None,
                                 on_environment=created, stop_requested=broken_stop)
     assert len(seen[0].runner.greenlet) == 0

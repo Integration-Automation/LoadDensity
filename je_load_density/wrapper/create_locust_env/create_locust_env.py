@@ -1,3 +1,4 @@
+import sys
 from functools import partial
 from time import monotonic
 from typing import Any, Dict, Optional
@@ -14,6 +15,7 @@ from locust.stats import stats_history, stats_printer
 from je_load_density.utils.logging.loggin_instance import load_density_logger
 from je_load_density.wrapper.distributed_config import DistributedConfig, NativeHeartbeatScope
 from je_load_density.wrapper.distributed_health import DistributedHealth
+from je_load_density.wrapper.event.request_hook import request_hook  # noqa: F401 — register the selected Locust path
 
 setup_logging("INFO", None)
 
@@ -148,17 +150,9 @@ def create_env(
     config = DistributedConfig.from_options(kwargs)
     shape_class = _resolve_shape(load_shape, shape_config)
     run_context = kwargs.pop("run_context", None)
-    if run_context is not None:
-        from je_load_density.wrapper.event.request_hook import request_hook
-        if another_event is not events:
-            raise ValueError("a canonical run context requires an isolated default event environment")
-        another_event = Events()
-        another_event.request.add_listener(partial(request_hook, record_run=run_context))
-    if another_event is events and runner_mode != "local":
-        # Shared global event hooks would let one master's quit stop another run.
-        another_event = Events()
-        from je_load_density.wrapper.event.request_hook import request_hook
-        another_event.request.add_listener(request_hook)
+    distributed_records = kwargs.pop("distributed_records", False)
+    delivery = _delivery_options(runner_mode, run_context, distributed_records, kwargs)
+    another_event = _request_events(another_event, runner_mode, run_context, distributed_records)
     options = None
     scope = None
     if runner_mode != "local" or shape_class is not None:
@@ -181,6 +175,9 @@ def create_env(
         if runner_mode == "master":
             env.distributed_health = DistributedHealth(env, config)
             env.load_density_tasks.spawn(env.distributed_health.monitor)
+        if delivery is not None:
+            from je_load_density.wrapper.distributed_records import attach_delivery
+            attach_delivery(env, delivery)
         if runner_mode != "worker":
             env.load_density_tasks.spawn(stats_printer(env.stats))
             env.load_density_tasks.spawn(stats_history, env.runner)
@@ -189,6 +186,30 @@ def create_env(
         if not runner_created:
             cleanup_env(env)
     return env
+
+
+def _delivery_options(mode, context, enabled, options):
+    if type(enabled) is not bool:
+        raise ValueError("distributed_records must be a boolean")
+    if context is None and not enabled:
+        return None
+    from je_load_density.wrapper.distributed_records import delivery_options
+    return delivery_options(mode, context, enabled, options)
+
+
+def _request_events(selected, mode, context, delivery):
+    if delivery and context is not None:
+        raise ValueError("workers receive canonical run identity from their master")
+    if context is not None and selected is not events:
+        raise ValueError("a canonical run context requires an isolated default event environment")
+    if selected is not events:
+        return selected
+    if mode == "local" and context is None:
+        return selected
+    isolated = Events()
+    if not delivery:
+        isolated.request.add_listener(partial(request_hook, record_run=context))
+    return isolated
 
 
 def _resolve_shape(load_shape: Optional[str], shape_config: Optional[Dict[str, Any]]):
@@ -212,9 +233,12 @@ def _wait_for_workers(env, expected_workers: int, timeout: float = 60.0,
     """Wait for healthy ready workers; fail closed unless degraded startup is explicit."""
     deadline = monotonic() + timeout
     while True:
-        connected = env.distributed_health.ready_count
+        delivery = getattr(env, "record_delivery", None)
+        connected = delivery.ready_count if delivery is not None else env.distributed_health.ready_count
         if connected >= expected_workers:
             return
+        if delivery is not None:
+            delivery.raise_if_failed()
         if stop_requested is not None and stop_requested():
             return
         remaining = deadline - monotonic()
@@ -253,6 +277,9 @@ def _stop_owned_run(env: Environment) -> None:
     env.cancellation_requested = True
     if env.startup_task is not None and not env.startup_task.dead:
         env.startup_task.kill(block=True)
+    delivery = getattr(env, "record_delivery", None)
+    if delivery is not None:
+        delivery.close()
     env.runner.quit()
 
 
@@ -262,9 +289,13 @@ def cleanup_env(env: Environment) -> None:
         return
     env.load_density_closed = True
     health = getattr(env, "distributed_health", None)
-    if health is not None:
+    if health is not None and not getattr(env, "record_health_closed", False):
         health.close()
+        env.record_health_closed = True
     try:
+        delivery = getattr(env, "record_delivery", None)
+        if delivery is not None:
+            delivery.close()
         if env.runner is not None and env.runner.greenlet:
             env.runner.quit()
     finally:
@@ -274,6 +305,8 @@ def cleanup_env(env: Environment) -> None:
                 env.web_ui.stop()
         finally:
             _close_distributed_resources(env)
+    if delivery is not None and sys.exc_info()[0] is None:
+        delivery.raise_if_failed()
 
 
 def _close_distributed_resources(env: Environment) -> None:

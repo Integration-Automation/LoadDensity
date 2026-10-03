@@ -1,541 +1,527 @@
-# hook (side-effect import: registers Locust request hooks)
-from je_load_density.wrapper.event.request_hook import request_hook  # noqa: F401
+"""Public APIs are loaded on demand; native asyncio imports do not patch process I/O."""
 
-# Executor + action plumbing
-from je_load_density.utils.executor.action_executor import (
-    add_command_to_executor,
-    execute_action,
-    execute_files,
-    executor,
-)
-from je_load_density.utils.file_process.get_dir_file_list import get_dir_files_as_list
+import importlib
 
-# Reports
-from je_load_density.utils.generate_report.generate_allure_report import (
-    generate_allure_report,
-)
-from je_load_density.utils.generate_report.generate_chart_report import (
-    generate_chart_report,
-)
-from je_load_density.utils.generate_report.generate_histogram_report import (
-    generate_histogram_report,
-)
-from je_load_density.utils.generate_report.generate_pdf_report import (
-    generate_pdf_report,
-)
-from je_load_density.utils.generate_report.generate_csv_report import generate_csv_report
-from je_load_density.utils.generate_report.generate_html_report import (
-    generate_html,
-    generate_html_report,
-)
-from je_load_density.utils.generate_report.generate_json_report import (
-    generate_json,
-    generate_json_report,
-)
-from je_load_density.utils.generate_report.generate_junit_report import generate_junit_report
-from je_load_density.utils.generate_report.generate_summary_report import (
-    build_summary,
-    generate_summary_report,
-)
-from je_load_density.utils.generate_report.generate_xml_report import (
-    generate_xml,
-    generate_xml_report,
-)
-
-# JSON / YAML / TOML IO
-from je_load_density.utils.json.json_file.json_file import read_action_json
-from je_load_density.utils.json.json_file.toml_file import (
-    read_action_toml,
-    write_action_toml,
-)
-from je_load_density.utils.json.json_file.yaml_file import (
-    read_action_yaml,
-    write_action_yaml,
-)
-
-# Metrics
-from je_load_density.utils.metrics import (
-    start_influxdb_sink,
-    start_opentelemetry_exporter,
-    start_prometheus_exporter,
-    stop_influxdb_sink,
-    stop_opentelemetry_exporter,
-    stop_prometheus_exporter,
-)
-from je_load_density.utils.metrics.datadog_apm_exporter import (
-    start_datadog_apm_exporter,
-    stop_datadog_apm_exporter,
-)
-from je_load_density.utils.metrics.opentelemetry_tracing_exporter import (
-    start_opentelemetry_tracing_exporter,
-    stop_opentelemetry_tracing_exporter,
-)
-
-# Parameterisation
-from je_load_density.utils.parameterization import (
-    parameter_resolver,
-    register_csv_source,
-    register_csv_sources,
-    register_db_source,
-    register_db_sources,
-    register_variable,
-    register_variables,
-    resolve,
-)
-
-# Recording / replay
-from je_load_density.utils.recording.curl_importer import curl_to_task
-from je_load_density.utils.recording.har_importer import (
-    har_to_action_json,
-    har_to_tasks,
-    load_har,
-)
-from je_load_density.utils.recording.openapi_importer import (
-    load_openapi,
-    openapi_to_action_json,
-    openapi_to_tasks,
-)
-from je_load_density.utils.recording.postman_importer import (
-    load_postman_collection,
-    postman_to_action_json,
-    postman_to_tasks,
-)
-
-# Project scaffolding
-from je_load_density.utils.project.create_project_structure import create_project_dir
-
-# Control socket
-from je_load_density.utils.socket_server.load_density_socket_server import (
-    start_load_density_socket_server,
-)
-
-# Test records
-from je_load_density.utils.test_record.sqlite_persistence import (
-    fetch_run_records,
-    list_runs,
-    persist_records,
-)
-from je_load_density.utils.test_record.test_record_class import test_record_instance
-
-# Locust environment + start
-from je_load_density.wrapper.create_locust_env.create_locust_env import (
-    create_env,
-    prepare_env,
-)
-from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.start_wrapper.start_test import start_test
-
-# Locust re-exports
-from locust import SequentialTaskSet, TaskSet, task
-
-# Callback executor
-from je_load_density.utils.callback.callback_function_executor import callback_executor
-
-# DX / Quality
-from je_load_density.utils.action_generator.generate import (
-    generate_from_curls,
-    generate_from_openapi,
-    merge_actions,
-)
-from je_load_density.utils.ci_annotations.github_actions import (
-    emit_github_annotations,
-    format_github_annotation,
-)
-from je_load_density.utils.linter.action_formatter import (
-    format_action_document,
-    format_action_file,
-    format_action_string,
-)
-from je_load_density.utils.linter.action_linter import lint_action, lint_action_file
-from je_load_density.utils.schema.action_schema import (
-    action_json_schema,
-    export_schema,
-)
-
-# SLA / regression
-from je_load_density.utils.regression.diff import diff_runs, summarise_records
-from je_load_density.utils.regression.error_clustering import cluster_errors
-from je_load_density.utils.regression.multi_run_trend import trend_runs
-from je_load_density.utils.sla.sla_gates import assert_sla, evaluate_sla
-
-# Load shapes
-from je_load_density.utils.load_shapes.shapes import (
-    SoakShape,
-    SpikeShape,
-    StagesShape,
-    build_load_shape,
-)
-
-# GraphQL helper
-from je_load_density.utils.graphql.graphql_task import (
-    extract_field,
-    graphql_to_http_task,
-)
-
-# Throttle
-from je_load_density.utils.throttle.rps_throttle import (
-    RpsThrottle,
-    get_throttle,
-    reset_throttles,
-)
-
-# Reliability
-from je_load_density.utils.reliability.adaptive_retry import (
-    AdaptiveRetryPolicy,
-    classify_error,
-    run_with_retry,
-)
-from je_load_density.utils.reliability.failure_budget import (
-    CircuitOpenError,
-    FailureBudget,
-    install_failure_budget,
-    uninstall_failure_budget,
-)
-from je_load_density.utils.reliability.network_conditioner import (
-    NetworkConditioner,
-    install_network_conditioner,
-    uninstall_network_conditioner,
-)
-from je_load_density.utils.reliability.process_supervisor import (
-    ProcessSupervisor,
-    with_watchdog,
-)
-
-# Dashboard
-from je_load_density.utils.dashboard.live_dashboard import (
-    snapshot_metrics,
-    start_dashboard,
-    stop_dashboard,
-)
-
-# Notifier
-from je_load_density.utils.notifier.gitlab import (
-    build_gitlab_mr_note,
-    post_gitlab_mr_summary,
-)
-from je_load_density.utils.notifier.opsgenie import (
-    build_opsgenie_alert,
-    post_opsgenie_alert,
-)
-from je_load_density.utils.notifier.pagerduty import (
-    build_pagerduty_event,
-    post_pagerduty_event,
-)
-from je_load_density.utils.notifier.slack import (
-    build_slack_summary,
-    post_slack_summary,
-)
-from je_load_density.utils.notifier.teams import (
-    build_teams_summary,
-    post_teams_summary,
-)
-
-# StatsD
-from je_load_density.utils.metrics.statsd_sink import (
-    start_statsd_sink,
-    stop_statsd_sink,
-)
-
-# Importers (k6 + JMeter)
-from je_load_density.utils.recording.jmeter_importer import (
-    jmeter_to_action_json,
-    jmeter_to_tasks,
-    load_jmeter_jmx,
-)
-from je_load_density.utils.recording.k6_importer import (
-    k6_script_to_action_json,
-    k6_script_to_tasks,
-    load_k6_script,
-)
-
-# Scenario / Security / Stub / Chaos
-from je_load_density.utils.chaos.chaos_mesh import (
-    apply_manifest as chaos_apply_manifest,
-    build_network_delay as chaos_build_network_delay,
-    delete_manifest as chaos_delete_manifest,
-)
-from je_load_density.utils.chaos.toxiproxy import (
-    add_toxic as toxiproxy_add_toxic,
-    create_proxy as toxiproxy_create_proxy,
-    install_bandwidth as toxiproxy_install_bandwidth,
-    install_latency as toxiproxy_install_latency,
-    list_proxies as toxiproxy_list_proxies,
-    remove_proxies as toxiproxy_remove_proxies,
-    remove_toxic as toxiproxy_remove_toxic,
-    reset_all as toxiproxy_reset_all,
-)
-from je_load_density.utils.scenario.cookie_jar import (
-    jar_for_user,
-    reset_all_jars,
-    reset_user_jar,
-)
-from je_load_density.utils.scenario.fsm import FsmRunner
-from je_load_density.utils.security.fuzz import (
-    expand_task_fuzz,
-    fuzz_query_string,
-    mutate_json,
-    mutate_string,
-)
-from je_load_density.utils.security.owasp_checks import (
-    check_broken_object_level_auth,
-    check_excessive_data_exposure,
-    check_security_headers,
-    check_sensitive_token_leak,
-    run_owasp_checks,
-)
-from je_load_density.utils.stub_server.stub_server import (
-    start_stub_server,
-    stop_stub_server,
-)
-
-# Native asyncio engine
-from je_load_density.engine.asyncio_engine import run_async_load
-
-# AI features
-from je_load_density.utils.ai.auto_baseline import calibrate_sla
-from je_load_density.utils.ai.auto_tune import AutoTuner
-from je_load_density.utils.ai.root_cause import (
-    build_root_cause_prompt,
-    render_prompt_text,
-)
-from je_load_density.utils.ai.smart_shape import find_breaking_point
-
-# Cloud worker adapters
-from je_load_density.cloud.aws_fargate import launch_fargate_workers
-from je_load_density.cloud.aws_lambda import (
-    invoke_lambda_workers,
-    lambda_worker_handler,
-)
-from je_load_density.cloud.azure_aci import launch_aci_workers
-from je_load_density.cloud.gcp_cloud_run import run_cloud_run_job
-
-# CI / canary
-from je_load_density.utils.ci_annotations.canary_analysis import canary_verdict
-
-# Data / state utilities
-from je_load_density.utils.data.db_fixtures import apply_fixture, run_teardown
-from je_load_density.utils.data.factory import build_user, build_user_pool
-from je_load_density.utils.data.pii_anonymizer import (
-    find_pii,
-    scrub as pii_scrub,
-    scrub_string as pii_scrub_string,
-)
-
-# DX / tooling
-from je_load_density.utils.dx.i18n import (
-    available_locales,
-    get_current_locale,
-    t as translate,
-)
-from je_load_density.utils.dx.leak_detector import (
-    detect_growing_allocations,
-    start_leak_detector,
-    stop_leak_detector,
-)
-from je_load_density.utils.dx.profiler import memory_snapshot, profile_call
-from je_load_density.utils.dx.repl import start_repl
-
-# Governance
-from je_load_density.utils.governance.audit_log import (
-    append_audit_entry,
-    read_audit_log,
-)
-from je_load_density.utils.governance.run_tagging import (
-    list_tags,
-    search_runs_by_tag,
-    tag_run,
-)
-from je_load_density.utils.governance.share_link import (
-    issue_share_link,
-    verify_share_link,
-)
-from je_load_density.utils.governance.test_catalog import index_catalog, search_catalog
-
-# Reports (additional)
-from je_load_density.utils.generate_report.generate_cost_report import (
-    estimate_run_cost,
-    generate_cost_report,
-)
-from je_load_density.utils.generate_report.generate_cyclonedx_report import (
-    generate_cyclonedx_report,
-)
-from je_load_density.utils.generate_report.generate_excel_report import (
-    generate_excel_report,
-)
-from je_load_density.utils.generate_report.generate_sarif_report import (
-    generate_sarif_report,
-)
-from je_load_density.utils.generate_report.generate_service_map import (
-    build_service_map,
-    generate_service_map,
-)
-
-# Recording (additional)
-from je_load_density.utils.recording.cdp_capture import (
-    capture_cdp_session,
-    capture_cdp_to_har,
-    discover_targets as cdp_discover_targets,
-)
-
-# Security: extended attack toolkits
-from je_load_density.utils.security.graphql_checks import (
-    build_alias_batching_attack,
-    build_depth_attack,
-    build_introspection_payload,
-    graphql_attack_pack,
-)
-from je_load_density.utils.security.jwt_attacks import (
-    craft_alg_confusion_token,
-    craft_alg_none_token,
-    craft_attack_pack as craft_jwt_attack_pack,
-    craft_expired_token,
-    craft_kid_traversal_token,
-)
-from je_load_density.utils.security.rate_limit_probe import probe_rate_limit
-from je_load_density.utils.security.smuggling_checks import (
-    build_cl_te,
-    build_te_cl,
-    build_te_te,
-    smuggling_attack_pack,
-)
-from je_load_density.utils.security.ssrf_checks import (
-    build_ssrf_targets,
-    find_metadata_leak,
-    render_ssrf_tasks,
-)
-
-# Tracing exporters
-
-# Auth
-from je_load_density.utils.auth.aws_sigv4 import sign_aws_request
-from je_load_density.utils.auth.jwt_signer import decode_jwt, sign_jwt
-from je_load_density.utils.auth.oauth2 import (
-    OAuth2Client,
-    fetch_client_credentials_token,
-    fetch_password_token,
-    refresh_token,
-)
+_EXPORTS = {
+    "AsyncRunHandle": ("je_load_density.engine.asyncio_engine", "AsyncRunHandle"),
+    "AdaptiveRetryPolicy": ("je_load_density.utils.reliability.adaptive_retry", "AdaptiveRetryPolicy"),
+    "AutoTuner": ("je_load_density.utils.ai.auto_tune", "AutoTuner"),
+    "CircuitOpenError": ("je_load_density.utils.reliability.failure_budget", "CircuitOpenError"),
+    "FailureBudget": ("je_load_density.utils.reliability.failure_budget", "FailureBudget"),
+    "FsmRunner": ("je_load_density.utils.scenario.fsm", "FsmRunner"),
+    "NetworkConditioner": ("je_load_density.utils.reliability.network_conditioner", "NetworkConditioner"),
+    "OAuth2Client": ("je_load_density.utils.auth.oauth2", "OAuth2Client"),
+    "ProcessSupervisor": ("je_load_density.utils.reliability.process_supervisor", "ProcessSupervisor"),
+    "RpsThrottle": ("je_load_density.utils.throttle.rps_throttle", "RpsThrottle"),
+    "SequentialTaskSet": ("locust", "SequentialTaskSet"),
+    "SoakShape": ("je_load_density.utils.load_shapes.shapes", "SoakShape"),
+    "SpikeShape": ("je_load_density.utils.load_shapes.shapes", "SpikeShape"),
+    "StagesShape": ("je_load_density.utils.load_shapes.shapes", "StagesShape"),
+    "TaskSet": ("locust", "TaskSet"),
+    "action_json_schema": ("je_load_density.utils.schema.action_schema", "action_json_schema"),
+    "add_command_to_executor": ("je_load_density.utils.executor.action_executor", "add_command_to_executor"),
+    "append_audit_entry": ("je_load_density.utils.governance.audit_log", "append_audit_entry"),
+    "apply_fixture": ("je_load_density.utils.data.db_fixtures", "apply_fixture"),
+    "assert_sla": ("je_load_density.utils.sla.sla_gates", "assert_sla"),
+    "available_locales": ("je_load_density.utils.dx.i18n", "available_locales"),
+    "build_alias_batching_attack": ("je_load_density.utils.security.graphql_checks", "build_alias_batching_attack"),
+    "build_cl_te": ("je_load_density.utils.security.smuggling_checks", "build_cl_te"),
+    "build_depth_attack": ("je_load_density.utils.security.graphql_checks", "build_depth_attack"),
+    "build_gitlab_mr_note": ("je_load_density.utils.notifier.gitlab", "build_gitlab_mr_note"),
+    "build_introspection_payload": ("je_load_density.utils.security.graphql_checks", "build_introspection_payload"),
+    "build_load_shape": ("je_load_density.utils.load_shapes.shapes", "build_load_shape"),
+    "build_opsgenie_alert": ("je_load_density.utils.notifier.opsgenie", "build_opsgenie_alert"),
+    "build_pagerduty_event": ("je_load_density.utils.notifier.pagerduty", "build_pagerduty_event"),
+    "build_root_cause_prompt": ("je_load_density.utils.ai.root_cause", "build_root_cause_prompt"),
+    "build_service_map": ("je_load_density.utils.generate_report.generate_service_map", "build_service_map"),
+    "build_slack_summary": ("je_load_density.utils.notifier.slack", "build_slack_summary"),
+    "build_ssrf_targets": ("je_load_density.utils.security.ssrf_checks", "build_ssrf_targets"),
+    "build_summary": ("je_load_density.utils.generate_report.generate_summary_report", "build_summary"),
+    "build_te_cl": ("je_load_density.utils.security.smuggling_checks", "build_te_cl"),
+    "build_te_te": ("je_load_density.utils.security.smuggling_checks", "build_te_te"),
+    "build_teams_summary": ("je_load_density.utils.notifier.teams", "build_teams_summary"),
+    "build_user": ("je_load_density.utils.data.factory", "build_user"),
+    "build_user_pool": ("je_load_density.utils.data.factory", "build_user_pool"),
+    "calibrate_sla": ("je_load_density.utils.ai.auto_baseline", "calibrate_sla"),
+    "callback_executor": ("je_load_density.utils.callback.callback_function_executor", "callback_executor"),
+    "canary_verdict": ("je_load_density.utils.ci_annotations.canary_analysis", "canary_verdict"),
+    "capture_cdp_session": ("je_load_density.utils.recording.cdp_capture", "capture_cdp_session"),
+    "capture_cdp_to_har": ("je_load_density.utils.recording.cdp_capture", "capture_cdp_to_har"),
+    "cdp_discover_targets": ("je_load_density.utils.recording.cdp_capture", "discover_targets"),
+    "chaos_apply_manifest": ("je_load_density.utils.chaos.chaos_mesh", "apply_manifest"),
+    "chaos_build_network_delay": ("je_load_density.utils.chaos.chaos_mesh", "build_network_delay"),
+    "chaos_delete_manifest": ("je_load_density.utils.chaos.chaos_mesh", "delete_manifest"),
+    "check_broken_object_level_auth": ("je_load_density.utils.security.owasp_checks", "check_broken_object_level_auth"),
+    "check_excessive_data_exposure": ("je_load_density.utils.security.owasp_checks", "check_excessive_data_exposure"),
+    "check_security_headers": ("je_load_density.utils.security.owasp_checks", "check_security_headers"),
+    "check_sensitive_token_leak": ("je_load_density.utils.security.owasp_checks", "check_sensitive_token_leak"),
+    "classify_error": ("je_load_density.utils.reliability.adaptive_retry", "classify_error"),
+    "cluster_errors": ("je_load_density.utils.regression.error_clustering", "cluster_errors"),
+    "craft_alg_confusion_token": ("je_load_density.utils.security.jwt_attacks", "craft_alg_confusion_token"),
+    "craft_alg_none_token": ("je_load_density.utils.security.jwt_attacks", "craft_alg_none_token"),
+    "craft_expired_token": ("je_load_density.utils.security.jwt_attacks", "craft_expired_token"),
+    "craft_jwt_attack_pack": ("je_load_density.utils.security.jwt_attacks", "craft_attack_pack"),
+    "craft_kid_traversal_token": ("je_load_density.utils.security.jwt_attacks", "craft_kid_traversal_token"),
+    "create_env": ("je_load_density.wrapper.create_locust_env.create_locust_env", "create_env"),
+    "create_project_dir": ("je_load_density.utils.project.create_project_structure", "create_project_dir"),
+    "curl_to_task": ("je_load_density.utils.recording.curl_importer", "curl_to_task"),
+    "decode_jwt": ("je_load_density.utils.auth.jwt_signer", "decode_jwt"),
+    "detect_growing_allocations": ("je_load_density.utils.dx.leak_detector", "detect_growing_allocations"),
+    "diff_runs": ("je_load_density.utils.regression.diff", "diff_runs"),
+    "emit_github_annotations": ("je_load_density.utils.ci_annotations.github_actions", "emit_github_annotations"),
+    "estimate_run_cost": ("je_load_density.utils.generate_report.generate_cost_report", "estimate_run_cost"),
+    "evaluate_sla": ("je_load_density.utils.sla.sla_gates", "evaluate_sla"),
+    "execute_action": ("je_load_density.utils.executor.action_executor", "execute_action"),
+    "execute_files": ("je_load_density.utils.executor.action_executor", "execute_files"),
+    "executor": ("je_load_density.utils.executor.action_executor", "executor"),
+    "expand_task_fuzz": ("je_load_density.utils.security.fuzz", "expand_task_fuzz"),
+    "export_schema": ("je_load_density.utils.schema.action_schema", "export_schema"),
+    "extract_field": ("je_load_density.utils.graphql.graphql_task", "extract_field"),
+    "fetch_client_credentials_token": ("je_load_density.utils.auth.oauth2", "fetch_client_credentials_token"),
+    "fetch_password_token": ("je_load_density.utils.auth.oauth2", "fetch_password_token"),
+    "fetch_run_records": ("je_load_density.utils.test_record.sqlite_persistence", "fetch_run_records"),
+    "find_breaking_point": ("je_load_density.utils.ai.smart_shape", "find_breaking_point"),
+    "find_metadata_leak": ("je_load_density.utils.security.ssrf_checks", "find_metadata_leak"),
+    "find_pii": ("je_load_density.utils.data.pii_anonymizer", "find_pii"),
+    "format_action_document": ("je_load_density.utils.linter.action_formatter", "format_action_document"),
+    "format_action_file": ("je_load_density.utils.linter.action_formatter", "format_action_file"),
+    "format_action_string": ("je_load_density.utils.linter.action_formatter", "format_action_string"),
+    "format_github_annotation": ("je_load_density.utils.ci_annotations.github_actions", "format_github_annotation"),
+    "fuzz_query_string": ("je_load_density.utils.security.fuzz", "fuzz_query_string"),
+    "generate_allure_report": (
+        "je_load_density.utils.generate_report.generate_allure_report",
+        "generate_allure_report",
+    ),
+    "generate_chart_report": ("je_load_density.utils.generate_report.generate_chart_report", "generate_chart_report"),
+    "generate_cost_report": ("je_load_density.utils.generate_report.generate_cost_report", "generate_cost_report"),
+    "generate_csv_report": ("je_load_density.utils.generate_report.generate_csv_report", "generate_csv_report"),
+    "generate_cyclonedx_report": (
+        "je_load_density.utils.generate_report.generate_cyclonedx_report",
+        "generate_cyclonedx_report",
+    ),
+    "generate_excel_report": ("je_load_density.utils.generate_report.generate_excel_report", "generate_excel_report"),
+    "generate_from_curls": ("je_load_density.utils.action_generator.generate", "generate_from_curls"),
+    "generate_from_openapi": ("je_load_density.utils.action_generator.generate", "generate_from_openapi"),
+    "generate_histogram_report": (
+        "je_load_density.utils.generate_report.generate_histogram_report",
+        "generate_histogram_report",
+    ),
+    "generate_html": ("je_load_density.utils.generate_report.generate_html_report", "generate_html"),
+    "generate_html_report": ("je_load_density.utils.generate_report.generate_html_report", "generate_html_report"),
+    "generate_json": ("je_load_density.utils.generate_report.generate_json_report", "generate_json"),
+    "generate_json_report": ("je_load_density.utils.generate_report.generate_json_report", "generate_json_report"),
+    "generate_junit_report": ("je_load_density.utils.generate_report.generate_junit_report", "generate_junit_report"),
+    "generate_pdf_report": ("je_load_density.utils.generate_report.generate_pdf_report", "generate_pdf_report"),
+    "generate_sarif_report": ("je_load_density.utils.generate_report.generate_sarif_report", "generate_sarif_report"),
+    "generate_service_map": ("je_load_density.utils.generate_report.generate_service_map", "generate_service_map"),
+    "generate_summary_report": (
+        "je_load_density.utils.generate_report.generate_summary_report",
+        "generate_summary_report",
+    ),
+    "generate_xml": ("je_load_density.utils.generate_report.generate_xml_report", "generate_xml"),
+    "generate_xml_report": ("je_load_density.utils.generate_report.generate_xml_report", "generate_xml_report"),
+    "get_current_locale": ("je_load_density.utils.dx.i18n", "get_current_locale"),
+    "get_dir_files_as_list": ("je_load_density.utils.file_process.get_dir_file_list", "get_dir_files_as_list"),
+    "get_throttle": ("je_load_density.utils.throttle.rps_throttle", "get_throttle"),
+    "graphql_attack_pack": ("je_load_density.utils.security.graphql_checks", "graphql_attack_pack"),
+    "graphql_to_http_task": ("je_load_density.utils.graphql.graphql_task", "graphql_to_http_task"),
+    "har_to_action_json": ("je_load_density.utils.recording.har_importer", "har_to_action_json"),
+    "har_to_tasks": ("je_load_density.utils.recording.har_importer", "har_to_tasks"),
+    "index_catalog": ("je_load_density.utils.governance.test_catalog", "index_catalog"),
+    "install_failure_budget": ("je_load_density.utils.reliability.failure_budget", "install_failure_budget"),
+    "install_network_conditioner": (
+        "je_load_density.utils.reliability.network_conditioner",
+        "install_network_conditioner",
+    ),
+    "invoke_lambda_workers": ("je_load_density.cloud.aws_lambda", "invoke_lambda_workers"),
+    "issue_share_link": ("je_load_density.utils.governance.share_link", "issue_share_link"),
+    "jar_for_user": ("je_load_density.utils.scenario.cookie_jar", "jar_for_user"),
+    "jmeter_to_action_json": ("je_load_density.utils.recording.jmeter_importer", "jmeter_to_action_json"),
+    "jmeter_to_tasks": ("je_load_density.utils.recording.jmeter_importer", "jmeter_to_tasks"),
+    "k6_script_to_action_json": ("je_load_density.utils.recording.k6_importer", "k6_script_to_action_json"),
+    "k6_script_to_tasks": ("je_load_density.utils.recording.k6_importer", "k6_script_to_tasks"),
+    "lambda_worker_handler": ("je_load_density.cloud.aws_lambda", "lambda_worker_handler"),
+    "launch_aci_workers": ("je_load_density.cloud.azure_aci", "launch_aci_workers"),
+    "launch_fargate_workers": ("je_load_density.cloud.aws_fargate", "launch_fargate_workers"),
+    "lint_action": ("je_load_density.utils.linter.action_linter", "lint_action"),
+    "lint_action_file": ("je_load_density.utils.linter.action_linter", "lint_action_file"),
+    "list_runs": ("je_load_density.utils.test_record.sqlite_persistence", "list_runs"),
+    "list_tags": ("je_load_density.utils.governance.run_tagging", "list_tags"),
+    "load_har": ("je_load_density.utils.recording.har_importer", "load_har"),
+    "load_jmeter_jmx": ("je_load_density.utils.recording.jmeter_importer", "load_jmeter_jmx"),
+    "load_k6_script": ("je_load_density.utils.recording.k6_importer", "load_k6_script"),
+    "load_openapi": ("je_load_density.utils.recording.openapi_importer", "load_openapi"),
+    "load_postman_collection": ("je_load_density.utils.recording.postman_importer", "load_postman_collection"),
+    "locust_wrapper_proxy": ("je_load_density.wrapper.proxy.proxy_user", "locust_wrapper_proxy"),
+    "memory_snapshot": ("je_load_density.utils.dx.profiler", "memory_snapshot"),
+    "merge_actions": ("je_load_density.utils.action_generator.generate", "merge_actions"),
+    "mutate_json": ("je_load_density.utils.security.fuzz", "mutate_json"),
+    "mutate_string": ("je_load_density.utils.security.fuzz", "mutate_string"),
+    "openapi_to_action_json": ("je_load_density.utils.recording.openapi_importer", "openapi_to_action_json"),
+    "openapi_to_tasks": ("je_load_density.utils.recording.openapi_importer", "openapi_to_tasks"),
+    "parameter_resolver": ("je_load_density.utils.parameterization", "parameter_resolver"),
+    "persist_records": ("je_load_density.utils.test_record.sqlite_persistence", "persist_records"),
+    "pii_scrub": ("je_load_density.utils.data.pii_anonymizer", "scrub"),
+    "pii_scrub_string": ("je_load_density.utils.data.pii_anonymizer", "scrub_string"),
+    "post_gitlab_mr_summary": ("je_load_density.utils.notifier.gitlab", "post_gitlab_mr_summary"),
+    "post_opsgenie_alert": ("je_load_density.utils.notifier.opsgenie", "post_opsgenie_alert"),
+    "post_pagerduty_event": ("je_load_density.utils.notifier.pagerduty", "post_pagerduty_event"),
+    "post_slack_summary": ("je_load_density.utils.notifier.slack", "post_slack_summary"),
+    "post_teams_summary": ("je_load_density.utils.notifier.teams", "post_teams_summary"),
+    "postman_to_action_json": ("je_load_density.utils.recording.postman_importer", "postman_to_action_json"),
+    "postman_to_tasks": ("je_load_density.utils.recording.postman_importer", "postman_to_tasks"),
+    "prepare_env": ("je_load_density.wrapper.create_locust_env.create_locust_env", "prepare_env"),
+    "probe_rate_limit": ("je_load_density.utils.security.rate_limit_probe", "probe_rate_limit"),
+    "profile_call": ("je_load_density.utils.dx.profiler", "profile_call"),
+    "read_action_json": ("je_load_density.utils.json.json_file.json_file", "read_action_json"),
+    "read_action_toml": ("je_load_density.utils.json.json_file.toml_file", "read_action_toml"),
+    "read_action_yaml": ("je_load_density.utils.json.json_file.yaml_file", "read_action_yaml"),
+    "read_audit_log": ("je_load_density.utils.governance.audit_log", "read_audit_log"),
+    "refresh_token": ("je_load_density.utils.auth.oauth2", "refresh_token"),
+    "register_csv_source": ("je_load_density.utils.parameterization", "register_csv_source"),
+    "register_csv_sources": ("je_load_density.utils.parameterization", "register_csv_sources"),
+    "register_db_source": ("je_load_density.utils.parameterization", "register_db_source"),
+    "register_db_sources": ("je_load_density.utils.parameterization", "register_db_sources"),
+    "register_variable": ("je_load_density.utils.parameterization", "register_variable"),
+    "get_resolver": ("je_load_density.utils.parameterization", "get_resolver"),
+    "use_resolver": ("je_load_density.utils.parameterization", "use_resolver"),
+    "register_session_variable": ("je_load_density.utils.parameterization", "register_session_variable"),
+    "register_variables": ("je_load_density.utils.parameterization", "register_variables"),
+    "render_prompt_text": ("je_load_density.utils.ai.root_cause", "render_prompt_text"),
+    "render_ssrf_tasks": ("je_load_density.utils.security.ssrf_checks", "render_ssrf_tasks"),
+    "request_hook": ("je_load_density.wrapper.event.request_hook", "request_hook"),
+    "reset_all_jars": ("je_load_density.utils.scenario.cookie_jar", "reset_all_jars"),
+    "reset_throttles": ("je_load_density.utils.throttle.rps_throttle", "reset_throttles"),
+    "reset_user_jar": ("je_load_density.utils.scenario.cookie_jar", "reset_user_jar"),
+    "resolve": ("je_load_density.utils.parameterization", "resolve"),
+    "run_async_load": ("je_load_density.engine.asyncio_engine", "run_async_load"),
+    "run_cloud_run_job": ("je_load_density.cloud.gcp_cloud_run", "run_cloud_run_job"),
+    "run_owasp_checks": ("je_load_density.utils.security.owasp_checks", "run_owasp_checks"),
+    "run_teardown": ("je_load_density.utils.data.db_fixtures", "run_teardown"),
+    "run_with_retry": ("je_load_density.utils.reliability.adaptive_retry", "run_with_retry"),
+    "search_catalog": ("je_load_density.utils.governance.test_catalog", "search_catalog"),
+    "search_runs_by_tag": ("je_load_density.utils.governance.run_tagging", "search_runs_by_tag"),
+    "sign_aws_request": ("je_load_density.utils.auth.aws_sigv4", "sign_aws_request"),
+    "sign_jwt": ("je_load_density.utils.auth.jwt_signer", "sign_jwt"),
+    "smuggling_attack_pack": ("je_load_density.utils.security.smuggling_checks", "smuggling_attack_pack"),
+    "snapshot_metrics": ("je_load_density.utils.dashboard.live_dashboard", "snapshot_metrics"),
+    "start_dashboard": ("je_load_density.utils.dashboard.live_dashboard", "start_dashboard"),
+    "start_datadog_apm_exporter": ("je_load_density.utils.metrics.datadog_apm_exporter", "start_datadog_apm_exporter"),
+    "start_influxdb_sink": ("je_load_density.utils.metrics", "start_influxdb_sink"),
+    "start_leak_detector": ("je_load_density.utils.dx.leak_detector", "start_leak_detector"),
+    "start_load_density_socket_server": (
+        "je_load_density.utils.socket_server.load_density_socket_server",
+        "start_load_density_socket_server",
+    ),
+    "start_opentelemetry_exporter": ("je_load_density.utils.metrics", "start_opentelemetry_exporter"),
+    "start_opentelemetry_tracing_exporter": (
+        "je_load_density.utils.metrics.opentelemetry_tracing_exporter",
+        "start_opentelemetry_tracing_exporter",
+    ),
+    "start_prometheus_exporter": ("je_load_density.utils.metrics", "start_prometheus_exporter"),
+    "start_repl": ("je_load_density.utils.dx.repl", "start_repl"),
+    "start_statsd_sink": ("je_load_density.utils.metrics.statsd_sink", "start_statsd_sink"),
+    "start_stub_server": ("je_load_density.utils.stub_server.stub_server", "start_stub_server"),
+    "start_test": ("je_load_density.engine.entrypoints", "start_test"),
+    "stop_dashboard": ("je_load_density.utils.dashboard.live_dashboard", "stop_dashboard"),
+    "stop_datadog_apm_exporter": ("je_load_density.utils.metrics.datadog_apm_exporter", "stop_datadog_apm_exporter"),
+    "stop_influxdb_sink": ("je_load_density.utils.metrics", "stop_influxdb_sink"),
+    "stop_leak_detector": ("je_load_density.utils.dx.leak_detector", "stop_leak_detector"),
+    "stop_opentelemetry_exporter": ("je_load_density.utils.metrics", "stop_opentelemetry_exporter"),
+    "stop_opentelemetry_tracing_exporter": (
+        "je_load_density.utils.metrics.opentelemetry_tracing_exporter",
+        "stop_opentelemetry_tracing_exporter",
+    ),
+    "stop_prometheus_exporter": ("je_load_density.utils.metrics", "stop_prometheus_exporter"),
+    "stop_statsd_sink": ("je_load_density.utils.metrics.statsd_sink", "stop_statsd_sink"),
+    "stop_stub_server": ("je_load_density.utils.stub_server.stub_server", "stop_stub_server"),
+    "summarise_records": ("je_load_density.utils.regression.diff", "summarise_records"),
+    "tag_run": ("je_load_density.utils.governance.run_tagging", "tag_run"),
+    "task": ("locust", "task"),
+    "test_record_instance": ("je_load_density.utils.test_record.test_record_class", "test_record_instance"),
+    "toxiproxy_add_toxic": ("je_load_density.utils.chaos.toxiproxy", "add_toxic"),
+    "toxiproxy_create_proxy": ("je_load_density.utils.chaos.toxiproxy", "create_proxy"),
+    "toxiproxy_install_bandwidth": ("je_load_density.utils.chaos.toxiproxy", "install_bandwidth"),
+    "toxiproxy_install_latency": ("je_load_density.utils.chaos.toxiproxy", "install_latency"),
+    "toxiproxy_list_proxies": ("je_load_density.utils.chaos.toxiproxy", "list_proxies"),
+    "toxiproxy_remove_proxies": ("je_load_density.utils.chaos.toxiproxy", "remove_proxies"),
+    "toxiproxy_remove_toxic": ("je_load_density.utils.chaos.toxiproxy", "remove_toxic"),
+    "toxiproxy_reset_all": ("je_load_density.utils.chaos.toxiproxy", "reset_all"),
+    "translate": ("je_load_density.utils.dx.i18n", "t"),
+    "trend_runs": ("je_load_density.utils.regression.multi_run_trend", "trend_runs"),
+    "uninstall_failure_budget": ("je_load_density.utils.reliability.failure_budget", "uninstall_failure_budget"),
+    "uninstall_network_conditioner": (
+        "je_load_density.utils.reliability.network_conditioner",
+        "uninstall_network_conditioner",
+    ),
+    "verify_share_link": ("je_load_density.utils.governance.share_link", "verify_share_link"),
+    "with_watchdog": ("je_load_density.utils.reliability.process_supervisor", "with_watchdog"),
+    "write_action_toml": ("je_load_density.utils.json.json_file.toml_file", "write_action_toml"),
+    "write_action_yaml": ("je_load_density.utils.json.json_file.yaml_file", "write_action_yaml"),
+}
 
 __all__ = [
-    "create_env", "start_test",
+    "AsyncRunHandle",
+    "create_env",
+    "start_test",
     "locust_wrapper_proxy",
     "prepare_env",
     "test_record_instance",
-    "execute_action", "execute_files", "executor", "add_command_to_executor",
+    "execute_action",
+    "execute_files",
+    "executor",
+    "add_command_to_executor",
     "get_dir_files_as_list",
-    "generate_html", "generate_html_report",
-    "generate_json", "generate_json_report",
-    "generate_xml", "generate_xml_report",
-    "generate_csv_report", "generate_junit_report", "generate_summary_report",
+    "generate_html",
+    "generate_html_report",
+    "generate_json",
+    "generate_json_report",
+    "generate_xml",
+    "generate_xml_report",
+    "generate_csv_report",
+    "generate_junit_report",
+    "generate_summary_report",
     "generate_chart_report",
     "build_summary",
     "read_action_json",
     "start_load_density_socket_server",
-    "SequentialTaskSet", "task", "TaskSet",
-    "callback_executor", "create_project_dir",
-    "parameter_resolver", "resolve",
-    "register_variable", "register_variables",
-    "register_csv_source", "register_csv_sources",
-    "register_db_source", "register_db_sources",
-    "har_to_action_json", "har_to_tasks", "load_har",
-    "postman_to_action_json", "postman_to_tasks", "load_postman_collection",
-    "openapi_to_action_json", "openapi_to_tasks", "load_openapi",
+    "SequentialTaskSet",
+    "task",
+    "TaskSet",
+    "callback_executor",
+    "create_project_dir",
+    "parameter_resolver",
+    "resolve",
+    "register_variable",
+    "get_resolver",
+    "use_resolver",
+    "register_session_variable",
+    "register_variables",
+    "register_csv_source",
+    "register_csv_sources",
+    "register_db_source",
+    "register_db_sources",
+    "har_to_action_json",
+    "har_to_tasks",
+    "load_har",
+    "postman_to_action_json",
+    "postman_to_tasks",
+    "load_postman_collection",
+    "openapi_to_action_json",
+    "openapi_to_tasks",
+    "load_openapi",
     "curl_to_task",
-    "persist_records", "list_runs", "fetch_run_records",
-    "start_prometheus_exporter", "stop_prometheus_exporter",
-    "start_influxdb_sink", "stop_influxdb_sink",
-    "start_opentelemetry_exporter", "stop_opentelemetry_exporter",
-    "lint_action", "lint_action_file",
-    "action_json_schema", "export_schema",
-    "emit_github_annotations", "format_github_annotation",
-    "evaluate_sla", "assert_sla",
-    "diff_runs", "summarise_records",
-    "SoakShape", "SpikeShape", "StagesShape", "build_load_shape",
-    "graphql_to_http_task", "extract_field",
-    "RpsThrottle", "get_throttle", "reset_throttles",
-    "AdaptiveRetryPolicy", "classify_error", "run_with_retry",
-    "FailureBudget", "CircuitOpenError",
-    "install_failure_budget", "uninstall_failure_budget",
+    "persist_records",
+    "list_runs",
+    "fetch_run_records",
+    "start_prometheus_exporter",
+    "stop_prometheus_exporter",
+    "start_influxdb_sink",
+    "stop_influxdb_sink",
+    "start_opentelemetry_exporter",
+    "stop_opentelemetry_exporter",
+    "lint_action",
+    "lint_action_file",
+    "action_json_schema",
+    "export_schema",
+    "emit_github_annotations",
+    "format_github_annotation",
+    "evaluate_sla",
+    "assert_sla",
+    "diff_runs",
+    "summarise_records",
+    "SoakShape",
+    "SpikeShape",
+    "StagesShape",
+    "build_load_shape",
+    "graphql_to_http_task",
+    "extract_field",
+    "RpsThrottle",
+    "get_throttle",
+    "reset_throttles",
+    "AdaptiveRetryPolicy",
+    "classify_error",
+    "run_with_retry",
+    "FailureBudget",
+    "CircuitOpenError",
+    "install_failure_budget",
+    "uninstall_failure_budget",
     "NetworkConditioner",
-    "install_network_conditioner", "uninstall_network_conditioner",
-    "ProcessSupervisor", "with_watchdog",
-    "start_dashboard", "stop_dashboard", "snapshot_metrics",
-    "post_slack_summary", "build_slack_summary",
-    "post_teams_summary", "build_teams_summary",
-    "start_statsd_sink", "stop_statsd_sink",
-    "jmeter_to_action_json", "jmeter_to_tasks", "load_jmeter_jmx",
-    "k6_script_to_action_json", "k6_script_to_tasks", "load_k6_script",
+    "install_network_conditioner",
+    "uninstall_network_conditioner",
+    "ProcessSupervisor",
+    "with_watchdog",
+    "start_dashboard",
+    "stop_dashboard",
+    "snapshot_metrics",
+    "post_slack_summary",
+    "build_slack_summary",
+    "post_teams_summary",
+    "build_teams_summary",
+    "start_statsd_sink",
+    "stop_statsd_sink",
+    "jmeter_to_action_json",
+    "jmeter_to_tasks",
+    "load_jmeter_jmx",
+    "k6_script_to_action_json",
+    "k6_script_to_tasks",
+    "load_k6_script",
     "OAuth2Client",
-    "fetch_client_credentials_token", "fetch_password_token", "refresh_token",
-    "sign_jwt", "decode_jwt", "sign_aws_request",
+    "fetch_client_credentials_token",
+    "fetch_password_token",
+    "refresh_token",
+    "sign_jwt",
+    "decode_jwt",
+    "sign_aws_request",
     # New report formats
-    "generate_histogram_report", "generate_pdf_report", "generate_allure_report",
+    "generate_histogram_report",
+    "generate_pdf_report",
+    "generate_allure_report",
     # YAML / TOML loaders
-    "read_action_yaml", "write_action_yaml",
-    "read_action_toml", "write_action_toml",
+    "read_action_yaml",
+    "write_action_yaml",
+    "read_action_toml",
+    "write_action_toml",
     # Tracing & APM exporters
-    "start_opentelemetry_tracing_exporter", "stop_opentelemetry_tracing_exporter",
-    "start_datadog_apm_exporter", "stop_datadog_apm_exporter",
+    "start_opentelemetry_tracing_exporter",
+    "stop_opentelemetry_tracing_exporter",
+    "start_datadog_apm_exporter",
+    "stop_datadog_apm_exporter",
     # Notifier
-    "post_pagerduty_event", "build_pagerduty_event",
-    "post_opsgenie_alert", "build_opsgenie_alert",
-    "post_gitlab_mr_summary", "build_gitlab_mr_note",
+    "post_pagerduty_event",
+    "build_pagerduty_event",
+    "post_opsgenie_alert",
+    "build_opsgenie_alert",
+    "post_gitlab_mr_summary",
+    "build_gitlab_mr_note",
     # Trend & error clustering
-    "trend_runs", "cluster_errors",
+    "trend_runs",
+    "cluster_errors",
     # DX
-    "format_action_document", "format_action_file", "format_action_string",
-    "generate_from_openapi", "generate_from_curls", "merge_actions",
+    "format_action_document",
+    "format_action_file",
+    "format_action_string",
+    "generate_from_openapi",
+    "generate_from_curls",
+    "merge_actions",
     # Scenario
-    "FsmRunner", "jar_for_user", "reset_user_jar", "reset_all_jars",
+    "FsmRunner",
+    "jar_for_user",
+    "reset_user_jar",
+    "reset_all_jars",
     # Stub server
-    "start_stub_server", "stop_stub_server",
+    "start_stub_server",
+    "stop_stub_server",
     # Security
-    "mutate_string", "mutate_json", "fuzz_query_string", "expand_task_fuzz",
+    "mutate_string",
+    "mutate_json",
+    "fuzz_query_string",
+    "expand_task_fuzz",
     "run_owasp_checks",
-    "check_broken_object_level_auth", "check_excessive_data_exposure",
-    "check_security_headers", "check_sensitive_token_leak",
+    "check_broken_object_level_auth",
+    "check_excessive_data_exposure",
+    "check_security_headers",
+    "check_sensitive_token_leak",
     # Chaos
-    "toxiproxy_create_proxy", "toxiproxy_list_proxies",
-    "toxiproxy_add_toxic", "toxiproxy_remove_toxic",
-    "toxiproxy_install_latency", "toxiproxy_install_bandwidth",
-    "toxiproxy_reset_all", "toxiproxy_remove_proxies",
-    "chaos_apply_manifest", "chaos_delete_manifest", "chaos_build_network_delay",
+    "toxiproxy_create_proxy",
+    "toxiproxy_list_proxies",
+    "toxiproxy_add_toxic",
+    "toxiproxy_remove_toxic",
+    "toxiproxy_install_latency",
+    "toxiproxy_install_bandwidth",
+    "toxiproxy_reset_all",
+    "toxiproxy_remove_proxies",
+    "chaos_apply_manifest",
+    "chaos_delete_manifest",
+    "chaos_build_network_delay",
     # Asyncio engine
     "run_async_load",
     # AI
-    "AutoTuner", "build_root_cause_prompt", "render_prompt_text",
-    "find_breaking_point", "calibrate_sla",
+    "AutoTuner",
+    "build_root_cause_prompt",
+    "render_prompt_text",
+    "find_breaking_point",
+    "calibrate_sla",
     # Cloud workers
-    "invoke_lambda_workers", "lambda_worker_handler",
-    "launch_fargate_workers", "launch_aci_workers", "run_cloud_run_job",
+    "invoke_lambda_workers",
+    "lambda_worker_handler",
+    "launch_fargate_workers",
+    "launch_aci_workers",
+    "run_cloud_run_job",
     # CI / canary
     "canary_verdict",
     # Data / state
-    "apply_fixture", "run_teardown",
-    "build_user", "build_user_pool",
-    "pii_scrub", "pii_scrub_string", "find_pii",
+    "apply_fixture",
+    "run_teardown",
+    "build_user",
+    "build_user_pool",
+    "pii_scrub",
+    "pii_scrub_string",
+    "find_pii",
     # DX
-    "start_repl", "profile_call", "memory_snapshot",
-    "start_leak_detector", "stop_leak_detector", "detect_growing_allocations",
-    "translate", "available_locales", "get_current_locale",
+    "start_repl",
+    "profile_call",
+    "memory_snapshot",
+    "start_leak_detector",
+    "stop_leak_detector",
+    "detect_growing_allocations",
+    "translate",
+    "available_locales",
+    "get_current_locale",
     # Governance
-    "append_audit_entry", "read_audit_log",
-    "tag_run", "list_tags", "search_runs_by_tag",
-    "issue_share_link", "verify_share_link",
-    "index_catalog", "search_catalog",
+    "append_audit_entry",
+    "read_audit_log",
+    "tag_run",
+    "list_tags",
+    "search_runs_by_tag",
+    "issue_share_link",
+    "verify_share_link",
+    "index_catalog",
+    "search_catalog",
     # Reports (additional)
-    "generate_excel_report", "generate_sarif_report", "generate_cyclonedx_report",
-    "generate_service_map", "build_service_map",
-    "generate_cost_report", "estimate_run_cost",
+    "generate_excel_report",
+    "generate_sarif_report",
+    "generate_cyclonedx_report",
+    "generate_service_map",
+    "build_service_map",
+    "generate_cost_report",
+    "estimate_run_cost",
     # Recording (additional)
-    "cdp_discover_targets", "capture_cdp_session", "capture_cdp_to_har",
+    "cdp_discover_targets",
+    "capture_cdp_session",
+    "capture_cdp_to_har",
     # Security: extended
-    "craft_alg_none_token", "craft_alg_confusion_token",
-    "craft_expired_token", "craft_kid_traversal_token",
+    "craft_alg_none_token",
+    "craft_alg_confusion_token",
+    "craft_expired_token",
+    "craft_kid_traversal_token",
     "craft_jwt_attack_pack",
-    "build_introspection_payload", "build_depth_attack",
-    "build_alias_batching_attack", "graphql_attack_pack",
-    "build_ssrf_targets", "render_ssrf_tasks", "find_metadata_leak",
-    "build_cl_te", "build_te_cl", "build_te_te", "smuggling_attack_pack",
+    "build_introspection_payload",
+    "build_depth_attack",
+    "build_alias_batching_attack",
+    "graphql_attack_pack",
+    "build_ssrf_targets",
+    "render_ssrf_tasks",
+    "find_metadata_leak",
+    "build_cl_te",
+    "build_te_cl",
+    "build_te_te",
+    "smuggling_attack_pack",
     "probe_rate_limit",
 ]
+
+
+def __getattr__(name: str):
+    target = _EXPORTS.get(name)
+    if target is None:
+        raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+    module, attribute = target
+    value = getattr(importlib.import_module(module), attribute)
+    if module == "locust":
+        importlib.import_module("je_load_density.wrapper.event.request_hook")
+    globals()[name] = value
+    return value
+
+
+def __dir__() -> list[str]:
+    return sorted(set(globals()) | set(_EXPORTS))

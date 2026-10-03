@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261003-02 | 2026-10-03 | Add isolated runners and canonical worker delivery | #done #async #gui #distributed #parameters #15 #24 #29 | [2026-10](2026-10.md) |
 | U-20261003-01 | 2026-10-03 | Verify extras matrix and resolve quality findings | #done #ci #quality #25 | [2026-10](2026-10.md) |
 | U-20261002-11 | 2026-10-02 | Share percentile bands and redesign live dashboard | #done #charts #ui #26 | [2026-10](2026-10.md) |
 | U-20261002-10 | 2026-10-02 | Monitor worker health and rebalance native load | #done #distributed | [2026-10](2026-10.md) |

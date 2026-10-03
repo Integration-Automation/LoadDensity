@@ -19,10 +19,13 @@ from je_load_density.utils.logging.loggin_instance import load_density_logger
 from je_load_density.utils.parameterization import (
     parameter_resolver,
     register_csv_sources,
+    register_db_sources,
     register_variables,
+    use_resolver,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 from je_load_density.wrapper.user_template._common import request_start_epoch
+from je_load_density.wrapper.user_template.request_executor import _apply_extractors
 
 
 def set_wrapper_async_http_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -30,6 +33,8 @@ def set_wrapper_async_http_user(user_detail_dict: Dict[str, Any], **kwargs) -> t
         register_variables(kwargs["variables"])
     if isinstance(kwargs.get("csv_sources"), list):
         register_csv_sources(kwargs["csv_sources"])
+    if isinstance(kwargs.get("db_sources"), list):
+        register_db_sources(kwargs["db_sources"])
     locust_wrapper_proxy.user_dict.get("async_http_user").configure(user_detail_dict, **kwargs)
     return AsyncHttpUserWrapper
 
@@ -45,6 +50,7 @@ class AsyncHttpUserWrapper(User):
 
     def __init__(self, environment):
         super().__init__(environment)
+        self._parameter_resolver = parameter_resolver.fork()
         self._client = None
 
     def _ensure_client(self):
@@ -95,6 +101,10 @@ class AsyncHttpUserWrapper(User):
         return None
 
     def _do_step(self, raw_task: Dict[str, Any]) -> None:
+        with use_resolver(self._parameter_resolver):
+            self._execute_step(raw_task)
+
+    def _execute_step(self, raw_task: Dict[str, Any]) -> None:
         step = parameter_resolver.resolve(raw_task)
         method = str(step.get("method", "")).lower()
         url = step.get("request_url") or step.get("url")
@@ -111,6 +121,7 @@ class AsyncHttpUserWrapper(User):
             if failure is not None:
                 self._fire(name, start, length, AssertionError(failure))
             else:
+                _apply_extractors(response, step.get("extract") or [])
                 self._fire(name, start, length)
         except Exception as error:
             load_density_logger.debug(f"async_http step failed: {error!r}")

@@ -102,21 +102,9 @@ def faker() -> None:
 
 
 def gui() -> None:
-    os.environ["QT_QPA_PLATFORM"] = "offscreen"
-    from PySide6.QtWidgets import QApplication
+    from gui_probe import run_gui_probe
 
-    from je_load_density.gui.main_window import LoadDensityUI
-
-    application = QApplication.instance() or QApplication([])
-    window = LoadDensityUI()
-    try:
-        window.show()
-        application.processEvents()
-        if not window.isVisible():
-            raise RuntimeError("GUI offscreen launch failed")
-    finally:
-        window.close()
-        application.processEvents()
+    run_gui_probe()
 
 
 def k8s() -> None:

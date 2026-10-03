@@ -5,9 +5,17 @@ Overview
 --------
 
 LoadDensity ships an optional PySide6 graphical front-end. It carries
-the form controls for kicking off a quick HTTP test, a log panel that
-mirrors the framework log, and a live stats panel that polls
-``test_record_instance`` once a second.
+settings on the left and state, Start/Stop, metrics, charts and recent requests
+on the right. Choose a target or action file, Locust/asyncio engine and load
+controls. Each run uses a fresh interpreter; the Qt parent never imports Locust.
+Action files retain their workload and report actions.
+
+Stop requests cooperative cancellation and escalates after three seconds.
+Closing an active window stops the child and joins its QThread. Results remain
+visible after completion/failure. Recent requests retain at most 200 sanitized rows,
+logs retain 500 blocks and existing persisted history remains available.
+The 128 KiB frame limit may retain fewer request rows. Charts receive up to 120
+windows computed from complete child records, independently of the request tail.
 
 Install
 -------
@@ -38,11 +46,10 @@ Launch
 Layout
 ------
 
-* **Test parameter form** — URL, test duration, user count, spawn rate,
-  HTTP method.
-* **Start button** — Launches the load test in a background ``QThread``.
+* **Test parameter form** — Target/action file, engine, duration, users, spawn rate and HTTP method.
+* **Start/Stop** — Launch or cancel a child supervised by a background ``QThread``.
 * **Live stats panel** — Total requests, current rate, average and p95
-  latency, failure count. Refreshes every 1 s.
+  latency, failure count, from child snapshots.
 * **Log panel** — Real-time framework log feed.
 * **Material Design theme** — ``dark_amber.xml`` from ``qt-material``.
 
@@ -74,9 +81,9 @@ Architecture
    * - ``LoadDensityWidget``
      - Form + start button + stats panel + log panel.
    * - ``StatsPanel``
-     - QTimer-driven panel reading ``test_record_instance``.
+     - Receives cumulative run snapshots through GUI-thread signals.
    * - ``LoadDensityGUIThread``
-     - Background ``QThread`` that runs the test without blocking the UI.
+     - Background ``QThread`` supervising an isolated interpreter and bounded JSON frames.
    * - ``InterceptAllFilter``
      - Captures log records into a thread-safe queue.
    * - ``log_message_queue``
