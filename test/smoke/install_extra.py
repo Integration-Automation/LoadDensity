@@ -17,8 +17,8 @@ def main() -> None:
     requirement = str(wheels[0]) + (f"[{extra}]" if extra != "base" else "")
     # pywebpush's http-ece dependency publishes source archives; all other dependencies require wheels.
     # Security audit: CI-built wheel path and regex-validated extra are argv data; no shell evaluates them.
-    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args  # noqa: E501
     subprocess.run(  # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit  # noqa: E501
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-tainted-env-args.dangerous-subprocess-use-tainted-env-args  # noqa: E501
         [sys.executable, "-m", "pip", "install", "--only-binary", ":all:",
                     "--no-binary", "http-ece", requirement],
                    check=True, timeout=600)

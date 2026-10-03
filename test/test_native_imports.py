@@ -73,5 +73,7 @@ else:
     raise AssertionError('host package gate did not refuse os')
 assert 'import_module' not in manager.executor.event_dict, 'public inspection registered an unrestricted module loader'
 """
+    # Security audit: Fixed literal package-gate regression program runs in the current interpreter without a shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     result = subprocess.run([sys.executable, "-c", source], text=True, capture_output=True, timeout=20, check=False)
     assert result.returncode == 0, result.stdout + result.stderr

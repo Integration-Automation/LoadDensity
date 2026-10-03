@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261003-07 | 2026-10-03 | Align security annotations with argument-expression scan locations | #done #quality #security #ci | [2026-10](2026-10.md) |
 | U-20261003-06 | 2026-10-03 | Harden smoke XML and document reviewed Codacy false positives | #done #security #quality #ci | [2026-10](2026-10.md) |
 | U-20261003-05 | 2026-10-03 | Expose the shared worker stop query without private access | #done #quality #async | [2026-10](2026-10.md) |
 | U-20261003-04 | 2026-10-03 | Retain async stop intent through transport cancellation | #done #fix #async #ci | [2026-10](2026-10.md) |
@@ -137,5 +138,5 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-10.md](2026-10.md) | 2026-10 | 29 |
+| [2026-10.md](2026-10.md) | 2026-10 | 30 |
 | [2026-09.md](2026-09.md) | 2026-09 | 45 |

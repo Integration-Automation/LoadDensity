@@ -352,6 +352,8 @@ with use_resolver(ParameterResolver()):
 assert 'locust' not in sys.modules
 assert 'gevent' not in sys.modules
 """
+    # Security audit: Fixed parameter-import regression program runs in the current interpreter without a shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     completed = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=20)
     assert completed.returncode == 0, completed.stderr
 
