@@ -7,6 +7,7 @@ import json
 import socket
 import subprocess  # nosec B404 - the test server is a child process
 import sys
+import tempfile
 import time
 import urllib.request
 
@@ -63,7 +64,8 @@ def _run(tasks, **kwargs):
     # The suite also selects Locust. Exercise actual native I/O in an unpatched
     # interpreter, just like bench and the isolated desktop worker.
     source = """
-import asyncio, json, sys
+import asyncio, faulthandler, json, sys
+faulthandler.dump_traceback_later(8, repeat=True)
 from je_load_density.engine.asyncio_engine import run_async_load
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 options = json.loads(sys.argv[1])
@@ -72,10 +74,31 @@ print(json.dumps({'result': result, 'success': test_record_instance.test_record_
                   'failure': test_record_instance.error_record_list}))
 """
     options = {"tasks": tasks, "users": 2, "duration_seconds": 1.0, **kwargs}
-    completed = subprocess.run([sys.executable, "-c", source, json.dumps(options)],
-                               capture_output=True, text=True, check=False, timeout=20)
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    measured = json.loads(completed.stdout.splitlines()[-1])
+    arguments = [sys.executable, "-c", source, json.dumps(options)]
+    # Locust patches subprocess communication in this parent; regular files avoid
+    # gevent pipe-reader joins while keeping the same native child and timeout.
+    with (
+        tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output,
+        tempfile.TemporaryFile(mode="w+", encoding="utf-8") as errors,
+    ):
+        child = subprocess.Popen(arguments, stdout=output, stderr=errors, text=True)
+        try:
+            deadline = time.monotonic() + 20
+            while child.poll() is None and time.monotonic() < deadline:
+                time.sleep(0.02)
+            if child.poll() is None:
+                output.seek(0)
+                errors.seek(0)
+                raise subprocess.TimeoutExpired(arguments, 20, output.read(), errors.read())
+        finally:
+            if child.poll() is None:
+                child.kill()
+            child.wait(timeout=5)
+        output.seek(0)
+        errors.seek(0)
+        stdout, stderr = output.read(), errors.read()
+    assert child.returncode == 0, stdout + stderr
+    measured = json.loads(stdout.splitlines()[-1])
     test_record_instance.test_record_list[:] = measured["success"]
     test_record_instance.error_record_list[:] = measured["failure"]
     return measured["result"]

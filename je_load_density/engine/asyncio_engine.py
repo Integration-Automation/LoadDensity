@@ -60,6 +60,7 @@ class AsyncRunHandle:
         )
         self.successes, self.failures = [], []
         self.workers = []
+        self._retiring = set()
         self.state = "created"
         self.started = None
         self.finished = None
@@ -211,11 +212,23 @@ class AsyncRunHandle:
                 self.finished = time.monotonic()
         return self.snapshot()
 
-    async def _cancel_workers(self) -> list:
-        for task in self.workers:
+    def _stop_workers(self, workers: list) -> None:
+        self._retiring.update(workers)
+        for task in workers:
             if not task.done():
                 task.cancel()
-        return await asyncio.gather(*self.workers, return_exceptions=True)
+
+    def _worker_stopping(self) -> bool:
+        """Keep stop intent even when transport cancellation scopes absorb the exception."""
+        return self._stop.is_set() or asyncio.current_task() in self._retiring
+
+    async def _cancel_workers(self) -> list:
+        self._stop.set()
+        self._stop_workers(self.workers)
+        try:
+            return await asyncio.gather(*self.workers, return_exceptions=True)
+        finally:
+            self._retiring.clear()
 
     def _raise_worker_errors(self, results: list) -> None:
         for result in results:
@@ -253,10 +266,10 @@ class AsyncRunHandle:
 
     async def _resize(self, httpx, count: int, available: int) -> None:
         excess = self.workers[count:]
-        for task in excess:
-            task.cancel()
         if excess:
+            self._stop_workers(excess)
             results = await asyncio.gather(*excess, return_exceptions=True)
+            self._retiring.difference_update(excess)
             self._raise_worker_errors(results)
             self.workers = self.workers[:count]
         self._spawned = min(max(count - len(self.workers), 0), available)
@@ -270,12 +283,14 @@ class AsyncRunHandle:
             pool = UserClientPool(httpx, self.http2, self.verify_context)
         with use_resolver(resolver):
             async with pool:
-                while not self._stop.is_set():
+                while not self._worker_stopping():
                     tasks = self.payload["tasks"]
                     if self.payload["mode"] == "weighted":
                         chosen = _pick_weighted(tasks)
                         tasks = [] if chosen is None else [chosen]
                     for task in tasks:
+                        if self._worker_stopping():
+                            return
                         if _condition_passes(task):
                             await execute_step(pool, task, self)
                     await asyncio.sleep(0.001)

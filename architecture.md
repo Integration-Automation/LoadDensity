@@ -226,6 +226,8 @@ report callbacks and settings restoration do not require the unreleased core col
 The public start_test signature remains compatible and accepts engine through kwargs:
 locust defaults to the existing environment path, asyncio dispatches local native HTTP.
 AsyncRunHandle owns clients/tasks, user resolvers, run summary and cooperative callbacks;
+retiring workers retain explicit stop intent through transport cancellation scopes,
+including load-shape downsizing, retry and journey-step boundaries. The existing
 legacy record/report and canonical opt-in paths remain available. Unsupported protocols,
 distributed options and exporter integrations are retained as outstanding capabilities.
 The desktop Qt supervisor communicates with a fresh engine interpreter through bounded

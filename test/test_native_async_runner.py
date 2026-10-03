@@ -467,3 +467,83 @@ def test_cancellation_during_start_closes_owned_run_and_clients(transport_factor
         assert all(client.is_closed for client in clients)
 
     asyncio.run(run())
+
+
+@pytest.mark.parametrize("status", [200, 503])
+def test_deadline_stops_steps_and_retries_after_transport_swallows_cancel(transport_factory, status):
+    from je_load_density.engine.asyncio_engine import AsyncRunHandle
+
+    calls = []
+
+    async def handler(request):
+        calls.append(request.url.path)
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            if len(calls) != 1:
+                raise
+        return httpx.Response(status)
+
+    clients = transport_factory(handler)
+
+    async def run():
+        handle = AsyncRunHandle([
+            {"request_url": "https://local/first", "think_time": 30,
+             "retry": {"permanent": 2, "base_delay": 30, "jitter": 0}},
+            {"request_url": "https://local/next"},
+        ], users=1, duration_seconds=0.05)
+        await handle.start()
+        result = await asyncio.wait_for(handle.wait(), 1)
+        assert result["state"] == "completed"
+        assert calls == ["/first"]
+        assert all(worker.done() for worker in handle.workers)
+
+    asyncio.run(run())
+    assert clients
+    assert all(client.is_closed for client in clients)
+
+
+def test_shrinking_load_stops_only_retiring_worker_when_transport_swallows_cancel(transport_factory, monkeypatch):
+    from je_load_density.engine.asyncio_engine import AsyncRunHandle
+
+    entered = asyncio.Event()
+    counts = {}
+
+    async def handler(_request):
+        worker = asyncio.current_task()
+        counts[worker] = counts.get(worker, 0) + 1
+        if len(counts) == 2:
+            entered.set()
+        try:
+            await asyncio.Event().wait()
+        except asyncio.CancelledError:
+            if counts[worker] != 1:
+                raise
+        return httpx.Response(200)
+
+    clients = transport_factory(handler)
+
+    async def run():
+        handle = AsyncRunHandle([{"request_url": "https://local"}], users=2, duration_seconds=20)
+
+        async def schedule(httpx_module):
+            await handle._resize(httpx_module, 2, 2)
+            await handle._stop.wait()
+
+        monkeypatch.setattr(handle, "_schedule", schedule)
+        await handle.start()
+        try:
+            await asyncio.wait_for(entered.wait(), 1)
+            survivor, retiring = handle.workers
+            await asyncio.wait_for(handle._resize(None, 1, 0), 1)
+            assert retiring.done()
+            assert not survivor.done()
+            assert not handle._stop.is_set()
+            assert counts[retiring] == 1
+        finally:
+            handle.stop()
+            await asyncio.wait_for(handle.wait(), 1)
+
+    asyncio.run(run())
+    assert clients
+    assert all(client.is_closed for client in clients)
