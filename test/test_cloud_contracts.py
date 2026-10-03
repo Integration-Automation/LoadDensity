@@ -15,7 +15,8 @@ from je_load_density.cloud import aws_fargate, aws_lambda, azure_aci, gcp_cloud_
 def test_cloud_launch_error_has_public_import():
     import je_load_density.cloud as cloud
     error_type = getattr(cloud, "CloudLaunchError", None)
-    assert error_type is not None and issubclass(error_type, RuntimeError)
+    assert error_type is not None
+    assert issubclass(error_type, RuntimeError)
 
 
 def test_lambda_warm_handler_clears_records_after_failed_invocation(monkeypatch):
@@ -69,13 +70,13 @@ def test_invalid_worker_counts_fail_before_sdk_import(monkeypatch, count, backen
         pytest.fail("invalid configuration reached SDK import")
     module = {"fargate": aws_fargate, "lambda": aws_lambda, "aci": azure_aci}[backend]
     monkeypatch.setattr(module, "_import_azure" if backend == "aci" else "_import_boto3", forbidden)
+    launch, arguments = {
+        "fargate": (aws_fargate.launch_fargate_workers, ("c", "t", count, ["s"])),
+        "lambda": (aws_lambda.invoke_lambda_workers, ("f", count, {})),
+        "aci": (azure_aci.launch_aci_workers, ("sub", "rg", "region", "image", count)),
+    }[backend]
     with pytest.raises(ValueError, match="workers"):
-        if backend == "fargate":
-            module.launch_fargate_workers("c", "t", count, ["s"])
-        elif backend == "lambda":
-            module.invoke_lambda_workers("f", count, {})
-        else:
-            module.launch_aci_workers("sub", "rg", "region", "image", count)
+        launch(*arguments)
 
 
 @pytest.mark.parametrize("kwargs", [
@@ -129,11 +130,12 @@ def test_aws_service_errors_preserve_cause_without_resending(monkeypatch, module
         calls.append(kwargs)
         raise error
     aws_stub(monkeypatch, module, fail)
+    if module is aws_fargate:
+        launch, arguments = aws_fargate.launch_fargate_workers, ("c", "t", 1, ["s"])
+    else:
+        launch, arguments = aws_lambda.invoke_lambda_workers, ("f", 1, {})
     with pytest.raises(RuntimeError) as caught:
-        if module is aws_fargate:
-            module.launch_fargate_workers("c", "t", 1, ["s"])
-        else:
-            module.invoke_lambda_workers("f", 1, {})
+        launch(*arguments)
     assert caught.value.__cause__ is error
     assert caught.value.failed_workers == [0]
     assert caught.value.responses == []
@@ -413,11 +415,31 @@ def aci_stub(monkeypatch, create):
     {"overrides_env": {"LD_WORKER_COUNT": "9"}}, {"image": ""},
     {"overrides_env": {"BAD NAME": "x"}}, {"overrides_env": {"NAME_": "x"}},
     {"overrides_env": {"N" * 64: "x"}},
+    {"overrides_env": {"NéM": "x"}}, {"overrides_env": {"N中M": "x"}},
+    {"overrides_env": {"N١M": "x"}}, {"overrides_env": {"NKM": "x"}},
+    {"overrides_env": {"éN": "x"}}, {"overrides_env": {"_NAME": "x"}},
 ])
 def test_aci_invalid_resource_parameters_fail_before_sdk(monkeypatch, kwargs):
     monkeypatch.setattr(azure_aci, "_import_azure", lambda: pytest.fail("SDK reached"))
+    arguments = dict(kwargs)
+    image = arguments.pop("image", "image")
     with pytest.raises(ValueError):
-        azure_aci.launch_aci_workers("sub", "rg", "region", kwargs.pop("image", "image"), 1, **kwargs)
+        azure_aci.launch_aci_workers("sub", "rg", "region", image, 1, **arguments)
+
+
+@pytest.mark.parametrize("environment_name", ["N", "7", "TARGET_1", "A__B"])
+def test_aci_ascii_environment_names_are_supported(monkeypatch, environment_name):
+    created = []
+    def create(**kwargs):
+        created.append(kwargs)
+        return SimpleNamespace(result=lambda: SimpleNamespace(id="resource/worker", provisioning_state="Succeeded"))
+    aci_stub(monkeypatch, create)
+    result = azure_aci.launch_aci_workers("sub", "rg", "region", "image", 1,
+                                         overrides_env={environment_name: "value"})
+    assert result[0]["status"] == "Succeeded"
+    variables = created[0]["container_group"].containers[0].environment_variables
+    environment = {entry.name: entry.value for entry in variables}
+    assert environment == {environment_name: "value", "LD_WORKER_INDEX": "0", "LD_WORKER_COUNT": "1"}
 
 
 def test_aci_names_are_unique_across_launches_and_provisioning_is_checked(monkeypatch):
@@ -439,7 +461,8 @@ def test_aci_names_are_unique_across_launches_and_provisioning_is_checked(monkey
     group = calls[1]["container_group"]
     assert group.containers[0].resources.requests.cpu == 2
     assert group.containers[0].resources.requests.memory_in_gb == 4
-    assert group.location == "region" and group.restart_policy == "Never"
+    assert group.location == "region"
+    assert group.restart_policy == "Never"
     assert calls[1]["resource_group_name"] == "rg"
     assert {item.name: item.value for item in group.containers[0].environment_variables} == {
         "LD_WORKER_INDEX": "1", "LD_WORKER_COUNT": "2"}

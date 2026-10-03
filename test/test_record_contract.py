@@ -51,9 +51,10 @@ def test_recording_without_explicit_context_is_a_no_op():
 
 
 def test_malformed_legacy_record_reports_field_location():
+    run = context()
     with pytest.raises(ValueError, match="status_code"):
         from_legacy_record({"Method": "GET", "test_url": "http://localhost/", "status_code": "bad"},
-                           context(), "passed")
+                           run, "passed")
 
 
 def test_live_payload_capture_is_disabled_by_default():

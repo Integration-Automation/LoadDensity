@@ -136,7 +136,8 @@ def test_official_azure_serialization_and_poller_result_without_network(monkeypa
                                          overrides_env={"TARGET": "https://target.invalid"})
     assert result[0]["status"] == "Succeeded"
     assert result[0]["resource_id"].endswith("/containerGroups/" + result[0]["name"])
-    assert len(requests) == 1 and requests[0].method == "PUT"
+    assert len(requests) == 1
+    assert requests[0].method == "PUT"
     resource_path = f"/resourceGroups/rg/providers/Microsoft.ContainerInstance/containerGroups/{result[0]['name']}?"
     assert resource_path in requests[0].url
     payload = json.loads(requests[0].body)

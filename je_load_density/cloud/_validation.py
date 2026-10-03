@@ -58,12 +58,15 @@ def validate_environment(environment: Optional[Dict[str, str]]) -> None:
 
 def sdk_error_types(provider: str) -> Tuple[Type[Exception], ...]:
     """Return optional SDK base errors without requiring SDKs for module import."""
+    sdk_errors: List[Type[Exception]]
     try:
         if provider == "aws":
             from botocore.exceptions import BotoCoreError, ClientError
-            return (BotoCoreError, ClientError, OSError)
-        from azure.core.exceptions import AzureError
-        return (AzureError, OSError)
+            sdk_errors = [BotoCoreError, ClientError]
+        else:
+            from azure.core.exceptions import AzureError
+            sdk_errors = [AzureError]
     except ImportError:
         # Lightweight SDK doubles need only the standard transport boundary.
-        return (OSError,)
+        sdk_errors = []
+    return tuple(sdk_errors + [OSError])

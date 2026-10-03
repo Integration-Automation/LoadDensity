@@ -15,7 +15,13 @@ Execute inline in the existing isolated feature worktree. The approved roadmap a
 - [x] Build the wheel using existing locked build tools. Each cell installs that wheel plus only its selected extra in a fresh Docker image, runs pip check, CLI checks and non-skipping capability probes.
 - [x] Define probes for declared extras: create/use their relevant local SDK or framework capabilities, perform MCP handshake even without dependencies, render charts/PDF and launch Qt offscreen. Fail explicitly if a declared extra lacks a probe.
 - [x] Implement a reusable workflow consumed by stable/dev CI; keep pinned actions, minimum permissions and timeouts. Dev publication waits for these checks.
-- [ ] Validate representative base/gui/charts/cloud/protocol cells locally in Docker, then complete the whole representative matrix. Repair installation/API incompatibilities rather than excluding supported cells silently.
+- [x] Validate representative base/cloud/protocol cells locally in Docker, then complete the whole representative matrix including GUI/charts/all in CI. Repair installation/API incompatibilities rather than excluding supported cells silently.
+
+2026-10-03 verification: all 48 Docker installation cells, ten Windows/Ubuntu
+Python3.10–3.14 unit-test jobs and the healthy Compose service job passed for
+head82912d5 (Actions run37006974442). GUI/all offscreen launch uses the writable
+home of the unprivileged account. Full GUI execution/cancellation smoke remains
+separately tracked in progress.md #24 until the desktop lifecycle redesign.
 
 ## Task 3: Protocol service smoke and handoff
 

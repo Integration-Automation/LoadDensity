@@ -5,9 +5,9 @@ RUN --mount=type=cache,target=/root/.cache/pip,sharing=locked python -m pip inst
 ARG EXTRA=base
 RUN if [ "$EXTRA" = "gui" ] || [ "$EXTRA" = "all" ]; then \
       apt-get update && apt-get install -y --no-install-recommends \
-        libegl1 libgl1 libopengl0 libglib2.0-0 libxkbcommon0 libdbus-1-3 libfontconfig1 \
-        libxcb-cursor0 libxcb-icccm4 libxcb-keysyms1 libxcb-shape0 libxcb-xinerama0 \
-        libxcb-randr0 libxcb-render-util0 libxcb-image0 fonts-dejavu-core \
+        fonts-dejavu-core libdbus-1-3 libegl1 libfontconfig1 libgl1 libglib2.0-0 libopengl0 \
+        libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 libxcb-randr0 \
+        libxcb-render-util0 libxcb-shape0 libxcb-xinerama0 libxkbcommon0 \
       && rm -rf /var/lib/apt/lists/*; \
     fi
 COPY test/smoke /checks/smoke

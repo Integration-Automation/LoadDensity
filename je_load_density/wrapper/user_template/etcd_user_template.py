@@ -67,7 +67,10 @@ class EtcdUserWrapper(ProtocolUserBase):
         if self._client is None:
             raise RuntimeError("etcd not connected")
         result = self._client.get(step["key"])
-        value = (result[0] if result else None) if self._gateway_client else result[0]
+        if self._gateway_client:
+            value = result[0] if result else None
+        else:
+            value = result[0]
         return len(value or b"")
 
     def _delete(self, step: Dict[str, Any]) -> int:

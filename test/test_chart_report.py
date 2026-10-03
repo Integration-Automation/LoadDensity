@@ -1,3 +1,5 @@
+import math
+
 import pytest
 
 from je_load_density.utils.generate_report.generate_chart_report import (
@@ -54,7 +56,7 @@ def test_latency_bands_include_failures_and_leave_empty_seconds_disconnected(tmp
     assert len(bands) == 2
     assert bands[0][1][0] == 10
     assert bands[0][1][2] == 80
-    assert bands[0][1][1] != bands[0][1][1]  # NaN prevents connecting the empty bucket.
+    assert math.isnan(bands[0][1][1])  # NaN prevents connecting the empty bucket.
     for path in paths.values():
         with open(path, "rb") as image:
             assert image.read(8) == b"\x89PNG\r\n\x1a\n"

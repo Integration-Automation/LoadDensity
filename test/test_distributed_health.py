@@ -30,9 +30,13 @@ def master():
     {"worker_startup_policy": "anyway"}, {"expected_workers": -1},
 ])
 def test_invalid_distributed_settings_rejected_before_runner_creation(options):
-    with pytest.raises(ValueError):
-        env = wrapper.create_env(IdleUser, runner_mode="master", master_bind_port=0, **options)
-        env.runner.quit()
+    env = None
+    try:
+        with pytest.raises(ValueError):
+            env = wrapper.create_env(IdleUser, runner_mode="master", master_bind_port=0, **options)
+    finally:
+        if env is not None:
+            wrapper.cleanup_env(env)
 
 
 def test_ready_gate_excludes_missing_running_and_expired_workers(master):
@@ -55,7 +59,8 @@ def test_native_settings_restore_after_last_environment_cleanup():
             wrapper.create_env(IdleUser, runner_mode="master", master_bind_port=0, worker_heartbeat_interval=2)
     finally:
         wrapper.cleanup_env(env)
-    assert (runners.HEARTBEAT_INTERVAL, runners.HEARTBEAT_LIVENESS) == original
+    current_timing = runners.HEARTBEAT_INTERVAL, runners.HEARTBEAT_LIVENESS
+    assert current_timing == original
 
 
 def test_prepare_env_startup_timeout_never_starts_and_cleans_runner(monkeypatch, master):
@@ -135,7 +140,8 @@ def test_native_network_loss_rebalances_capacity_at_original_target_and_rate(mas
     _until(lambda: master.runner.clients["second"].state == "missing")
     _until(lambda: master.runner.clients["first"].user_count == 4)
     snapshot = master.distributed_health.snapshot()
-    assert snapshot["target_users"] == snapshot["reported_users"] == 4
+    assert snapshot["target_users"] == 4
+    assert snapshot["reported_users"] == 4
     assert snapshot["affected_workers"] == ["second"]
     assert snapshot["request_replay"] is False
     assert master.runner.spawn_rate == 4
@@ -271,7 +277,8 @@ def test_matching_environment_scope_restores_only_after_last_close():
         assert runners.HEARTBEAT_INTERVAL == 5
     finally:
         wrapper.cleanup_env(second)
-    assert (runners.HEARTBEAT_INTERVAL, runners.HEARTBEAT_LIVENESS) == original
+    current_timing = runners.HEARTBEAT_INTERVAL, runners.HEARTBEAT_LIVENESS
+    assert current_timing == original
 
 
 def test_real_rpc_worker_connects_runs_and_closes_both_transports(master):
@@ -299,7 +306,8 @@ def test_cleanup_ui_error_still_closes_transport_and_restores_settings():
     with pytest.raises(RuntimeError, match="UI stop failed"):
         wrapper.cleanup_env(env)
     assert env.runner.server.socket.closed
-    assert (runners.HEARTBEAT_INTERVAL, runners.HEARTBEAT_LIVENESS) == original
+    current_timing = runners.HEARTBEAT_INTERVAL, runners.HEARTBEAT_LIVENESS
+    assert current_timing == original
 
 
 def test_local_shape_completes_and_releases_tasks(monkeypatch):
@@ -352,7 +360,8 @@ def test_master_stop_callback_error_propagates_and_restores_settings(monkeypatch
                                 on_environment=created, stop_requested=broken_stop)
     assert seen[0].runner.server.socket.closed
     assert len(seen[0].load_density_tasks) == 0
-    assert (runners.HEARTBEAT_INTERVAL, runners.HEARTBEAT_LIVENESS) == original
+    current_timing = runners.HEARTBEAT_INTERVAL, runners.HEARTBEAT_LIVENESS
+    assert current_timing == original
 
 
 def test_master_stop_callback_error_interrupts_slow_ramp(monkeypatch):

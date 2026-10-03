@@ -133,12 +133,14 @@ def test_aci_creates_one_group_per_worker(monkeypatch):
     responses = azure_aci.launch_aci_workers("sub", "rg", "eastasia", "ld:latest", workers=2,
                                              overrides_env={"TARGET": "https://x"})
     assert responses[0]["name"].startswith("loaddensity-worker-")
-    assert responses[0]["name"].endswith("-0") and responses[1]["name"].endswith("-1")
+    assert responses[0]["name"].endswith("-0")
+    assert responses[1]["name"].endswith("-1")
     assert responses[0]["name"] != responses[1]["name"]
     assert all(response["status"] == "Succeeded" for response in responses)
     group = created[1]["container_group"]
     assert created[1]["resource_group_name"] == "rg"
-    assert group.restart_policy == "Never" and group.os_type == "Linux"
+    assert group.restart_policy == "Never"
+    assert group.os_type == "Linux"
     env = {item.name: item.value for item in group.containers[0].environment_variables}
     assert env == {"TARGET": "https://x", "LD_WORKER_INDEX": "1", "LD_WORKER_COUNT": "2"}
 

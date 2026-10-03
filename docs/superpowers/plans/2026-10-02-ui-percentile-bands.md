@@ -42,5 +42,5 @@ Final batch verification: 1442 passed, 14 optional skips and four existing
 warnings; Ruff E/F/W/C90/I passed. Six subprocess smoke tests passed both from
 the checkout and from the rebuilt installed wheel in a network-disabled Docker
 container. The Docker runtime user now has a real writable home, addressing
-qt-material theme generation under an unprivileged account. Full extras CI
-verification remains tracked until the updated matrix finishes.
+qt-material theme generation under an unprivileged account. On 2026-10-03 all
+48 updated extras cells and the Compose service job passed (run37006974442).

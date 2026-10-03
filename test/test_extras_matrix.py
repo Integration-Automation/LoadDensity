@@ -42,8 +42,9 @@ def test_schedule_matrix_covers_all_supported_versions(metadata):
 def test_unsafe_extra_names_are_rejected_before_shell_parameters(tmp_path):
     path = tmp_path / "pyproject.toml"
     path.write_text('[project.optional-dependencies]\n"bad;echo x" = []\n', encoding="utf-8")
+    matrix_module = load_matrix_module()
     with pytest.raises(ValueError, match="extra"):
-        load_matrix_module().build_matrix(path)
+        matrix_module.build_matrix(path)
 
 
 def test_cli_writes_checkout_matrix_independently_of_current_directory(tmp_path):

@@ -18,5 +18,6 @@ def test_protocol_failure_cannot_be_reported_as_a_passing_service_probe(monkeypa
 
 
 def test_missing_protocol_measurement_is_a_probe_failure(monkeypatch):
+    probe_module = load_probe(monkeypatch)
     with pytest.raises(RuntimeError, match="Expected 1"):
-        load_probe(monkeypatch).check_events([], 1)
+        probe_module.check_events([], 1)

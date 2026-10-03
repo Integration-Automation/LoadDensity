@@ -136,7 +136,7 @@ def _validate_prefix(name_prefix: str, workers: int) -> None:
 
 def _validate_environment_names(environment: Optional[Dict[str, str]]) -> None:
     for name in environment or {}:
-        if len(name) > 63 or not re.fullmatch(r"[a-zA-Z0-9](?:[a-zA-Z0-9_]*[a-zA-Z0-9])?", name):
+        if len(name) > 63 or not re.fullmatch(r"[a-zA-Z0-9](?:\w*[a-zA-Z0-9])?", name, flags=re.ASCII):
             raise ValueError("ACI environment names require 1 to 63 alphanumeric/internal underscore characters")
 
 

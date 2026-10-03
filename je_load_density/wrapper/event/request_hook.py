@@ -15,6 +15,19 @@ def _epoch_seconds(start_time):
     return float(start_time) if start_time is not None else None
 
 
+def _response_fields(response, successful: bool) -> dict[str, object]:
+    """Preserve response metadata, including HTTP error responses whose truth value is false."""
+    if response is None:
+        fields = {"status_code": None, "text": None}
+        if successful:
+            fields.update(content=None, headers=None)
+        return fields
+    fields = {"status_code": str(response.status_code), "text": str(response.text)}
+    if successful:
+        fields.update(content=str(response.content), headers=str(response.headers))
+    return fields
+
+
 @events.request.add_listener
 def request_hook(
     start_time,
@@ -33,42 +46,14 @@ def request_hook(
     將每個 request 的結果紀錄到 test_record_instance
     """
 
-    if exception is None:
-        # 成功紀錄 (Success record)
-        test_record_instance.test_record_list.append(
-            {
-                "Method": str(request_type),
-                "test_url": str(url),
-                "name": str(name),
-                "status_code": str(response.status_code) if response is not None else None,
-                "text": str(response.text) if response is not None else None,
-                "content": str(response.content) if response is not None else None,
-                "headers": str(response.headers) if response is not None else None,
-                "response_time_ms": float(response_time or 0),
-                "response_length": int(response_length or 0),
-                "error": None,
-                "start_time": _epoch_seconds(start_time),
-            }
-        )
-    else:
-        # 失敗紀錄 (Failure record)
-        test_record_instance.error_record_list.append(
-            {
-                "Method": str(request_type),
-                "test_url": str(url),
-                "name": str(name),
-                "status_code": str(response.status_code) if response is not None else None,
-                "text": str(response.text) if response is not None else None,
-                "response_time_ms": float(response_time or 0),
-                "response_length": int(response_length or 0),
-                "error": str(exception),
-                "start_time": _epoch_seconds(start_time),
-            }
-        )
-
-    outcome = "passed" if exception is None else "failed"
-    records = test_record_instance.test_record_list if exception is None else test_record_instance.error_record_list
-    entry = records[-1]
+    successful = exception is None
+    entry = {"Method": str(request_type), "test_url": str(url), "name": str(name)}
+    entry.update(_response_fields(response, successful))
+    entry.update(response_time_ms=float(response_time or 0), response_length=int(response_length or 0),
+                 error=None if successful else str(exception), start_time=_epoch_seconds(start_time))
+    records = test_record_instance.test_record_list if successful else test_record_instance.error_record_list
+    records.append(entry)
+    outcome = "passed" if successful else "failed"
     selected_run = kwargs.get("record_run")
     if selected_run is not None:
         from_legacy_record(entry, selected_run, outcome)

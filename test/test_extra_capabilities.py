@@ -23,8 +23,9 @@ def test_every_declared_extra_has_a_non_skipping_probe(monkeypatch):
 
 
 def test_unknown_extra_is_an_error(monkeypatch):
+    probe_module = probes(monkeypatch)
     with pytest.raises(ValueError, match="extra"):
-        probes(monkeypatch).run_probe("unregistered")
+        probe_module.run_probe("unregistered")
 
 
 def test_missing_declared_capability_is_a_failure(monkeypatch):
