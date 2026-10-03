@@ -1,9 +1,9 @@
 import json
-import statistics
 import sys
 from typing import Any, Dict, Iterable, List, Optional
 
 from je_load_density.utils.test_record.test_record_class import test_record_instance
+from je_load_density.utils.test_record.window_statistics import finite_number, latency_mean
 
 
 def _percentile(values: List[float], pct: float) -> float:
@@ -23,26 +23,26 @@ def _by_name(records: Iterable[Dict[str, Any]]) -> Dict[str, List[float]]:
     grouped: Dict[str, List[float]] = {}
     for record in records:
         key = str(record.get("name") or record.get("test_url") or "unknown")
-        latency = record.get("response_time_ms")
-        if latency is None:
+        latency = finite_number(record.get("response_time_ms"))
+        if latency is None or latency < 0:
             continue
-        grouped.setdefault(key, []).append(float(latency))
+        grouped.setdefault(key, []).append(latency)
     return grouped
 
 
-def build_summary() -> Dict[str, Any]:
+def build_summary(success=None, failures=None) -> Dict[str, Any]:
     """
     彙整成功與失敗紀錄為統計摘要。
     Build a summary dict of success/failure counts and per-name
     latency percentiles for charting and regression checks.
     """
-    success = test_record_instance.test_record_list
-    failures = test_record_instance.error_record_list
+    success = test_record_instance.test_record_list if success is None else success
+    failures = test_record_instance.error_record_list if failures is None else failures
 
     all_latencies: List[float] = [
-        float(r.get("response_time_ms"))
+        latency
         for r in (*success, *failures)
-        if r.get("response_time_ms") is not None
+        if (latency := finite_number(r.get("response_time_ms"))) is not None and latency >= 0
     ]
 
     grouped = _by_name(success)
@@ -52,7 +52,7 @@ def build_summary() -> Dict[str, Any]:
             "count": len(values),
             "min_ms": float(min(values)),
             "max_ms": float(max(values)),
-            "mean_ms": float(statistics.fmean(values)),
+            "mean_ms": latency_mean(values),
             "p50_ms": _percentile(values, 50),
             "p90_ms": _percentile(values, 90),
             "p95_ms": _percentile(values, 95),

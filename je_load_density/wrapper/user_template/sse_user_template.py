@@ -24,7 +24,10 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
-from je_load_density.wrapper.user_template._common import default_host
+from je_load_density.wrapper.user_template._common import (
+    default_host,
+    request_start_epoch,
+)
 
 
 def set_wrapper_sse_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -87,7 +90,7 @@ class SseUserWrapper(User):
             context={},
             url=self._url,
             response=None,
-            start_time=start,
+            start_time=request_start_epoch(start),
         )
 
     def _wait_for(self, expect: Optional[str], timeout: float) -> int:

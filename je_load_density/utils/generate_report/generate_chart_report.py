@@ -3,7 +3,7 @@ Chart-rendering reports backed by matplotlib (soft-dep).
 
 Two charts are produced from ``test_record_instance``:
 
-* Latency over time (scatter, per request)
+* Latency over time (p50 line, p50–p95 and p95–p99 bands)
 * Rolling RPS (line, 1-second buckets)
 
 matplotlib is imported lazily. Install with ``pip install matplotlib``
@@ -11,9 +11,11 @@ or via the ``[charts]`` extra.
 """
 
 import os
-from typing import Dict, List, Tuple
+from itertools import chain
+from typing import Dict
 
 from je_load_density.utils.test_record.test_record_class import test_record_instance
+from je_load_density.utils.test_record.window_statistics import latency_windows
 
 
 class ChartDependencyError(RuntimeError):
@@ -33,37 +35,19 @@ def _require_matplotlib():
     return plt
 
 
-def _collect_points() -> Tuple[List[float], List[float]]:
-    timestamps: List[float] = []
-    latencies: List[float] = []
-    for index, record in enumerate(test_record_instance.test_record_list):
-        latency = record.get("response_time_ms")
-        if latency is None:
-            continue
-        timestamps.append(float(record.get("ts") or index))
-        latencies.append(float(latency))
-    return timestamps, latencies
-
-
-def _bucket_rps(timestamps: List[float], bucket_size: float = 1.0) -> Tuple[List[float], List[int]]:
-    if not timestamps:
-        return [], []
-    start = min(timestamps)
-    buckets: Dict[int, int] = {}
-    for ts in timestamps:
-        idx = int((ts - start) // bucket_size)
-        buckets[idx] = buckets.get(idx, 0) + 1
-    xs = sorted(buckets.keys())
-    return [start + x * bucket_size for x in xs], [buckets[x] for x in xs]
-
-
-def _render_latency_chart(plt, output_path: str, timestamps, latencies) -> str:
+def _render_latency_chart(plt, output_path: str, windows) -> str:
     fig, ax = plt.subplots(figsize=(10, 4))
-    ax.scatter(timestamps, latencies, s=8, alpha=0.6)
-    ax.set_xlabel("Request index (or timestamp)")
+    xs = [item["start_time"] for item in windows]
+    bands = {key: [item[key] if item[key] is not None else float("nan") for item in windows]
+             for key in ("p50_ms", "p95_ms", "p99_ms")}
+    ax.fill_between(xs, bands["p50_ms"], bands["p95_ms"], alpha=0.35, label="p50–p95")
+    ax.fill_between(xs, bands["p95_ms"], bands["p99_ms"], alpha=0.2, label="p95–p99")
+    ax.plot(xs, bands["p50_ms"], marker=".", label="p50")
+    ax.set_xlabel("Request start (epoch seconds)")
     ax.set_ylabel("Response time (ms)")
     ax.set_title("LoadDensity latency over time")
     ax.grid(True, alpha=0.3)
+    ax.legend()
     fig.tight_layout()
     fig.savefig(output_path)
     plt.close(fig)
@@ -86,6 +70,7 @@ def _render_rps_chart(plt, output_path: str, xs, counts) -> str:
 def generate_chart_report(
     report_name: str = "loaddensity-charts",
     bucket_size_seconds: float = 1.0,
+    max_buckets: int = 10000,
 ) -> Dict[str, str]:
     """
     Render latency + RPS charts. Writes
@@ -93,12 +78,14 @@ def generate_chart_report(
     returns ``{"latency": path, "rps": path}``.
     """
     plt = _require_matplotlib()
-    timestamps, latencies = _collect_points()
-    if not latencies:
+    records = chain(test_record_instance.test_record_list, test_record_instance.error_record_list)
+    windows = latency_windows(records, bucket_size_seconds=bucket_size_seconds, max_buckets=max_buckets)
+    if not any(item["p50_ms"] is not None for item in windows):
         raise ChartDependencyError("no records to render charts")
 
     latency_path = _render_latency_chart(plt, f"{report_name}-latency.png",
-                                          timestamps, latencies)
-    rps_xs, rps_counts = _bucket_rps(timestamps, bucket_size_seconds)
+                                          windows)
+    rps_xs = [item["start_time"] for item in windows]
+    rps_counts = [item["rps"] for item in windows]
     rps_path = _render_rps_chart(plt, f"{report_name}-rps.png", rps_xs, rps_counts)
     return {"latency": latency_path, "rps": rps_path}

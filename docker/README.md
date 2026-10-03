@@ -27,3 +27,39 @@ docker compose -f docker/docker-compose.yml down -v
   enough for examples, not for production load.
 * `mosquitto.conf` allows anonymous connections; tighten before
   exposing the broker.
+
+## Installed wheel CI checks
+
+The extras matrix is generated from `pyproject.toml`. Each Docker cell installs the
+checkout wheel, runs `pip check`, checks its declared capability without skipping,
+and runs the six base smoke tests. GUI cells install Qt system libraries and use
+`QT_QPA_PLATFORM=offscreen`. These installation probes use local codecs, stubbed
+SDK calls and client configuration; live protocol checks run separately.
+Dependencies require wheels except `http-ece`, whose upstream distribution is a
+source archive used by Web Push. That explicit exception is built only in the
+isolated image. Runtime probes run as uid/gid 65534.
+
+```bash
+python -m build --wheel --no-isolation
+docker build -f docker/extras.Dockerfile --build-arg EXTRA=etcd -t ld-check .
+docker run --rm ld-check
+```
+
+Use `--build-arg PYTHON_VERSION=3.14` to select a supported Python minor. The
+`etcd` extra uses `etcd3gw`, so the target etcd server must enable its v3 HTTP gateway.
+Legacy manually installed `etcd3` remains a fallback when `etcd3gw` is unavailable.
+
+The dedicated Compose job has no exposed host ports or fixed container names. It
+waits for healthy Redis/MQTT services, checks actual adapter operations and MQTT
+delivery, and verifies a SQLite query. Use a unique project name for local runs:
+
+```bash
+docker compose -p ld-check -f docker/ci-services.yml build probe
+docker compose -p ld-check -f docker/ci-services.yml up -d --wait --wait-timeout 60 redis mosquitto
+docker compose -p ld-check -f docker/ci-services.yml run --rm probe
+docker compose -p ld-check -f docker/ci-services.yml down --volumes --remove-orphans
+```
+
+CI always cleans up this project, including on failure. Publishing depends on the
+reusable extras workflow. Pull requests test every extra on Python 3.12 and base on
+3.10/3.14; scheduled runs test every cell on 3.10–3.14.

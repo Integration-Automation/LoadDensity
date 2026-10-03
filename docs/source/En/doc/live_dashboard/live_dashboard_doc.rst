@@ -8,6 +8,16 @@ A stdlib-only HTTP server with a Server-Sent Events stream that pushes
 running stats from ``test_record_instance`` to any browser. Use it for
 demos, war rooms, and on-call.
 
+The responsive page shows metric cards, SSE connection status, separate latency
+and RPS charts, p50–p95 / p95–p99 bands and text-only request-group names.
+``latency_windows`` extends the existing snapshot keys with the newest 120
+one-second buckets, including failed requests. Empty latency windows stay
+disconnected; partial buckets use actual duration for RPS. Window percentiles
+use rounded order statistics; overall cards preserve summary interpolation.
+The request-group table retains the legacy successful-request statistics and
+shows up to 100 groups. Streaming clients do not block snapshots; stop closes
+streams and the server thread.
+
 Endpoints
 ---------
 

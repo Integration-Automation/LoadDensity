@@ -61,6 +61,11 @@ def run_template_coroutine(coro: Coroutine[Any, Any, T]) -> T:
             loop.close()
 
 
+def request_start_epoch(monotonic_start: float) -> float:
+    """Convert a duration clock start to the wall-clock epoch used by request charts."""
+    return time.time() - (time.monotonic() - monotonic_start)
+
+
 def fire_request_event(
     environment: Any,
     request_type: str,
@@ -79,7 +84,7 @@ def fire_request_event(
         context={},
         url=name,
         response=None,
-        start_time=start,
+        start_time=request_start_epoch(start),
     )
 
 

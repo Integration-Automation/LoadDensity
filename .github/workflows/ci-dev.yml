@@ -12,6 +12,11 @@ permissions:
   contents: read
 
 jobs:
+  extras:
+    uses: ./.github/workflows/extras.yml
+    with:
+      event-name: ${{ github.event_name }}
+
   test:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15  # about 3x the slowest recent run, at least 15
@@ -44,7 +49,7 @@ jobs:
     # it is still the tip of dev and ships something the newest je_load_density_dev does not.
     # scripts/dev_release.py picks the version from PyPI, so nothing is committed back.
     name: Publish je_load_density_dev to PyPI
-    needs: [test]
+    needs: [test, extras]
     if: github.event_name == 'push' && github.ref == 'refs/heads/dev'
     runs-on: ubuntu-latest
     timeout-minutes: 15  # about 3x the slowest recent run, at least 15

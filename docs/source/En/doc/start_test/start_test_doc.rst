@@ -110,3 +110,53 @@ Worker (run on each node, on the same network as master)::
 The master waits for ``expected_workers`` workers to register before
 ramping up. Workers join the master and run the requested user count
 proportional to the cluster size.
+
+Native asyncio HTTP
+-------------------
+
+Pass ``engine="asyncio"`` to the public ``start_test`` or ``LD_start_test``.
+The default stays ``locust``. In an active event loop, use
+``await run_async_load(tasks, users, duration_seconds, ...)`` instead.
+Package/native imports do not load Locust or patch process I/O.
+After selecting Locust, use a fresh interpreter for native I/O; CLI bench and
+the desktop supervisor provide this isolation.
+
+Native HTTP supports request parameters/body/headers/cookies/auth/redirects,
+all five HTTP assertions and three extractor kinds, independent user sessions,
+sequence/weighted/conditional scenarios, retry, asynchronous think time/token
+buckets, ramp and stages/spike/soak shapes. Client TLS/proxy settings are reused
+per user. Certificates never modify another user's trust context. If supplying
+an SSLContext, configure its certificate directly and omit cert/client_cert.
+Malformed or unsupported options are rejected before requests; protocols other
+than HTTP and master/worker modes remain unsupported. Metrics exporter parity
+is still outstanding.
+
+``AsyncRunHandle`` exposes awaitable ``start``/``wait`` and ``stop``/``snapshot``.
+``stop_requested`` and ``on_environment`` callbacks work with both engines.
+Cancellation closes owned tasks and clients, while unexpected worker/cleanup
+errors propagate. Each result includes an isolated ``summary`` suitable for
+SLA evaluation. Legacy report lists and optional canonical RunContext recording
+remain compatible. ``requests`` counts successes; ``summary.totals.requests``
+counts all measured attempts. HTTP 4xx/5xx fail unless a passing status-code
+assertion explicitly expects that status. Native durations/counts/rates must be
+positive finite numbers; counts must be integral.
+
+Canonical distributed results
+-----------------------------
+
+The opt-in master passes ``run_context=DistributedRunContext()`` imported from
+``je_load_density.utils.test_record.distributed_context``. Every worker enables
+``distributed_records=True``. This requires the coordinated ActionCore record
+API; legacy-only environments retain their published dependency floor.
+Master ingestion preserves worker identity, validates the whole batch before
+mutation and globally deduplicates record IDs. Newly accepted records populate
+legacy reports once. Inspect ``env.record_delivery.snapshot()`` for diagnostics.
+
+Default limits are 100 records/262144 bytes per batch, 65536 bytes per record,
+1000 records/4194304 queued bytes, 0.1-second retries and 2-second drain/terminal
+acknowledgement budgets. Configure with ``record_batch_size``,
+``record_batch_bytes``, ``record_max_bytes``, ``record_max_pending``,
+``record_pending_bytes``, ``record_flush_interval`` and ``record_drain_timeout``.
+Queue overflow, conflicting retries and incomplete final delivery fail explicitly.
+Storage is in memory until exported. Native ongoing-user rebalancing does not
+replay requests, migrate sessions or supply finite shards/exactly-once execution.

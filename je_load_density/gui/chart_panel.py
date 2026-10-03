@@ -1,99 +1,149 @@
-"""
-Live RPS / latency chart widget.
+"""Bounded latency bands and a separate request-rate chart for Qt."""
 
-Drop into the existing PySide6 GUI alongside ``StatsPanel``. Uses
-``QtCharts`` (ships with PySide6) so no extra dependency.
-"""
-
+import math
 import time
-from collections import deque
-from typing import Deque, Tuple
+from itertools import chain
 
-from PySide6.QtCharts import QChart, QChartView, QLineSeries, QValueAxis
+from PySide6.QtCharts import QAreaSeries, QChart, QChartView, QLineSeries, QValueAxis
 from PySide6.QtCore import QPointF, Qt, QTimer
-from PySide6.QtGui import QPainter
+from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from je_load_density.utils.test_record.test_record_class import test_record_instance
-
+from je_load_density.utils.test_record.window_statistics import latency_windows
 
 _HISTORY_SECONDS = 120
 
 
-def _percentile(values, pct: float) -> float:
-    if not values:
-        return 0.0
-    ordered = sorted(values)
-    index = max(0, min(len(ordered) - 1, int(round(pct / 100.0 * (len(ordered) - 1)))))
-    return float(ordered[index])
+def _chart(title: str, unit: str):
+    chart = QChart()
+    chart.setTitle(title)
+    chart.legend().setAlignment(Qt.AlignBottom)
+    x, y = QValueAxis(), QValueAxis()
+    x.setTitleText("elapsed seconds")
+    x.setRange(0, _HISTORY_SECONDS)
+    y.setTitleText(unit)
+    y.setRange(0, 100)
+    chart.addAxis(x, Qt.AlignBottom)
+    chart.addAxis(y, Qt.AlignLeft)
+    view = QChartView(chart)
+    view.setRenderHint(QPainter.Antialiasing)
+    return chart, view, x, y
+
+
+def _segments(windows):
+    segment = []
+    for window in windows:
+        if window["p50_ms"] is None:
+            if segment:
+                yield segment
+                segment = []
+        else:
+            segment.append(window)
+    if segment:
+        yield segment
 
 
 class LiveChartPanel(QWidget):
-    """Two-series line chart (RPS + p95 latency)."""
+    """p50 line and p50–p95/p95–p99 bands; gaps remain disconnected."""
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
-        self._buffer: Deque[Tuple[float, int, float]] = deque(maxlen=_HISTORY_SECONDS)
-        self._last_count = 0
-        self._start_ts = time.monotonic()
-
+        self._latency_chart, self._chart_view, self._latency_axis_x, self._latency_axis_y = _chart(
+            "Latency · p50 / p95 / p99", "milliseconds")
+        self._rps_chart, self._rps_view, self._rps_axis_x, self._rps_axis_y = _chart("Throughput", "requests / second")
+        self._rps_chart.legend().hide()
         self._rps_series = QLineSeries()
         self._rps_series.setName("RPS")
-        self._latency_series = QLineSeries()
-        self._latency_series.setName("p95 ms")
-
-        chart = QChart()
-        chart.addSeries(self._rps_series)
-        chart.addSeries(self._latency_series)
-        chart.setTitle("LoadDensity live")
-        chart.legend().setAlignment(Qt.AlignBottom)
-
-        axis_x = QValueAxis()
-        axis_x.setTitleText("seconds")
-        axis_x.setRange(0, _HISTORY_SECONDS)
-        chart.addAxis(axis_x, Qt.AlignBottom)
-        self._rps_series.attachAxis(axis_x)
-        self._latency_series.attachAxis(axis_x)
-
-        axis_y = QValueAxis()
-        axis_y.setTitleText("value")
-        axis_y.setRange(0, 100)
-        chart.addAxis(axis_y, Qt.AlignLeft)
-        self._rps_series.attachAxis(axis_y)
-        self._latency_series.attachAxis(axis_y)
-
-        self._chart_view = QChartView(chart)
-        self._chart_view.setRenderHint(QPainter.Antialiasing)
-
-        layout = QVBoxLayout()
-        layout.addWidget(self._chart_view)
-        self.setLayout(layout)
-
+        self._rps_chart.addSeries(self._rps_series)
+        self._rps_series.attachAxis(self._rps_axis_x)
+        self._rps_series.attachAxis(self._rps_axis_y)
+        self._latency_lines = []
+        self._band_series = []
+        self.reset_history()
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.addWidget(self._chart_view, 2)
+        layout.addWidget(self._rps_view, 1)
+        self._chart_view.setMinimumHeight(220)
+        self._rps_view.setMinimumHeight(160)
         self._timer = QTimer(self)
         self._timer.setInterval(1000)
         self._timer.timeout.connect(self.refresh)
         self._timer.start()
 
-    def refresh(self) -> None:
-        records = (
-            list(test_record_instance.test_record_list)
-            + list(test_record_instance.error_record_list)
-        )
-        total = len(records)
-        delta = max(total - self._last_count, 0)
-        self._last_count = total
-
-        latencies = [
-            float(record.get("response_time_ms"))
-            for record in records[-200:]
-            if record.get("response_time_ms") is not None
-        ]
-        p95 = _percentile(latencies, 95)
-        now = time.monotonic() - self._start_ts
-        self._buffer.append((now, delta, p95))
-
+    def reset_history(self, start_time: float | None = None) -> None:
+        self._snapshot_windows = None
+        self._start_epoch = math.floor(time.time()) if start_time is None else start_time
         self._rps_series.clear()
-        self._latency_series.clear()
-        for sample in self._buffer:
-            self._rps_series.append(QPointF(sample[0], sample[1]))
-            self._latency_series.append(QPointF(sample[0], sample[2]))
+        self._latency_chart.removeAllSeries()
+        self._latency_lines.clear()
+        self._band_series.clear()
+
+    def set_snapshot(self, snapshot: dict) -> None:
+        """Render complete child window aggregates independently of the bounded request table."""
+        windows = snapshot.get("windows")
+        self._snapshot_windows = list(windows[-_HISTORY_SECONDS:]) if windows is not None else None
+        self.refresh()
+
+    def _current_windows(self):
+        if self._snapshot_windows is not None:
+            end = self._start_epoch
+            if self._snapshot_windows:
+                last = self._snapshot_windows[-1]
+                end = last["start_time"] + last["duration_seconds"]
+            return self._snapshot_windows, max(end, self._start_epoch)
+        now = max(time.time(), self._start_epoch)
+        records = chain(test_record_instance.test_record_list, test_record_instance.error_record_list)
+        return latency_windows(records, start=self._start_epoch, end=now, max_buckets=_HISTORY_SECONDS), now
+
+    def _add_latency(self, series) -> None:
+        self._latency_chart.addSeries(series)
+        series.attachAxis(self._latency_axis_x)
+        series.attachAxis(self._latency_axis_y)
+
+    def _line(self, segment, key: str):
+        series = QLineSeries()
+        series.replace([QPointF(item["start_time"] - self._start_epoch, item[key]) for item in segment])
+        return series
+
+    def _band(self, segment, lower: str, upper: str, color: str):
+        low, high = self._line(segment, lower), self._line(segment, upper)
+        area = QAreaSeries(high, low)
+        # Area boundaries stay caller-owned; parent them explicitly for refresh cleanup.
+        low.setParent(area)
+        high.setParent(area)
+        area.setName(f"{lower.split('_')[0]}–{upper.split('_')[0]}")
+        area.setColor(QColor(color))
+        area.setBorderColor(QColor("transparent"))
+        self._add_latency(area)
+        self._band_series.append(area)
+
+    def _render_latency(self, windows) -> None:
+        self._latency_chart.removeAllSeries()
+        self._latency_lines.clear()
+        self._band_series.clear()
+        for index, segment in enumerate(_segments(windows)):
+            self._band(segment, "p50_ms", "p95_ms", "#664fc3f7")
+            self._band(segment, "p95_ms", "p99_ms", "#33a78bfa")
+            line = self._line(segment, "p50_ms")
+            line.setName("p50")
+            line.setColor(QColor("#1591d0"))
+            line.setPointsVisible(True)
+            self._add_latency(line)
+            self._latency_lines.append(line)
+            if index:
+                for series in (line, *self._band_series[-2:]):
+                    for marker in self._latency_chart.legend().markers(series):
+                        marker.setVisible(False)
+
+    def refresh(self) -> None:
+        windows, now = self._current_windows()
+        self._rps_series.replace([QPointF(item["start_time"] - self._start_epoch, item["rps"]) for item in windows])
+        self._render_latency(windows)
+        left = windows[0]["start_time"] - self._start_epoch if windows else 0
+        right = max(left + 1, now - self._start_epoch)
+        for axis in (self._latency_axis_x, self._rps_axis_x):
+            axis.setRange(left, right)
+        self._latency_axis_y.setRange(0, max(1, max((item["p99_ms"] or 0 for item in windows), default=0) * 1.15))
+        self._rps_axis_y.setRange(0, max(1, max((item["rps"] for item in windows), default=0) * 1.15))

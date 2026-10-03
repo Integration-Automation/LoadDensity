@@ -868,6 +868,7 @@ def test_elasticsearch_unknown_method_and_missing_client(monkeypatch, env):
 
 
 def install_fake_etcd3(monkeypatch, stored: Optional[bytes] = b"value") -> SimpleNamespace:
+    block_import(monkeypatch, "etcd3gw")
     record = SimpleNamespace(client_kwargs=None, calls=[], closed=0)
 
     class FakeEtcdClient:
@@ -927,9 +928,36 @@ def test_etcd_unknown_method_and_missing_client(monkeypatch, env):
     user = etcd_t.EtcdUserWrapper(env)
     user._do_step({"method": "watch"})
     assert env.fired == []
-    block_import(monkeypatch, "etcd3")
+    block_import(monkeypatch, "etcd3", "etcd3gw")
     user._do_step({"method": "connect"})
     assert_failure(env, "ETCD", "connect", RuntimeError, "pip install etcd3")
+
+
+@pytest.mark.parametrize("values,length", [([b"value"], 5), ([], 0)])
+def test_etcd_gateway_preserves_step_results_and_closes_session(monkeypatch, env, values, length):
+    calls = []
+    client = SimpleNamespace(
+        get=lambda key: values,
+        put=lambda key, value: calls.append(("put", key, value)),
+        delete=lambda key: calls.append(("delete", key)),
+        session=SimpleNamespace(close=lambda: calls.append(("close",))),
+    )
+
+    def factory(**kwargs):
+        calls.append(("connect", kwargs))
+        return client
+
+    monkeypatch.setitem(sys.modules, "etcd3gw", make_module("etcd3gw", client=factory))
+    block_import(monkeypatch, "etcd3")
+    user = etcd_t.EtcdUserWrapper(env)
+    for step in [{"method": "connect"}, {"method": "put", "key": "k", "value": "v"},
+                 {"method": "get", "key": "k"}, {"method": "delete", "key": "k"}, {"method": "close"}]:
+        user._do_step(step)
+    assert all(event["exception"] is None for event in env.fired)
+    assert env.fired[2]["response_length"] == length
+    assert calls == [("connect", {"host": "127.0.0.1", "port": 2379}),
+                     ("put", "k", "v"), ("delete", "k"), ("close",)]
+    assert user._client is None
 
 
 # ---------------------------------------------------------------------------

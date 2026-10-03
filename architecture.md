@@ -1,7 +1,7 @@
 # LoadDensity Architecture
 
 > Short overview for people and agents.
-> Last verified: 2026-09-22 against `7cf7901` on `dev`.
+> Last verified: 2026-10-03 against the working tree on `feat/testing-platform`.
 
 ## 1. Purpose
 
@@ -135,6 +135,36 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
 
 ## 6. Cross-project boundaries
 
+`utils.test_record.window_statistics` supplies shared request-start buckets for
+Qt, browser and PNG percentile bands. It merges success/failure samples, leaves
+unmeasured windows null and counts timed requests using actual bucket duration.
+Window percentiles use rounded order statistics; existing aggregate summary keys
+and interpolation remain compatible. Dashboard snapshots add `latency_windows`
+and retain legacy keys. Live charts bound history to 120 buckets; offline defaults
+to 10,000. Protocol events convert monotonic duration clocks to epoch starts.
+The responsive dashboard uses SVG/text nodes and a threaded SSE server.
+
+Locust master/worker runs use scoped native heartbeat settings and rebalancing.
+Startup defaults to failing an unmet healthy ready-worker count; explicit degraded
+policy still requires one worker. Master results add `distributed_health`; this is
+infrastructure health, separate from target request outcomes. `prepare_env` owns
+runner/UI/RPC/auxiliary cleanup, including callback failures during ramp-up;
+direct `create_env` callers own `cleanup_env`. Lifecycle callbacks are
+`on_environment(env)` and `stop_requested()`. No finite-work leases, request replay
+or canonical worker-record aggregation are exposed.
+
+CLI execution retains legacy flags and Python executor return shapes, but now returns a nonzero process exit code after failed actions/SLA gates. `test/smoke` runs real HTTP/report/dashboard/MCP checks in subprocesses against source or an installed wheel. Native async HTTP benchmarking requires base httpx; the `http2` extra adds HTTP/2 support.
+CI derives its Docker installation matrix from declared extras, runs isolated installed-wheel capabilities and smoke checks, and gates publishing on the reusable extras workflow. Compose probes measure Redis/MQTT adapter calls after health checks. The etcd adapter prefers etcd3gw (v3 HTTP gateway) while retaining legacy etcd3 support; this avoids incompatible generated protobuf code in the old extra.
+
+Canonical persistence exports `persist_canonical_records(database_path, context)` and `fetch_canonical_records(database_path, run_id)` from `utils.test_record.sqlite_persistence`. Versioned tables are separate from legacy runs; transaction rollback, run-scoped JSON-aware retry conflicts and read-time schema/identity validation preserve the shared contract.
+
+Canonical request records are an opt-in contract supplied by ActionCore's ``request_record``/
+``request_context`` APIs. ``utils/test_record/contract.py`` adapts legacy results and
+``run_context.py`` exposes explicit run scopes. Locust environments bind the selected context
+to isolated events; asyncio propagates it to its tasks. Canonical APIs require the coordinated
+core release/checkouts, while existing imports and legacy report shapes remain compatible with
+the published dependency floor. The old action-executor record contract is separate and unchanged.
+
 - **PyBreeze (subprocess)** runs `python -m je_load_density --execute_str <json>` or `--execute_file <path>`
   (`PyBreeze/pybreeze/extend/process_executor/python_task_process_manager.py`; the package name is in
   `.../process_executor/load_density/load_density_process.py`). The hidden legacy flags and the
@@ -181,6 +211,39 @@ MCP `load_density.list_executor_commands` tool all read the `LD_*` names from `e
   policy is now the same allowlist here, in MailThunder and in WebRunner (`SAFE_BUILTINS`, 22 names);
   APITestka, FileAutomation, AutoControlGUI and TestPioneer register no builtins at all
   (workspace `progress.md` X-12).
+
+Cloud launchers preflight counts/resources and distinguish accepted submissions from successful execution/provisioning. Public cloud.CloudLaunchError retains accepted worker responses and failure indices. Cloud Run per-run parallelism is rejected (configure the deployed Job); ACI waits its poller and returns unique names/resource IDs. No adapter retries or rolls back launches.
+
+Public package exports and executor command functions resolve their fixed module bindings
+on first use. Importing the package, CLI parser or native HTTP engine does not load Locust
+or patch socket/TLS/threading. Selecting a Locust environment registers its request hook.
+`get_resolver`, `use_resolver` and `register_session_variable` are public APIs. HTTP user
+templates fork variable/session state once per user; ContextVar scopes restore selection,
+while locked CSV/DB providers allocate one coherent row per recursive task resolution.
+CLI action failures are counted through a scoped reporter around public execute_action;
+report callbacks and settings restoration do not require the unreleased core collector API.
+
+The public start_test signature remains compatible and accepts engine through kwargs:
+locust defaults to the existing environment path, asyncio dispatches local native HTTP.
+AsyncRunHandle owns clients/tasks, user resolvers, run summary and cooperative callbacks;
+retiring workers retain explicit stop intent through transport cancellation scopes,
+including load-shape downsizing, retry and journey-step boundaries. The existing
+legacy record/report and canonical opt-in paths remain available. Unsupported protocols,
+distributed options and exporter integrations are retained as outstanding capabilities.
+The desktop Qt supervisor communicates with a fresh engine interpreter through bounded
+JSON frames and a unique cancellation file; no worker mutates Qt objects. Existing PyBreeze
+LoadDensityWidget controls and tab attributes remain available.
+The 128 KiB frame budget retains recent complete request rows; charts consume at most
+120 child-computed windows covering full measurements rather than the bounded row tail.
+
+Locust master opt-in DistributedRunContext composes public strict ActionCore worker contexts.
+Worker distributed_records delivery binds producer epochs/generations to master run identity,
+uses bounded sequenced batches with ACK retry and final drain, and preserves record IDs across
+reconnection. Master whole-batch validation and global deduplication feed legacy reports once.
+env.record_delivery exposes pending/incomplete diagnostics; failure cleanup preserves caller
+exceptions. No durable queue, finite shard replay, session migration or HTTP exactly-once promise
+is part of this native ongoing-load contract. Legacy start-wrapper imports now defer the Locust
+implementation to locust_start.py while preserving the original registry/import attributes.
 
 ## 7. Design constraints
 

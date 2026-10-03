@@ -1,4 +1,5 @@
 je_load_density
+httpx>=0.27
 defusedxml>=0.7.1
 je_action_core>=0.0.2
 pytest

@@ -58,6 +58,24 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261003-07 | 2026-10-03 | Align security annotations with argument-expression scan locations | #done #quality #security #ci | [2026-10](2026-10.md) |
+| U-20261003-06 | 2026-10-03 | Harden smoke XML and document reviewed Codacy false positives | #done #security #quality #ci | [2026-10](2026-10.md) |
+| U-20261003-05 | 2026-10-03 | Expose the shared worker stop query without private access | #done #quality #async | [2026-10](2026-10.md) |
+| U-20261003-04 | 2026-10-03 | Retain async stop intent through transport cancellation | #done #fix #async #ci | [2026-10](2026-10.md) |
+| U-20261003-03 | 2026-10-03 | Isolate extras probes and clean up cancelled async startup | #done #ci #quality #async #gui | [2026-10](2026-10.md) |
+| U-20261003-02 | 2026-10-03 | Add isolated runners and canonical worker delivery | #done #async #gui #distributed #parameters #15 #24 #29 | [2026-10](2026-10.md) |
+| U-20261003-01 | 2026-10-03 | Verify extras matrix and resolve quality findings | #done #ci #quality #25 | [2026-10](2026-10.md) |
+| U-20261002-11 | 2026-10-02 | Share percentile bands and redesign live dashboard | #done #charts #ui #26 | [2026-10](2026-10.md) |
+| U-20261002-10 | 2026-10-02 | Monitor worker health and rebalance native load | #done #distributed | [2026-10](2026-10.md) |
+| U-20261002-09 | 2026-10-02 | Validate cloud launch outcomes and preserve partial failures | #done #cloud | [2026-10](2026-10.md) |
+| U-20261002-08 | 2026-10-02 | Repair Qt Web Push and NATS installation probes | #done #ci #extras | [2026-10](2026-10.md) |
+| U-20261002-07 | 2026-10-02 | Align CI install paths and isolate smoke container permissions | #done #ci | [2026-10](2026-10.md) |
+| U-20261002-06 | 2026-10-02 | Gate publishing on Docker extras and protocol smoke checks | #done #ci #extras | [2026-10](2026-10.md) |
+| U-20261002-05 | 2026-10-02 | Exercise installed wheels and propagate failed SLA status | #done #smoke | [2026-10](2026-10.md) |
+| U-20261002-04 | 2026-10-02 | Scope persisted request IDs to their run | #done #records | [2026-10](2026-10.md) |
+| U-20261002-03 | 2026-10-02 | Persist canonical request records transactionally | #done #records | [2026-10](2026-10.md) |
+| U-20261002-02 | 2026-10-02 | Capture canonical records in Locust and asyncio runs | #migration #records | [2026-10](2026-10.md) |
+| U-20261002-01 | 2026-10-02 | Testing platform design draft and outstanding work | #docs #design | [2026-10](2026-10.md) |
 | U-20261001-12 | 2026-10-01 | Publish jobs build with the locked setuptools | #ci #security #X-13 | [2026-10](2026-10.md) |
 | U-20261001-11 | 2026-10-01 | Publish jobs install hash-locked build tooling | #done #ci #security #X-13 | [2026-10](2026-10.md) |
 | U-20261001-10 | 2026-10-01 | The sdist carries no tests | #done #packaging #X-13 | [2026-10](2026-10.md) |
@@ -120,5 +138,5 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-10.md](2026-10.md) | 2026-10 | 12 |
+| [2026-10.md](2026-10.md) | 2026-10 | 30 |
 | [2026-09.md](2026-09.md) | 2026-09 | 45 |
