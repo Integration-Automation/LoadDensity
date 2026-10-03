@@ -220,6 +220,8 @@ def test_http_template_setup_registers_database_sources(monkeypatch, module_name
 
     from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
 
+    # Security audit: Module suffix comes only from the three literal pytest parameter cases above.
+    # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
     module = importlib.import_module(f"je_load_density.wrapper.user_template.{module_name}")
     monkeypatch.setattr(ParameterResolver, "_read_db", staticmethod(lambda *_args: [{"name": "Alice"}]))
     monkeypatch.setitem(locust_wrapper_proxy.user_dict, proxy_name, SimpleNamespace(configure=lambda *_a, **_k: None))
@@ -314,6 +316,8 @@ thread.start()
 thread.join()
 assert seen[0] is not jar_for_user()
 """
+    # Security audit: Current interpreter executes the fixed test program without a shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     completed = subprocess.run([sys.executable, "-c", script], capture_output=True, text=True, timeout=20)
     assert completed.returncode == 0, completed.stderr
 
@@ -379,5 +383,7 @@ assert resolve('${token}') == 'default'
 assert 'locust' not in sys.modules
 assert 'gevent' not in sys.modules
 """
+    # Security audit: Fixed test program reads the temporary action path from sys.argv; no Python/shell interpolation.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     completed = subprocess.run([sys.executable, "-c", script, str(path)], capture_output=True, text=True, timeout=20)
     assert completed.returncode == 0, completed.stderr

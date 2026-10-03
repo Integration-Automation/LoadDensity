@@ -81,6 +81,9 @@ print(json.dumps({'result': result, 'success': test_record_instance.test_record_
         tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output,
         tempfile.TemporaryFile(mode="w+", encoding="utf-8") as errors,
     ):
+        # Security audit: Fixed interpreter/-c program; task options are JSON in sys.argv[1], not interpolated Python or
+        # shell.
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
         child = subprocess.Popen(arguments, stdout=output, stderr=errors, text=True)
         try:
             deadline = time.monotonic() + 20
@@ -89,6 +92,9 @@ print(json.dumps({'result': result, 'success': test_record_instance.test_record_
             if child.poll() is None:
                 output.seek(0)
                 errors.seek(0)
+                # Security audit: Constructing TimeoutExpired only describes a timed-out process; it does not execute
+                # arguments.
+                # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
                 raise subprocess.TimeoutExpired(arguments, 20, output.read(), errors.read())
         finally:
             if child.poll() is None:

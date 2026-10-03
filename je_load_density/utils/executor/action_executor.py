@@ -37,6 +37,9 @@ def _lazy_command(module: str, attribute: str):
     def command(*args, **kwargs):
         from importlib import import_module
 
+        # Security audit: Private factory captures only module/attribute literals declared below, never action-file
+        # data.
+        # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
         function = getattr(import_module(module), attribute)
         return function(*args, **kwargs)
 

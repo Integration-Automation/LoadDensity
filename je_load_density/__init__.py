@@ -814,6 +814,8 @@ def __getattr__(name: str):
     if target is None:
         raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
     module, attribute = target
+    # Security audit: Only targets from the fixed _EXPORTS map reach this import; unknown names raise before import.
+    # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
     value = getattr(importlib.import_module(module), attribute)
     if module == "locust":
         importlib.import_module("je_load_density.wrapper.event.request_hook")

@@ -45,6 +45,9 @@ console.log(JSON.stringify({name:nodes.tbody.children[0].children[0].textContent
             "latency_windows": [{**window, "start_time": 0},
                                 {**window, "start_time": 1, "p50_ms": None, "p95_ms": None, "p99_ms": None},
                                 {**window, "start_time": 2}]}
+    # Security audit: PATH-resolved Node runs fixed harness code; report/name payloads arrive on stdin, never shell
+    # code.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     completed = subprocess.run([node, "-e", harness], input=json.dumps({"script": script, "data": data}),
                                text=True, encoding="utf-8", capture_output=True, timeout=10, check=False)
     assert completed.returncode == 0, completed.stderr

@@ -50,6 +50,8 @@ def test_unsafe_extra_names_are_rejected_before_shell_parameters(tmp_path):
 def test_cli_writes_checkout_matrix_independently_of_current_directory(tmp_path):
     destination = tmp_path / "github-output"
     (tmp_path / "pyproject.toml").write_text('[project.optional-dependencies]\nattacker = []\n', encoding="utf-8")
+    # Security audit: Fixed checkout matrix script and temporary output path are separate argv values; no shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     completed = subprocess.run([sys.executable, str(ROOT / "scripts/extras_matrix.py"),
                                 "--output", str(destination)],
                                cwd=tmp_path, capture_output=True, text=True, timeout=10, check=False)

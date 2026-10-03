@@ -188,6 +188,8 @@ def mcp() -> None:
     request = {"jsonrpc": "2.0", "id": 1, "method": "initialize",
                "params": {"protocolVersion": "2025-06-18", "capabilities": {},
                           "clientInfo": {"name": "extras-probe", "version": "1"}}}
+    # Security audit: Current interpreter runs the fixed MCP module; the JSON request is stdin data, no shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     response = subprocess.run([sys.executable, "-m", "je_load_density.mcp_server"],
                               input=json.dumps(request) + "\n", text=True, capture_output=True,
                               timeout=30, check=True)

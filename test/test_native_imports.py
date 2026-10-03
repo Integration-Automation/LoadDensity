@@ -18,6 +18,8 @@ events.request.fire(start_time=100, url='http://local', request_type='GET', name
 assert len(test_record_instance.test_record_list) == 1
 """
     )
+    # Security audit: Source is composed only from literal test code and three fixed pytest export names; no shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     result = subprocess.run([sys.executable, "-c", source], capture_output=True, text=True, timeout=20, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
 
@@ -46,6 +48,8 @@ assert 'gevent.monkey' not in sys.modules, 'native import loads gevent monkey pa
 assert original == (socket.socket, ssl.SSLSocket, threading.Thread, time.sleep)
 """
     )
+    # Security audit: Source is composed only from literal test code and fixed pytest import statements; no shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     result = subprocess.run([sys.executable, "-c", source], text=True, capture_output=True, timeout=20, check=False)
     assert result.returncode == 0, result.stdout + result.stderr
 

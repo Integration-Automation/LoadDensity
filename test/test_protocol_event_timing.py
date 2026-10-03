@@ -21,6 +21,8 @@ from je_load_density.wrapper.user_template import _common
     ("websocket", "WebSocketUserWrapper", ("health", 42, 3)),
 ])
 def test_protocol_events_report_epoch_start_and_monotonic_duration(monkeypatch, module_name, class_name, args):
+    # Security audit: Module suffix comes only from the ten literal pytest parameter cases above.
+    # nosemgrep: python.lang.security.audit.non-literal-import.non-literal-import
     module = importlib.import_module(f"je_load_density.wrapper.user_template.{module_name}_user_template")
     clock = SimpleNamespace(time=lambda: 1000, monotonic=lambda: 44)
     monkeypatch.setattr(module, "time", clock)

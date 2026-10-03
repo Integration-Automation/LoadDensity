@@ -48,6 +48,8 @@ def run_probe(extra: str) -> None:
         try:
             if extra == "all":
                 # Each capability chooses its scheduler before SDK/TLS imports.
+                # Security audit: Fixed current script and PROBES-validated capability name run as argv without a shell.
+                # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
                 subprocess.run([sys.executable, str(Path(__file__).resolve()), name], check=True, timeout=120)
             else:
                 PROBES[name]()

@@ -65,6 +65,8 @@ def widget(application, monkeypatch):
 
 def test_parent_import_does_not_patch_native_threads():
     source = "import sys; import je_load_density.gui.main_widget; assert 'locust' not in sys.modules"
+    # Security audit: Current interpreter executes a fixed literal import-isolation program without a shell.
+    # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
     result = subprocess.run([sys.executable, "-c", source], capture_output=True, text=True, timeout=20)
     assert result.returncode == 0, result.stderr
 
@@ -169,9 +171,8 @@ def test_serialized_snapshot_stays_within_reader_byte_limit_and_keeps_latest(mon
 
 
 def test_chart_uses_complete_child_windows_after_request_tail_truncation(application):
-    from je_load_density.gui.run_protocol import make_snapshot
-
     from je_load_density.gui.chart_panel import LiveChartPanel
+    from je_load_density.gui.run_protocol import make_snapshot
 
     records = [{"name": "first", "start_time": 100.5, "response_time_ms": 10}] * 250
     records += [{"name": "second", "start_time": 101.5, "response_time_ms": 100}] * 250
@@ -212,9 +213,10 @@ def test_action_failure_remains_visible_and_reports_continue(tmp_path):
 
 def test_session_package_commands_are_registered_on_private_executor(tmp_path, monkeypatch):
     from je_load_density.gui.run_worker import RunSession
-
     from je_load_density.utils.executor.action_executor import executor
-    from je_load_density.utils.package_manager.package_manager_class import package_manager
+    from je_load_density.utils.package_manager.package_manager_class import (
+        package_manager,
+    )
 
     monkeypatch.setattr(package_manager, "allowed_packages", {"json"})
     monkeypatch.setattr(package_manager, "allow_arbitrary_packages", False)
@@ -263,9 +265,8 @@ def test_cleanup_failure_still_notifies_failed_with_retained_summary(application
 
 
 def test_scripted_load_preserved_with_selected_engine_and_callbacks(tmp_path, monkeypatch):
-    from je_load_density.gui.run_worker import RunSession
-
     from je_load_density.engine import entrypoints
+    from je_load_density.gui.run_worker import RunSession
 
     calls = []
     monkeypatch.setattr(entrypoints, "start_test", lambda *args, **kwargs: calls.append((args, kwargs)))

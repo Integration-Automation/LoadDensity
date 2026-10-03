@@ -1,4 +1,4 @@
-"""Stdlib smoke harness; Docker copies it outside the checkout to test the installed wheel."""
+"""Installed-wheel smoke harness; Docker copies it outside the checkout to test the installed wheel."""
 
 import json
 import os
@@ -12,10 +12,22 @@ from contextlib import closing
 from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
-from xml.etree import ElementTree
+
+from defusedxml import ElementTree
+from defusedxml.common import DefusedXmlException
 
 SMOKE_DIRECTORY = Path(__file__).resolve().parent
 PROCESS_TIMEOUT_SECONDS = 45
+
+
+class ReportXmlSecurity(unittest.TestCase):
+    def test_junit_parser_rejects_entity_expansion(self) -> None:
+        payload = '<!DOCTYPE testsuite [<!ENTITY count "1">]><testsuite>&count;</testsuite>'
+        with tempfile.TemporaryDirectory(prefix="loaddensity-xml-") as directory:
+            path = Path(directory) / "junit.xml"
+            path.write_text(payload, encoding="utf-8")
+            with self.assertRaises(DefusedXmlException):
+                ElementTree.parse(path)
 
 
 class WheelSmoke(unittest.TestCase):
@@ -28,6 +40,9 @@ class WheelSmoke(unittest.TestCase):
         if (source / "je_load_density").is_dir():
             cls.environment["PYTHONPATH"] = str(source) + os.pathsep + cls.environment.get("PYTHONPATH", "")
         ready = cls.directory / "ready.json"
+        # Security audit: Current interpreter runs our sibling loopback server; temporary path is one argv value, no
+        # shell.
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
         cls.server = subprocess.Popen(
             [sys.executable, str(SMOKE_DIRECTORY / "server.py"), str(ready)],
             stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, cwd=cls.directory,
@@ -58,6 +73,8 @@ class WheelSmoke(unittest.TestCase):
         cls.temporary.cleanup()
 
     def command(self, *arguments: str, input_text: str | None = None) -> subprocess.CompletedProcess:
+        # Security audit: Callers supply fixed module/script flags; dynamic URLs/paths stay argv data, never shell code.
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
         return subprocess.run(
             [sys.executable, *arguments], input=input_text, capture_output=True, text=True,
             encoding="utf-8", errors="replace", env=self.environment, cwd=self.directory,
