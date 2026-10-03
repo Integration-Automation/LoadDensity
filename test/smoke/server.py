@@ -25,7 +25,7 @@ class Handler(BaseHTTPRequestHandler):
         self.end_headers()
         Thread(target=self.server.shutdown, daemon=True).start()
 
-    def log_message(self, _format: str, *_args: object) -> None:
+    def log_message(self, format: str, *args: object) -> None:
         pass
 
 

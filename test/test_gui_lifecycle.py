@@ -5,6 +5,7 @@ import json
 import os
 import subprocess
 import sys
+import tempfile
 import time
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -168,8 +169,9 @@ def test_serialized_snapshot_stays_within_reader_byte_limit_and_keeps_latest(mon
 
 
 def test_chart_uses_complete_child_windows_after_request_tail_truncation(application):
-    from je_load_density.gui.chart_panel import LiveChartPanel
     from je_load_density.gui.run_protocol import make_snapshot
+
+    from je_load_density.gui.chart_panel import LiveChartPanel
 
     records = [{"name": "first", "start_time": 100.5, "response_time_ms": 10}] * 250
     records += [{"name": "second", "start_time": 101.5, "response_time_ms": 100}] * 250
@@ -210,6 +212,7 @@ def test_action_failure_remains_visible_and_reports_continue(tmp_path):
 
 def test_session_package_commands_are_registered_on_private_executor(tmp_path, monkeypatch):
     from je_load_density.gui.run_worker import RunSession
+
     from je_load_density.utils.executor.action_executor import executor
     from je_load_density.utils.package_manager.package_manager_class import package_manager
 
@@ -260,8 +263,9 @@ def test_cleanup_failure_still_notifies_failed_with_retained_summary(application
 
 
 def test_scripted_load_preserved_with_selected_engine_and_callbacks(tmp_path, monkeypatch):
-    from je_load_density.engine import entrypoints
     from je_load_density.gui.run_worker import RunSession
+
+    from je_load_density.engine import entrypoints
 
     calls = []
     monkeypatch.setattr(entrypoints, "start_test", lambda *args, **kwargs: calls.append((args, kwargs)))
@@ -287,6 +291,81 @@ def test_child_incidental_output_is_visible_without_credentials(monkeypatch):
     message = json.loads(output.getvalue())
     assert message["type"] == "log"
     assert "secret" not in message["text"]
+
+
+@pytest.fixture
+def worker_cli(tmp_path, monkeypatch):
+    from je_load_density.gui import run_worker
+
+    monkeypatch.setattr(tempfile, "gettempdir", lambda: str(tmp_path))
+    directory = tmp_path / "loaddensity-gui-abcdefgh"
+    directory.mkdir()
+    config = directory / "run.json"
+    config.write_text('{"engine":"asyncio"}', encoding="utf-8")
+    control = directory / "stop"
+    calls = []
+    monkeypatch.setattr(run_worker, "run", lambda *args: calls.append(args))
+    monkeypatch.setattr(sys, "argv", ["worker", "--config", str(config), "--control", str(control)])
+    return run_worker, config, control, calls
+
+
+@pytest.mark.parametrize("cancel_requested", [False, True])
+def test_worker_cli_accepts_private_settings_and_matching_cancel_file(worker_cli, cancel_requested):
+    worker, config, control, calls = worker_cli
+    if cancel_requested:
+        control.touch()
+    worker.main()
+    assert calls[0][0] == {"engine": "asyncio"}
+    assert calls[0][1] == control
+    assert len(calls) == 1
+
+
+@pytest.mark.parametrize("invalid_path", ["outside", "filename", "control", "mismatch", "traversal", "nested"])
+def test_worker_cli_rejects_untrusted_paths_before_reading(worker_cli, monkeypatch, invalid_path):
+    from pathlib import Path
+
+    worker, config, control, calls = worker_cli
+    if invalid_path == "outside":
+        config = config.parent.parent / "run.json"
+    elif invalid_path == "filename":
+        config = config.with_name("credentials.json")
+    elif invalid_path == "control":
+        control = control.with_name("credentials.json")
+    elif invalid_path == "mismatch":
+        control = control.parent.parent / "loaddensity-gui-ijklmnop" / "stop"
+    elif invalid_path == "traversal":
+        config = config.parent / ".." / config.parent.name / "run.json"
+    else:
+        config = config.parent / "nested" / "run.json"
+        control = config.with_name("stop")
+    monkeypatch.setattr(sys, "argv", ["worker", "--config", str(config), "--control", str(control)])
+
+    def forbidden_read(*args, **kwargs):
+        raise AssertionError("Untrusted configuration was read")
+
+    monkeypatch.setattr(Path, "read_text", forbidden_read)
+    with pytest.raises(ValueError, match="private worker"):
+        worker.main()
+    assert calls == []
+
+
+@pytest.mark.parametrize("escaped_file", ["config", "control"])
+def test_worker_cli_rejects_resolved_escape_before_reading(worker_cli, monkeypatch, escaped_file):
+    from pathlib import Path
+
+    worker, config, control, calls = worker_cli
+    resolve = Path.resolve
+    escaped_path = config if escaped_file == "config" else control
+
+    def escaped_resolve(path, *args, **kwargs):
+        if path == escaped_path:
+            return config.parent.parent / "credentials.json"
+        return resolve(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "resolve", escaped_resolve)
+    with pytest.raises(ValueError, match="private worker"):
+        worker.main()
+    assert calls == []
 
 
 def test_unresponsive_child_is_killed_and_thread_joined(application, monkeypatch, tmp_path):

@@ -77,8 +77,9 @@ def test_foreign_identity_rejects_whole_batch(field, value):
     run = aggregate()
     bad = measured(identifier="record-two")
     bad[field] = value
+    records = [measured(), bad]
     with pytest.raises(ValueError, match=field):
-        run.ingest_batch("worker-a", [measured(), bad])
+        run.ingest_batch("worker-a", records)
     assert run.snapshot() == []
 
 
@@ -87,16 +88,18 @@ def test_conflicting_retry_rejects_new_records_in_same_batch():
     original = measured()
     run.ingest_batch("worker-a", [original])
     conflicting = measured(response_time_ms=25.0)
+    records = [measured(identifier="record-new"), conflicting]
     with pytest.raises(ValueError, match="conflicting"):
-        run.ingest_batch("worker-a", [measured(identifier="record-new"), conflicting])
+        run.ingest_batch("worker-a", records)
     assert run.snapshot() == [original]
 
 
 def test_record_identifier_cannot_be_reused_by_another_worker():
     run = aggregate()
     run.ingest_batch("worker-a", [measured()])
+    records = [measured("worker-b")]
     with pytest.raises(ValueError, match="record_id"):
-        run.ingest_batch("worker-b", [measured("worker-b")])
+        run.ingest_batch("worker-b", records)
     assert len(run.snapshot()) == 1
 
 
@@ -104,8 +107,9 @@ def test_malformed_record_rejects_entire_batch():
     run = aggregate()
     malformed = measured(identifier="record-two")
     malformed["schema_version"] = 2
+    records = [measured(), malformed]
     with pytest.raises(ValueError, match="schema_version"):
-        run.ingest_batch("worker-a", [measured(), malformed])
+        run.ingest_batch("worker-a", records)
     assert run.snapshot() == []
 
 
@@ -156,8 +160,9 @@ def test_pending_overflow_fails_without_unbounded_queue_growth():
     configure(producer)
     producer.capture_legacy(legacy_entry(), "passed")
     producer.capture_legacy(legacy_entry(), "passed")
+    entry = legacy_entry()
     with pytest.raises(module.RecordDeliveryError, match="pending"):
-        producer.capture_legacy(legacy_entry(), "passed")
+        producer.capture_legacy(entry, "passed")
     assert producer.snapshot()["pending_records"] == 2
     assert env.process_exit_code == 1
     env.load_density_tasks.kill()

@@ -4,7 +4,9 @@ import argparse
 import contextlib
 import json
 import math
+import re
 import sys
+import tempfile
 import time
 from pathlib import Path
 from typing import Any, Callable
@@ -169,16 +171,42 @@ def run(config: dict, control: Path, protocol: Protocol) -> None:
         protocol.emit("terminal", data={"state": state, "summary": session.snapshot["summary"]})
 
 
+def _private_worker_path(argument: str, filename: str) -> Path:
+    """Rebuild a fixed worker filename inside one GUI-created temporary directory."""
+    supplied = Path(argument)
+    if not supplied.is_absolute() or ".." in supplied.parts:
+        raise ValueError("Invalid private worker path")
+    directory = supplied.parent.name
+    if re.fullmatch(r"loaddensity-gui-[a-z0-9_]{8}", directory, flags=re.ASCII) is None:
+        raise ValueError("Invalid private worker directory")
+    temporary_root = Path(tempfile.gettempdir()).absolute()
+    expected = temporary_root / directory / filename
+    canonical = temporary_root.resolve() / directory / filename
+    if supplied != expected or supplied.resolve() != canonical:
+        raise ValueError("Invalid private worker path")
+    return canonical
+
+
+def _private_worker_paths(config: str, control: str) -> tuple[Path, Path]:
+    """Reject unrelated configuration and cancellation files before reading either."""
+    config_path = _private_worker_path(config, "run.json")
+    control_path = _private_worker_path(control, "stop")
+    if config_path.parent != control_path.parent:
+        raise ValueError("Mismatched private worker paths")
+    return config_path, control_path
+
+
 def main() -> None:
     """Read private settings and reserve stdout for bounded worker frames."""
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", required=True)
     parser.add_argument("--control", required=True)
     args = parser.parse_args()
+    config_path, control_path = _private_worker_paths(args.config, args.control)
     protocol = Protocol()
-    config = json.loads(Path(args.config).read_text(encoding="utf-8"))
+    config = json.loads(config_path.read_text(encoding="utf-8"))
     with contextlib.redirect_stdout(protocol), contextlib.redirect_stderr(protocol):
-        run(config, Path(args.control), protocol)
+        run(config, control_path, protocol)
 
 
 if __name__ == "__main__":

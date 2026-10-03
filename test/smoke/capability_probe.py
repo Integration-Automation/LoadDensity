@@ -1,8 +1,11 @@
 """Non-skipping installation probes for every declared package extra."""
 
 import argparse
+import subprocess
+import sys
 import traceback
 from collections.abc import Callable
+from pathlib import Path
 
 import platform_probes
 import protocol_probes
@@ -43,7 +46,11 @@ def run_probe(extra: str) -> None:
         if name not in PROBES:
             raise ValueError(f"extra: missing capability probe for {name}")
         try:
-            PROBES[name]()
+            if extra == "all":
+                # Each capability chooses its scheduler before SDK/TLS imports.
+                subprocess.run([sys.executable, str(Path(__file__).resolve()), name], check=True, timeout=120)
+            else:
+                PROBES[name]()
             print(f"capability passed: {name}", flush=True)
         except Exception:
             if extra != "all":

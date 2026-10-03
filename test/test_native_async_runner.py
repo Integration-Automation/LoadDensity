@@ -4,9 +4,9 @@ import asyncio
 
 import httpx
 import pytest
+from je_load_density.engine.entrypoints import start_test
 
 from je_load_density.engine.asyncio_engine import run_async_load
-from je_load_density.engine.entrypoints import start_test
 from je_load_density.utils.parameterization import get_resolver, use_resolver
 from je_load_density.utils.test_record.test_record_class import test_record_instance
 
@@ -97,7 +97,8 @@ def test_virtual_users_keep_cookie_and_extracted_token_paired(transport_factory)
             )
         )
     assert result["requests"] > 0
-    assert checked and all(cookie == f"token={token}" for token, cookie in checked)
+    assert checked
+    assert all(cookie == f"token={token}" for token, cookie in checked)
 
 
 def test_assertion_failure_is_measured_and_retried(transport_factory):
@@ -141,8 +142,9 @@ def test_assertion_failure_is_measured_and_retried(transport_factory):
 )
 def test_invalid_capabilities_fail_before_opening_clients(transport_factory, options):
     clients = transport_factory(lambda _request: httpx.Response(200))
+    run = run_async_load([{"request_url": "https://local", "method": "get"}], **options)
     with pytest.raises((ValueError, TypeError)):
-        asyncio.run(run_async_load([{"request_url": "https://local", "method": "get"}], **options))
+        asyncio.run(run)
     assert clients == []
 
 
@@ -157,8 +159,9 @@ def test_invalid_capabilities_fail_before_opening_clients(transport_factory, opt
 )
 def test_unsupported_steps_fail_preflight(transport_factory, task):
     clients = transport_factory(lambda _request: httpx.Response(200))
+    run = run_async_load([{"method": "get", "request_url": "https://local", **task}])
     with pytest.raises(ValueError):
-        asyncio.run(run_async_load([{"method": "get", "request_url": "https://local", **task}]))
+        asyncio.run(run)
     assert not clients
 
 
@@ -185,7 +188,8 @@ def test_stop_during_io_closes_clients_without_failure_records(transport_factory
         assert handle.snapshot()["users"] == 0
 
     asyncio.run(run())
-    assert clients and all(client.is_closed for client in clients)
+    assert clients
+    assert all(client.is_closed for client in clients)
 
 
 def test_repeated_run_summary_does_not_include_legacy_history(transport_factory):
@@ -230,8 +234,9 @@ def test_completed_worker_error_is_observed_before_forced_deadline(monkeypatch):
 
 def test_worker_failure_at_run_deadline_propagates(transport_factory):
     transport_factory(lambda _request: (_ for _ in ()).throw(ValueError("invalid transport")))
+    run = run_async_load([{"request_url": "https://local"}], users=1, duration_seconds=0.005)
     with pytest.raises(ValueError, match="invalid transport"):
-        asyncio.run(run_async_load([{"request_url": "https://local"}], users=1, duration_seconds=0.005))
+        asyncio.run(run)
 
 
 def test_expected_error_status_can_pass_assertions(transport_factory):
@@ -291,14 +296,13 @@ def test_httpx_connection_failure_uses_transient_retry_budget(transport_factory)
 )
 def test_static_invalid_second_step_fails_before_any_io(transport_factory, task):
     clients = transport_factory(lambda _request: httpx.Response(200))
+    run = run_async_load(
+        [{"request_url": "https://local"}, {"request_url": "https://local", **task}],
+        users=1,
+        duration_seconds=0.03,
+    )
     with pytest.raises(ValueError):
-        asyncio.run(
-            run_async_load(
-                [{"request_url": "https://local"}, {"request_url": "https://local", **task}],
-                users=1,
-                duration_seconds=0.03,
-            )
-        )
+        asyncio.run(run)
     assert clients == []
 
 
@@ -314,32 +318,30 @@ def test_invalid_static_transport_fails_before_earlier_step_io(transport_factory
         return original(**options)
 
     monkeypatch.setattr(httpx, "AsyncClient", client)
+    run = run_async_load(
+        [{"request_url": "https://local"},
+         {"request_url": "https://local", "cert": "invalid.pem", **additional_options}],
+        users=1,
+        duration_seconds=0.1,
+        variables={"verify_tls": False},
+    )
     with pytest.raises(ValueError, match="invalid certificate"):
-        asyncio.run(
-            run_async_load(
-                [{"request_url": "https://local"},
-                 {"request_url": "https://local", "cert": "invalid.pem", **additional_options}],
-                users=1,
-                duration_seconds=0.1,
-                variables={"verify_tls": False},
-            )
-        )
+        asyncio.run(run)
     assert received == []
     assert all(client.is_closed for client in clients)
 
 
 def test_unknown_shape_option_fails_before_any_io(transport_factory):
     clients = transport_factory(lambda _request: httpx.Response(200))
+    run = run_async_load(
+        [{"request_url": "https://local"}],
+        users=1,
+        duration_seconds=0.03,
+        load_shape="spike",
+        shape_config={"baseline_users": 1, "spwan_rate": 100},
+    )
     with pytest.raises(ValueError):
-        asyncio.run(
-            run_async_load(
-                [{"request_url": "https://local"}],
-                users=1,
-                duration_seconds=0.03,
-                load_shape="spike",
-                shape_config={"baseline_users": 1, "spwan_rate": 100},
-            )
-        )
+        asyncio.run(run)
     assert clients == []
 
 
@@ -433,5 +435,35 @@ def test_worker_cleanup_error_propagates_on_stop_and_scale_down(operation):
             if not handle._task.done():
                 handle.stop()
                 await asyncio.gather(handle._task, return_exceptions=True)
+
+    asyncio.run(run())
+
+
+def test_cancellation_during_start_closes_owned_run_and_clients(transport_factory, monkeypatch):
+    from je_load_density.engine import asyncio_engine
+
+    clients = transport_factory(lambda _request: httpx.Response(200))
+    handles = []
+
+    class TrackedHandle(asyncio_engine.AsyncRunHandle):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            handles.append(self)
+
+    monkeypatch.setattr(asyncio_engine, "AsyncRunHandle", TrackedHandle)
+
+    async def run():
+        caller = asyncio.create_task(
+            asyncio_engine.run_async_load([{"request_url": "https://local"}], duration_seconds=20)
+        )
+        asyncio.get_running_loop().call_soon(caller.cancel)
+        with pytest.raises(asyncio.CancelledError):
+            await caller
+        assert len(handles) == 1
+        assert handles[0]._task.done()
+        assert handles[0].state == "cancelled"
+        assert all(worker.done() for worker in handles[0].workers)
+        assert clients
+        assert all(client.is_closed for client in clients)
 
     asyncio.run(run())

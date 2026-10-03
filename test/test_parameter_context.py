@@ -38,16 +38,20 @@ def test_fork_detaches_nested_variable_values_and_future_registration():
 
 
 def test_scoped_facade_restores_nested_context_and_keeps_default_state():
+    def fail_in_scope(resolver):
+        with parameters.use_resolver(resolver):
+            register_variable("token", "second")
+            assert parameters.resolve("${token}") == "second"
+            raise RuntimeError("scope failed")
+
     register_variable("token", "default")
     first, second = parameter_resolver.fork(), parameter_resolver.fork()
     saved_resolve = parameter_resolver.resolve
     with parameters.use_resolver(first):
         register_variable("token", "first")
         assert saved_resolve("${var.token}") == "first"
-        with pytest.raises(RuntimeError), parameters.use_resolver(second):
-            register_variable("token", "second")
-            assert parameters.resolve("${token}") == "second"
-            raise RuntimeError("scope failed")
+        with pytest.raises(RuntimeError):
+            fail_in_scope(second)
         assert parameters.get_resolver() is first
         assert parameters.resolve("${token}") == "first"
     assert saved_resolve("${token}") == "default"

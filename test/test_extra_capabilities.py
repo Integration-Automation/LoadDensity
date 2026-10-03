@@ -45,13 +45,25 @@ def test_missing_declared_capability_is_a_failure(monkeypatch):
 
 
 def test_all_probe_reports_failures_and_still_exercises_other_capabilities(monkeypatch):
+    import subprocess
+
     probe_module = probes(monkeypatch)
     calls = []
+    local_calls = []
 
     def broken():
         raise ImportError("missing dependency")
 
-    monkeypatch.setattr(probe_module, "PROBES", {"broken": broken, "healthy": lambda: calls.append("healthy")})
+    def child(arguments, **options):
+        calls.append(arguments[-1])
+        assert options["check"] is True
+        assert options["timeout"] > 0
+        if arguments[-1] == "broken":
+            raise subprocess.CalledProcessError(1, arguments)
+
+    monkeypatch.setattr(probe_module, "PROBES", {"broken": broken, "healthy": lambda: local_calls.append("healthy")})
+    monkeypatch.setattr(subprocess, "run", child)
     with pytest.raises(RuntimeError, match="broken"):
         probe_module.run_probe("all")
-    assert calls == ["healthy"]
+    assert calls == ["broken", "healthy"]
+    assert local_calls == []

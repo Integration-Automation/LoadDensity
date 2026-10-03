@@ -105,7 +105,12 @@ def number(value: Any, name: str, *, integer: bool = False, minimum: float = 0) 
 
 
 def _validate_rules(task: dict) -> None:
-    for rule in task.get("assertions") or []:
+    _validate_assertions(task.get("assertions") or [])
+    _validate_extractors(task.get("extract") or [])
+
+
+def _validate_assertions(rules: list) -> None:
+    for rule in rules:
         if not isinstance(rule, dict) or rule.get("type") not in _ASSERTIONS:
             raise ValueError("Unsupported native assertion")
         _rule_fields(rule, {"type", "value", "path", "name"})
@@ -113,7 +118,10 @@ def _validate_rules(task: dict) -> None:
             raise ValueError("Assertions require value")
         if rule["type"] == "status_code":
             number(rule.get("value"), "assertion status_code", integer=True, minimum=100)
-    for rule in task.get("extract") or []:
+
+
+def _validate_extractors(rules: list) -> None:
+    for rule in rules:
         if not isinstance(rule, dict) or rule.get("from", "json_path") not in _EXTRACTORS:
             raise ValueError("Unsupported native extractor")
         _rule_fields(rule, {"from", "var", "scope", "path", "name"})
@@ -130,13 +138,20 @@ def _rule_fields(rule: dict, fields: set) -> None:
 
 
 def _validate_timing(task: dict) -> None:
-    retry = task.get("retry")
+    _validate_retry(task.get("retry"))
+    _validate_think_time(task.get("think_time", 0))
+    _validate_throttle(task.get("throttle"))
+
+
+def _validate_retry(retry: Any) -> None:
     if retry is not None:
         if not isinstance(retry, dict) or set(retry) - _RETRY_FIELDS.keys():
             raise ValueError("Unsupported retry configuration")
         for key, value in retry.items():
             number(value, f"retry.{key}", integer=key in {"transient", "flaky", "permanent"})
-    think = task.get("think_time", 0)
+
+
+def _validate_think_time(think: Any) -> None:
     if isinstance(think, dict):
         if set(think) - {"min", "max"}:
             raise ValueError("Unsupported think_time configuration")
@@ -144,7 +159,9 @@ def _validate_timing(task: dict) -> None:
         number(think.get("max", think.get("min", 0)), "think_time.max")
     else:
         number(think, "think_time")
-    throttle = task.get("throttle")
+
+
+def _validate_throttle(throttle: Any) -> None:
     if throttle is not None:
         if not isinstance(throttle, dict) or set(throttle) - {"key", "rps", "burst"}:
             raise ValueError("Unsupported throttle configuration")
@@ -193,17 +210,20 @@ def _validate_task(task: dict) -> None:
         raise ValueError("Only HTTP(S) URLs are supported")
     if "timeout" in task and "${" not in str(task["timeout"]):
         number(task["timeout"], "timeout", minimum=0.000001)
-    auth = task.get("auth")
+    _validate_auth(task.get("auth"))
+    _request_types(task)
+    number(task.get("weight", 1), "weight", integer=True)
+    _validate_rules(task)
+    _validate_timing(task)
+
+
+def _validate_auth(auth: Any) -> None:
     if auth is not None and (not isinstance(auth, dict) or auth.get("type") not in {"basic", "bearer"}):
         raise ValueError("Native auth supports basic and bearer")
     if auth is not None:
         names = {"type", "username", "password"} if auth["type"] == "basic" else {"type", "token"}
         if set(auth) - names:
             raise ValueError("Unsupported auth configuration")
-    _request_types(task)
-    number(task.get("weight", 1), "weight", integer=True)
-    _validate_rules(task)
-    _validate_timing(task)
 
 
 def validate_shape(name: str | None, config: dict | None) -> None:

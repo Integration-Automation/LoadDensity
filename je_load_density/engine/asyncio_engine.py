@@ -108,6 +108,13 @@ class AsyncRunHandle:
         self._loop = asyncio.get_running_loop()
         self.semaphore = asyncio.Semaphore(self.limit)
         self._task = asyncio.create_task(self._execute())
+        # Let the owned run begin before returning control to the caller.
+        try:
+            await asyncio.sleep(0)
+        except asyncio.CancelledError:
+            self._task.cancel()
+            await asyncio.gather(self._task, return_exceptions=True)
+            raise
         return self
 
     def stop(self) -> None:
@@ -223,7 +230,7 @@ class AsyncRunHandle:
         self.workers = [task for task in self.workers if not task.done()]
 
     async def _schedule(self, httpx) -> None:
-        credits, previous = 1.0, self.started
+        spawn_credits, previous = 1.0, self.started
         while not self._stop.is_set():
             self._check_workers()
             now = time.monotonic()
@@ -238,10 +245,10 @@ class AsyncRunHandle:
             if target is None:
                 return
             count, rate = target
-            credits = min(max(count, 1), credits + (now - previous) * rate)
+            spawn_credits = min(max(count, 1), spawn_credits + (now - previous) * rate)
             previous = now
-            await self._resize(httpx, count, int(credits))
-            credits -= self._spawned
+            await self._resize(httpx, count, int(spawn_credits))
+            spawn_credits -= self._spawned
             await asyncio.sleep(min(0.02, max(0, self.duration - elapsed)))
 
     async def _resize(self, httpx, count: int, available: int) -> None:
