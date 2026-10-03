@@ -173,15 +173,15 @@ async def execute_step(pool: UserClientPool, raw_task: dict, run) -> None:
     throttle = task.get("throttle")
     policy = retry_policy(task["retry"]) if "retry" in task else None
     attempt_number = 0
-    while not run._worker_stopping():
+    while not run.worker_stop_requested():
         if throttle:
             await run.throttle(throttle).acquire()
         async with run.semaphore:
-            if run._worker_stopping():
+            if run.worker_stop_requested():
                 return
             attempt = await measure(pool, task, run.base_url)
         record_attempt(attempt, run)
-        if run._worker_stopping():
+        if run.worker_stop_requested():
             return
         attempt_number += 1
         if attempt.error is None or policy is None:
@@ -190,5 +190,5 @@ async def execute_step(pool: UserClientPool, raw_task: dict, run) -> None:
         if not decision.will_retry:
             break
         await asyncio.sleep(decision.delay_seconds)
-    if not run._worker_stopping():
+    if not run.worker_stop_requested():
         await asyncio.sleep(_think_time_seconds(task.get("think_time")))

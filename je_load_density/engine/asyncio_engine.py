@@ -218,7 +218,7 @@ class AsyncRunHandle:
             if not task.done():
                 task.cancel()
 
-    def _worker_stopping(self) -> bool:
+    def worker_stop_requested(self) -> bool:
         """Keep stop intent even when transport cancellation scopes absorb the exception."""
         return self._stop.is_set() or asyncio.current_task() in self._retiring
 
@@ -283,13 +283,13 @@ class AsyncRunHandle:
             pool = UserClientPool(httpx, self.http2, self.verify_context)
         with use_resolver(resolver):
             async with pool:
-                while not self._worker_stopping():
+                while not self.worker_stop_requested():
                     tasks = self.payload["tasks"]
                     if self.payload["mode"] == "weighted":
                         chosen = _pick_weighted(tasks)
                         tasks = [] if chosen is None else [chosen]
                     for task in tasks:
-                        if self._worker_stopping():
+                        if self.worker_stop_requested():
                             return
                         if _condition_passes(task):
                             await execute_step(pool, task, self)

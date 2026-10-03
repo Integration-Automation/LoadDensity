@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261003-05 | 2026-10-03 | Expose the shared worker stop query without private access | #done #quality #async | [2026-10](2026-10.md) |
 | U-20261003-04 | 2026-10-03 | Retain async stop intent through transport cancellation | #done #fix #async #ci | [2026-10](2026-10.md) |
 | U-20261003-03 | 2026-10-03 | Isolate extras probes and clean up cancelled async startup | #done #ci #quality #async #gui | [2026-10](2026-10.md) |
 | U-20261003-02 | 2026-10-03 | Add isolated runners and canonical worker delivery | #done #async #gui #distributed #parameters #15 #24 #29 | [2026-10](2026-10.md) |
