@@ -5,6 +5,7 @@ Translates LoadDensity failures into SARIF results so they can land in
 GitHub code scanning, GitLab security dashboards, or SonarQube.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import json
 import os
 from typing import Any, Dict, List, Optional
@@ -62,7 +63,7 @@ def generate_sarif_report(
             "results": [_result_for(record) for record in failures],
         }],
     }
-    file_path = f"{report_name}.sarif.json"
+    file_path = report_path(f"{report_name}.sarif.json")
     with open(file_path, "w", encoding="utf-8") as handle:
         json.dump(document, handle, ensure_ascii=False, indent=2)
     return os.path.abspath(file_path)

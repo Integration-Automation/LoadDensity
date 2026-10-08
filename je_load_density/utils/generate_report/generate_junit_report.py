@@ -1,3 +1,4 @@
+from je_load_density.utils.generate_report.report_path import report_path
 import sys
 from html import escape
 from typing import Optional
@@ -45,7 +46,7 @@ def generate_junit_report(report_name: str = "loaddensity-junit") -> Optional[st
     parts.append("</testsuite>")
     xml_body = "".join(parts)
 
-    path = f"{report_name}.xml"
+    path = report_path(f"{report_name}.xml")
     try:
         with open(path, "w", encoding="utf-8") as fh:
             fh.write(xml_body)

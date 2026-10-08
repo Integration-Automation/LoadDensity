@@ -6,6 +6,7 @@ Pointing ``allure serve <dir>`` at the directory renders the LoadDensity
 run inside any existing Allure dashboard.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import json
 import os
 import time
@@ -57,6 +58,7 @@ def generate_allure_report(
     label: Optional[str] = None,
 ) -> str:
     """Write one ``*-result.json`` file per record. Returns the directory path."""
+    output_dir = report_path(output_dir)
     os.makedirs(output_dir, exist_ok=True)
     if label:
         env_path = os.path.join(output_dir, "environment.properties")

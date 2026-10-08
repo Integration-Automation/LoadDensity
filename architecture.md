@@ -175,7 +175,10 @@ the published dependency floor. The old action-executor record contract is separ
   generates scripts that use `from je_load_density import start_test` (`pybreeze/utils/curl_import/script_templates.py`).
 - **TestPioneer**: `with: load-runner` imports `je_load_density.execute_action` in-process
   (`test_pioneer/executor/run/utils.py`) after setting `LOCUST_SKIP_MONKEY_PATCH=1`. `parallel_run`
-  spawns `python -m je_load_density --execute_file <script>` (`parallel_run.py`). Anyone embedding
+  spawns `python -m je_load_density --execute_file <script>` (`parallel_run.py`) and reads its exit
+  status and the `<name>_success.json` / `<name>_failure.json` pair. It sets `TEST_PIONEER_ARTIFACT_DIR`
+  for the runner, in a child process and in-process alike; `utils/generate_report/report_path.py` places
+  a report with a relative name below it (`test/test_report_path.py`). Anyone embedding
   this package must keep gevent patching in mind; the socket server calls `monkey.patch_all()`.
 - **APITestka (subprocess)**: `apitestka load run` / `AT_run_load_test`
   (`APITestka/je_api_testka/integrations/load_density_runner.py`) runs `python -m je_load_density --execute_file <file>`

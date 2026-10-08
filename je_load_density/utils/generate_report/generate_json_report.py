@@ -1,3 +1,4 @@
+from je_load_density.utils.generate_report.report_path import report_path
 import json
 import sys
 from threading import Lock
@@ -59,8 +60,8 @@ def generate_json_report(json_file_name: str = "default_name") -> Tuple[str, str
     """
     success_dict, failure_dict = generate_json()
 
-    success_path = f"{json_file_name}_success.json"
-    failure_path = f"{json_file_name}_failure.json"
+    success_path = report_path(f"{json_file_name}_success.json")
+    failure_path = report_path(f"{json_file_name}_failure.json")
 
     try:
         with _json_report_lock:

@@ -627,6 +627,8 @@ generate_summary_report("report-sum")    # totals + per-name p50/p90/p95/p99
 | JUnit | `<base>-junit.xml`(CI 原生) | single |
 | Summary | `<base>.json`(per-name p50/p90/p95/p99) | single |
 
+由 [TestPioneer](https://github.com/Integration-Automation/TestPioneer) 启动时（它会为启动的 runner 设置 `TEST_PIONEER_ARTIFACT_DIR`），以相对名称要求的报告会写到该目录底下，各生成器返回的路径就是实际写入的路径。绝对路径照原样使用；没有设置这个变量时，行为不变。
+
 ## 可观测性
 
 ```python

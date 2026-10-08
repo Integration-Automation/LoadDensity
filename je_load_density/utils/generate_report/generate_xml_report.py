@@ -1,3 +1,4 @@
+from je_load_density.utils.generate_report.report_path import report_path
 import sys
 from threading import Lock
 from defusedxml.minidom import parseString
@@ -40,8 +41,8 @@ def generate_xml_report(xml_file_name: str = "default_name") -> Tuple[str, str]:
     failure_xml = parseString(failure_xml_str).toprettyxml()
 
     lock = Lock()
-    success_path = f"{xml_file_name}_success.xml"
-    failure_path = f"{xml_file_name}_failure.xml"
+    success_path = report_path(f"{xml_file_name}_success.xml")
+    failure_path = report_path(f"{xml_file_name}_failure.xml")
 
     try:
         with lock:  # 使用 with 確保自動 acquire/release
