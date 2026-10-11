@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261011-03 | 2026-10-11 | Include PyModbus serial import dependency | #done #ci | [2026-10](2026-10.md) |
 | U-20261011-02 | 2026-10-11 | Avoid duplicate stable PyPI versions | #done #ci | [2026-10](2026-10.md) |
 | U-20261011-01 | 2026-10-11 | Clarify reviewed socket server analysis findings | #done #ci | [2026-10](2026-10.md) |
 | U-20261008-01 | 2026-10-08 | Reports go below TestPioneer's artifact directory | #feature #report #testpioneer | [2026-10](2026-10.md) |
@@ -141,5 +142,5 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-10.md](2026-10.md) | 2026-10 | 33 |
+| [2026-10.md](2026-10.md) | 2026-10 | 34 |
 | [2026-09.md](2026-09.md) | 2026-09 | 45 |

@@ -1,7 +1,7 @@
 # LoadDensity Architecture
 
 > Short overview for people and agents.
-> Last verified: 2026-10-03 against the working tree on `feat/testing-platform`.
+> Last verified: 2026-10-11 against the reviewed dev-to-main release working tree.
 
 ## 1. Purpose
 
@@ -40,7 +40,7 @@ persistence all read from that record.
 | `deploy/` | Helm chart, k8s operator, Terraform, Grafana dashboard, CI templates |
 | `docker/`, `action.yml`, `.pre-commit-hooks.yaml`, `examples/` | docker-compose test stack, composite GitHub Action, pre-commit hook, sample actions and scripts |
 | `load_density_driver/` | Prebuilt driver (script plus Windows and Linux binaries) |
-| `scripts/dev_release.py` | Release helper of the dev channel, standard library only: the next version from PyPI and the changed-wheel check. The `publish-dev` job of `.github/workflows/ci-dev.yml` runs it |
+| `scripts/dev_release.py` | Standard-library release helpers: both channels reuse PyPI-based next-version selection; the dev channel also checks changed wheels. Called by `ci-dev.yml` and `publish-pypi.yml` |
 | `test/`, `docs/source/` | pytest suite; Sphinx docs (`En/`, `Zh/`, `api/`) |
 
 ## 3. Entry points and public interfaces
