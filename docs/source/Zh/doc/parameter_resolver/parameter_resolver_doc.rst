@@ -32,6 +32,17 @@
 
 未知占位符會原樣保留，便於 dry run 時偵測缺值。
 
+使用者隔離
+----------
+
+HTTP、FastHTTP 與 Locust HTTPX 使用者各自 fork 變數及 session 狀態。
+擷取規則的 ``scope: "session"`` 對應獨立的 ``${session.NAME}``；
+省略 scope 則寫入目前使用者的 ``${var.NAME}``。
+其他協定模板保留既有 scope。
+Python 可用 ``with use_resolver(get_resolver().fork()):`` 選擇解析器；
+巢狀 scope 在例外後也會還原。每次遞迴 ``resolve(task)`` 對每個
+CSV／DB 來源只取一列，欄位保持配對，使用者間同步分配資料列。
+
 註冊資料
 --------
 
@@ -50,7 +61,8 @@
         {"name": "products", "file_path": "products.csv", "cycle": False},
     ])
 
-CSV 必須有 header；每次呼叫 ``${csv.name.col}`` 取下一行對應欄位。
+CSV 必須有 header；每次 ``resolve(task)`` 對每個來源取一列，該 task
+所有欄位共用這列資料，下次 resolve 才會前進。
 
 動作 JSON 用法
 --------------

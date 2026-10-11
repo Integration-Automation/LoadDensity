@@ -91,3 +91,31 @@ def test_no_flag_exits_non_zero(tmp_path):
 
 def test_create_project_dir_is_exported():
     assert callable(je_load_density.create_project_dir)
+
+
+def test_cli_executes_with_reporter_api_without_core_collector(monkeypatch):
+    from types import SimpleNamespace
+
+    from je_action_core.reporting import PrintReporter
+
+    from je_load_density import __main__ as cli
+    from je_load_density.utils.exception.exceptions import LoadDensityTestExecuteException
+    from je_load_density.utils.executor.action_executor import Executor
+
+    settings = Executor().settings
+    settings_before = settings
+    reported = []
+    monkeypatch.setattr(PrintReporter, "on_failure", lambda *args: reported.append("failure"))
+    monkeypatch.setattr(PrintReporter, "on_records", lambda *args: reported.append("records"))
+
+    def execute(actions):
+        assert actions == [["failing action", []]]
+        legacy.settings.reporter.on_failure(actions[0], RuntimeError("failed"))
+        legacy.settings.reporter.on_records({"failure": "failed"})
+
+    legacy = SimpleNamespace(settings=settings, execute_action=execute)
+    monkeypatch.setattr(cli, "executor", legacy)
+    with pytest.raises(LoadDensityTestExecuteException, match="1 action"):
+        cli._execute_cli_actions([["failing action", []]])
+    assert legacy.settings is settings_before
+    assert reported == ["failure", "records"]

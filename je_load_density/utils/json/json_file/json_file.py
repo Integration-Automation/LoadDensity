@@ -1,12 +1,20 @@
-import json
-from pathlib import Path
-from threading import Lock
+"""Action files: je_action_core's JSON reader and writer with LoadDensity's exception and messages."""
 from typing import Union
 
-from je_load_density.utils.exception.exceptions import LoadDensityTestJsonException
-from je_load_density.utils.exception.exception_tags import cant_find_json_error, cant_save_json_error
+from je_action_core import ActionJsonFile, JsonFileMessages, JsonFileSettings
 
-_json_file_lock = Lock()
+from je_load_density.utils.exception.exception_tags import cant_find_json_error, cant_save_json_error
+from je_load_density.utils.exception.exceptions import LoadDensityTestJsonException
+
+# Any error is wrapped, as LoadDensity always did; a missing file reads "<tag>: <tag>" as it always has.
+_json_file = ActionJsonFile(JsonFileSettings(
+    error=LoadDensityTestJsonException,
+    messages=JsonFileMessages(missing=f"{cant_find_json_error}: {cant_find_json_error}",
+                              unreadable=f"{cant_find_json_error}: {{error}}",
+                              unwritable=f"{cant_save_json_error}: {{error}}"),
+    read_errors=(Exception,),
+    write_errors=(Exception,),
+))
 
 
 def read_action_json(json_file_path: str) -> Union[dict, list]:
@@ -18,32 +26,16 @@ def read_action_json(json_file_path: str) -> Union[dict, list]:
     :return: JSON 內容 (dict or list)
     :raises LoadDensityTestJsonException: 當檔案不存在或無法讀取時 (if file not found or cannot be read)
     """
-    try:
-        with _json_file_lock:
-            file_path = Path(json_file_path)
-            if file_path.exists() and file_path.is_file():
-                # The CLI and executor read the action file their user names; MCP tool paths are confined
-                # to JE_LOAD_DENSITY_MCP_ROOT in mcp_server/server.py.
-                with open(json_file_path, "r", encoding="utf-8") as read_file:  # NOSONAR S8707 — see above
-                    return json.load(read_file)
-            else:
-                raise LoadDensityTestJsonException(cant_find_json_error)
-    except Exception as error:
-        raise LoadDensityTestJsonException(f"{cant_find_json_error}: {error}") from error
+    return _json_file.read(json_file_path)
 
 
 def write_action_json(json_save_path: str, action_json: Union[dict, list]) -> None:
     """
     將資料寫入 JSON 檔案
-    Write data into JSON file
+    Write data into JSON file (data that cannot be serialised leaves the file as it was)
 
     :param json_save_path: JSON 檔案儲存路徑 (path to save JSON file)
     :param action_json: 要寫入的資料 (data to write, dict or list)
     :raises LoadDensityTestJsonException: 當檔案無法寫入時 (if file cannot be saved)
     """
-    try:
-        with _json_file_lock:
-            with open(json_save_path, "w+", encoding="utf-8") as file_to_write:
-                json.dump(action_json, file_to_write, indent=4, ensure_ascii=False)
-    except Exception as error:
-        raise LoadDensityTestJsonException(f"{cant_save_json_error}: {error}") from error
+    _json_file.write(json_save_path, action_json)

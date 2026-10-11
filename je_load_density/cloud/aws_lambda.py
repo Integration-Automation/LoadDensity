@@ -19,8 +19,10 @@ Usage::
 """
 
 import json
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any, Dict, List, Optional
+
+from ._validation import CloudLaunchError, positive_integer, required_string, sdk_error_types
 
 
 def _import_boto3():
@@ -34,6 +36,68 @@ def _import_boto3():
     return boto3
 
 
+def _consume_payload(payload: Any, read_body: bool) -> Any:
+    close = getattr(payload, "close", None)
+    try:
+        if hasattr(payload, "close") and not callable(close):
+            raise ValueError("malformed Lambda payload close method")
+        read = getattr(payload, "read", None)
+        if hasattr(payload, "read") and not callable(read):
+            raise ValueError("malformed Lambda payload read method")
+        return read() if read_body and callable(read) else payload
+    finally:
+        if callable(close):
+            close()
+
+
+def _decode_payload(response: Dict[str, Any]) -> Dict[str, Any]:
+    body = _consume_payload(response.get("Payload", b""), read_body=True)
+    if not isinstance(body, (bytes, str)):
+        raise ValueError("malformed Lambda payload")
+    text = body.decode("utf-8") if isinstance(body, bytes) else body
+    if not text.strip():
+        raise ValueError("empty Lambda worker payload")
+    try:
+        decoded = json.loads(text)
+    except json.JSONDecodeError:
+        return {"raw": text}
+    if not isinstance(decoded, dict):
+        raise ValueError("Lambda worker payload must be an object")
+    return decoded
+
+
+def _judge_response(response: Dict[str, Any], index: int, invocation_type: str) -> Dict[str, Any]:
+    if not isinstance(response, dict):
+        raise ValueError("malformed Lambda response")
+    expected_status = {"RequestResponse": 200, "Event": 202, "DryRun": 204}[invocation_type]
+    payload = _decode_payload(response) if invocation_type == "RequestResponse" else {}
+    if invocation_type != "RequestResponse":
+        _consume_payload(response.get("Payload"), read_body=False)
+    if response.get("StatusCode") != expected_status or "FunctionError" in response:
+        failed_response = {**response, "worker_payload": payload}
+        raise CloudLaunchError("lambda", [index], [], "invocation failed or returned FunctionError", failed_response)
+    if invocation_type == "RequestResponse":
+        return payload
+    return {"status": "accepted" if invocation_type == "Event" else "validated",
+            "worker_index": index, "StatusCode": expected_status}
+
+
+def _collect_results(futures: List[Future]) -> List[Dict[str, Any]]:
+    results = []
+    errors = []
+    for future in futures:
+        try:
+            results.append(future.result())
+        except CloudLaunchError as error:
+            errors.append(error)
+    if errors:
+        failed_workers = [index for error in errors for index in error.failed_workers]
+        error = CloudLaunchError("lambda", failed_workers, results, "one or more invocations failed",
+                                 errors[0].response)
+        raise error from (errors[0].__cause__ or errors[0])
+    return results
+
+
 def invoke_lambda_workers(
     function_name: str,
     workers: int,
@@ -41,35 +105,49 @@ def invoke_lambda_workers(
     region_name: Optional[str] = None,
     invocation_type: str = "RequestResponse",
 ) -> List[Dict[str, Any]]:
-    """Invoke ``workers`` Lambda functions in parallel and collect results."""
+    """Invoke positive ``workers`` and return worker-ordered results.
+
+    FunctionError and malformed responses raise CloudLaunchError with other
+    successful results. Event returns acceptance only; DryRun returns validation.
+    Non-JSON text remains available as ``raw``. No invocation is retried.
+    """
+    positive_integer(workers, "workers")
+    required_string(function_name, "function_name")
+    if invocation_type not in {"RequestResponse", "Event", "DryRun"}:
+        raise ValueError("invocation_type must be RequestResponse, Event or DryRun")
+    if not isinstance(payload_template, dict):
+        raise ValueError("payload_template must be a dictionary")
+    # Serialize before creating clients or submitting any work.
+    template = json.dumps(payload_template)
     boto3 = _import_boto3()
-    client = boto3.client("lambda", region_name=region_name)
-    results: List[Dict[str, Any]] = []
+    service_errors = sdk_error_types("aws")
+    try:
+        client = boto3.client("lambda", region_name=region_name)
+    except service_errors as error:
+        raise CloudLaunchError("lambda", list(range(workers)), [], "client initialization failed") from error
 
     def _invoke(index: int) -> Dict[str, Any]:
-        payload = dict(payload_template)
+        payload = json.loads(template)
         payload["worker_index"] = index
         payload["worker_count"] = workers
-        response = client.invoke(
-            FunctionName=function_name,
-            InvocationType=invocation_type,
-            Payload=json.dumps(payload).encode("utf-8"),
-        )
-        body_bytes = response.get("Payload", b"").read() if hasattr(
-            response.get("Payload"), "read"
-        ) else response.get("Payload", b"")
-        body_text = body_bytes.decode("utf-8") if body_bytes else "{}"
         try:
-            return json.loads(body_text)
-        except json.JSONDecodeError:
-            return {"raw": body_text}
+            response = client.invoke(
+                FunctionName=function_name, InvocationType=invocation_type,
+                Payload=json.dumps(payload).encode("utf-8"),
+            )
+        except service_errors as error:
+            raise CloudLaunchError("lambda", [index], [], "invoke failed") from error
+        try:
+            return _judge_response(response, index, invocation_type)
+        except (ValueError,) + service_errors as error:
+            raise CloudLaunchError("lambda", [index], [], "invalid invocation response",
+                                   response if isinstance(response, dict) else None) from error
 
     # Results come back in worker order (results[i] is worker i), not completion order, so a
     # caller can tell which slice each summary belongs to.
     with ThreadPoolExecutor(max_workers=max(workers, 1)) as pool:
         futures = [pool.submit(_invoke, i) for i in range(workers)]
-        results.extend(future.result() for future in futures)
-    return results
+        return _collect_results(futures)
 
 
 def lambda_worker_handler(event: Dict[str, Any], _context: Any) -> Dict[str, Any]:

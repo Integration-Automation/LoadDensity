@@ -1,4 +1,23 @@
 traditional_chinese_word_dict = {
+    # Desktop lifecycle and settings
+    "settings": "測試設定",
+    "browse": "瀏覽…",
+    "action_file": "動作檔案",
+    "engine": "引擎",
+    "stop_button": "停止",
+    "idle": "待命",
+    "running": "執行中",
+    "stopping": "停止中",
+    "completed": "已完成",
+    "failed": "失敗",
+    "cancelled": "已取消",
+    "success": "成功",
+    "results": "近期請求",
+    "request": "請求",
+    "latency": "延遲 (ms)",
+    "result": "結果",
+    "failure_rate": "失敗率",
+    "invalid_input": "請輸入 HTTP 目標及正整數負載設定。",
     # Main
     "application_name": "LoadDensity",
     # Widget

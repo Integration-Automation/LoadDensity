@@ -6,6 +6,7 @@ duration and the worker count specified by the caller and produces a
 cost breakdown JSON.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import json
 import os
 from typing import Any, Dict, Optional
@@ -55,7 +56,7 @@ def generate_cost_report(
         egress_rate_usd_per_gb=egress_rate_usd_per_gb,
         extra_costs_usd=extras_usd,
     )
-    file_path = f"{report_name}.json"
+    file_path = report_path(f"{report_name}.json")
     with open(file_path, "w", encoding="utf-8") as handle:
         json.dump(breakdown, handle, ensure_ascii=False, indent=2)
     return os.path.abspath(file_path)

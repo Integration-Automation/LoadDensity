@@ -15,6 +15,8 @@ PackageManager Class
 
         def load_package_if_available(self, package: str) -> Optional[Any]: ...
         def add_package_to_executor(self, package: str) -> None: ...
+        def allow_packages(self, *packages: str) -> None: ...
+        def set_allow_arbitrary_packages(self, enabled: bool) -> None: ...
 
 load_package_if_available()
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -49,5 +51,16 @@ Import a package and register all its functions into the executor's ``event_dict
 
 Uses ``inspect.getmembers()`` with ``isfunction`` predicate to find all functions
 in the package.
+
+**Raises:** ``LoadDensityTestExecuteException`` when the package gate refuses ``package``
+(nothing is imported).
+
+allow_packages() / set_allow_arbitrary_packages()
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The package gate's switches. ``allow_packages`` adds packages, and their submodules, to the
+allowlist; ``set_allow_arbitrary_packages`` allows (``True``) or refuses (``False``) everything
+else. Until either is called, any package loads with a ``DeprecationWarning``. ``Executor`` has
+the same two static methods; neither is an action command.
 
 **Global instance:** ``package_manager``

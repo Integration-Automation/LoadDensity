@@ -6,6 +6,7 @@ so security tooling can ingest the run-time dependencies of the host
 process.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import json
 import os
 import uuid
@@ -53,7 +54,7 @@ def generate_cyclonedx_report(
         },
         "components": components,
     }
-    file_path = f"{report_name}.cdx.json"
+    file_path = report_path(f"{report_name}.cdx.json")
     with open(file_path, "w", encoding="utf-8") as handle:
         json.dump(document, handle, ensure_ascii=False, indent=2)
     return os.path.abspath(file_path)

@@ -4,7 +4,7 @@ TCP 控制 Socket Server
 概觀
 ----
 
-控制 socket server 是 gevent 為基礎的 TCP listener，將收到的 LoadDensity 動作 JSON 透過網路執行。硬化版協定加入 length-prefix framing、選用 TLS，以及共享密鑰 token；舊版未驗證模式仍保留以維持相容。
+控制 socket server 是 je_action_core 的多執行緒 TCP 動作伺服器，在 gevent 下執行，將收到的 LoadDensity 動作 JSON 透過網路執行。硬化版協定加入 length-prefix framing、選用 TLS，以及共享密鑰 token；舊版未驗證模式仍保留以維持相容。
 
 模式
 ----

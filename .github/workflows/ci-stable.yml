@@ -12,13 +12,19 @@ permissions:
   contents: read
 
 jobs:
+  extras:
+    uses: ./.github/workflows/extras.yml
+    with:
+      event-name: ${{ github.event_name }}
+
   test:
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 15  # about 3x the slowest recent run, at least 15
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest]
-        python-version: ["3.10", "3.11", "3.12"]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
 
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1

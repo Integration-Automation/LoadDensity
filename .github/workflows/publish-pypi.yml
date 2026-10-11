@@ -9,6 +9,10 @@ on:
 permissions:
   contents: write
 
+concurrency:
+  group: publish-stable
+  cancel-in-progress: false
+
 jobs:
   publish:
     # Run only when the upstream CI on the trusted main branch finished
@@ -22,6 +26,7 @@ jobs:
           && github.event.workflow_run.head_branch == 'main'
           && github.event.workflow_run.event == 'push' }}
     runs-on: ubuntu-latest
+    timeout-minutes: 15  # about 3x the slowest recent run, at least 15
 
     steps:
       # The job's `if` already gates on workflow_run.head_branch == 'main'
@@ -42,10 +47,11 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Install build tools
+      # This job holds the PyPI token, so its tools are wheels only at locked hashes and nothing else
+      # is installed. The command that regenerates publish.txt is in publish.in.
+      - name: Install build tools (hash-locked, from .github/requirements/publish.in)
         run: |
-          python -m pip install --upgrade pip
-          pip install build twine tomlkit
+          python -m pip install --require-hashes --only-binary :all: -r .github/requirements/publish.txt
 
       - name: Bump patch version in pyproject.toml
         id: bump
@@ -53,15 +59,14 @@ jobs:
           python <<'PYEOF'
           import os
           import tomlkit
+          from scripts.dev_release import as_version, next_version, published
 
           path = "pyproject.toml"
           with open(path, encoding="utf-8") as f:
               doc = tomlkit.parse(f.read())
 
           old = str(doc["project"]["version"])
-          parts = old.split(".")
-          parts[-1] = str(int(parts[-1]) + 1)
-          new = ".".join(parts)
+          new = next_version(as_version(tuple(old.split("."))), published(doc["project"]["name"]))
           doc["project"]["version"] = new
 
           with open(path, "w", encoding="utf-8") as f:
@@ -74,16 +79,28 @@ jobs:
           print(f"Bumped version: {old} -> {new}")
           PYEOF
 
+      # --no-isolation: the backend is the setuptools locked in publish.txt, not a fresh download.
       - name: Build distributions
-        run: python -m build
+        run: python -m build --no-isolation
+
+      - name: Check that the tested commit is still the tip of main
+        id: tip
+        env:
+          TESTED_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          tip="$(git ls-remote origin refs/heads/main | cut -f1)"
+          if [ "$tip" = "$TESTED_SHA" ]; then current=true; else current=false; fi
+          echo "current=$current" >> "$GITHUB_OUTPUT"
 
       - name: Publish to PyPI
+        if: steps.tip.outputs.current == 'true'
         env:
           TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.PYPI_API_TOKEN }}
         run: twine upload dist/*
 
       - name: Commit and tag bumped version
+        if: steps.tip.outputs.current == 'true'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -98,6 +115,7 @@ jobs:
           git push origin "v${{ steps.bump.outputs.new_version }}"
 
       - name: Create GitHub Release
+        if: steps.tip.outputs.current == 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |

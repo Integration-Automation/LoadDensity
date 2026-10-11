@@ -32,7 +32,8 @@ Base install (CLI & library)
 
     pip install je_load_density
 
-This pulls in `Locust <https://locust.io/>`_ and ``defusedxml`` —
+This pulls in `Locust <https://locust.io/>`_, ``defusedxml`` and ``je_action_core`` (the shared action
+executor, itself dependency-free) —
 nothing else.
 
 Optional extras

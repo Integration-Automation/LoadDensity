@@ -58,6 +58,43 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261011-03 | 2026-10-11 | Include PyModbus serial import dependency | #done #ci | [2026-10](2026-10.md) |
+| U-20261011-02 | 2026-10-11 | Avoid duplicate stable PyPI versions | #done #ci | [2026-10](2026-10.md) |
+| U-20261011-01 | 2026-10-11 | Clarify reviewed socket server analysis findings | #done #ci | [2026-10](2026-10.md) |
+| U-20261008-01 | 2026-10-08 | Reports go below TestPioneer's artifact directory | #feature #report #testpioneer | [2026-10](2026-10.md) |
+| U-20261003-07 | 2026-10-03 | Align security annotations with argument-expression scan locations | #done #quality #security #ci | [2026-10](2026-10.md) |
+| U-20261003-06 | 2026-10-03 | Harden smoke XML and document reviewed Codacy false positives | #done #security #quality #ci | [2026-10](2026-10.md) |
+| U-20261003-05 | 2026-10-03 | Expose the shared worker stop query without private access | #done #quality #async | [2026-10](2026-10.md) |
+| U-20261003-04 | 2026-10-03 | Retain async stop intent through transport cancellation | #done #fix #async #ci | [2026-10](2026-10.md) |
+| U-20261003-03 | 2026-10-03 | Isolate extras probes and clean up cancelled async startup | #done #ci #quality #async #gui | [2026-10](2026-10.md) |
+| U-20261003-02 | 2026-10-03 | Add isolated runners and canonical worker delivery | #done #async #gui #distributed #parameters #15 #24 #29 | [2026-10](2026-10.md) |
+| U-20261003-01 | 2026-10-03 | Verify extras matrix and resolve quality findings | #done #ci #quality #25 | [2026-10](2026-10.md) |
+| U-20261002-11 | 2026-10-02 | Share percentile bands and redesign live dashboard | #done #charts #ui #26 | [2026-10](2026-10.md) |
+| U-20261002-10 | 2026-10-02 | Monitor worker health and rebalance native load | #done #distributed | [2026-10](2026-10.md) |
+| U-20261002-09 | 2026-10-02 | Validate cloud launch outcomes and preserve partial failures | #done #cloud | [2026-10](2026-10.md) |
+| U-20261002-08 | 2026-10-02 | Repair Qt Web Push and NATS installation probes | #done #ci #extras | [2026-10](2026-10.md) |
+| U-20261002-07 | 2026-10-02 | Align CI install paths and isolate smoke container permissions | #done #ci | [2026-10](2026-10.md) |
+| U-20261002-06 | 2026-10-02 | Gate publishing on Docker extras and protocol smoke checks | #done #ci #extras | [2026-10](2026-10.md) |
+| U-20261002-05 | 2026-10-02 | Exercise installed wheels and propagate failed SLA status | #done #smoke | [2026-10](2026-10.md) |
+| U-20261002-04 | 2026-10-02 | Scope persisted request IDs to their run | #done #records | [2026-10](2026-10.md) |
+| U-20261002-03 | 2026-10-02 | Persist canonical request records transactionally | #done #records | [2026-10](2026-10.md) |
+| U-20261002-02 | 2026-10-02 | Capture canonical records in Locust and asyncio runs | #migration #records | [2026-10](2026-10.md) |
+| U-20261002-01 | 2026-10-02 | Testing platform design draft and outstanding work | #docs #design | [2026-10](2026-10.md) |
+| U-20261001-12 | 2026-10-01 | Publish jobs build with the locked setuptools | #ci #security #X-13 | [2026-10](2026-10.md) |
+| U-20261001-11 | 2026-10-01 | Publish jobs install hash-locked build tooling | #done #ci #security #X-13 | [2026-10](2026-10.md) |
+| U-20261001-10 | 2026-10-01 | The sdist carries no tests | #done #packaging #X-13 | [2026-10](2026-10.md) |
+| U-20261001-09 | 2026-10-01 | Wheels install only je_load_density | #done #packaging | [2026-10](2026-10.md) |
+| U-20261001-08 | 2026-10-01 | CI publishes je_load_density_dev from the dev branch | #release #ci #X-13 | [2026-10](2026-10.md) |
+| U-20261001-07 | 2026-10-01 | The control socket server moves to je_action_core | #migration #socket-server #L-6 | [2026-10](2026-10.md) |
+| U-20261001-06 | 2026-10-01 | je_action_core comes from PyPI | #done #build #L-6 | [2026-10](2026-10.md) |
+| U-20261001-05 | 2026-10-01 | Package gate in front of LD_add_package_to_executor | #done #security #X-12 | [2026-10](2026-10.md) |
+| U-20261001-04 | 2026-10-01 | je_action_core pin moves to 19bfe0a | #build #L-6 | [2026-10](2026-10.md) |
+| U-20261001-03 | 2026-10-01 | Executor and its helpers move to je_action_core | #migration #executor #L-6 | [2026-10](2026-10.md) |
+| U-20261001-02 | 2026-10-01 | Every workflow job has a timeout | #ci #tests | [2026-10](2026-10.md) |
+| U-20261001-01 | 2026-10-01 | architecture.md lists APITestka's load-test bridge | #docs #cross-project | [2026-10](2026-10.md) |
+| U-20260925-03 | 2026-09-25 | CI and classifiers cover Python 3.13 and 3.14 | #ci #packaging #tests | [2026-09](2026-09.md) |
+| U-20260925-02 | 2026-09-25 | Translated READMEs link back to the repository root | #docs #tests | [2026-09](2026-09.md) |
+| U-20260925-01 | 2026-09-25 | Dependabot waits 7 days before proposing a new release | #ci #security #deps | [2026-09](2026-09.md) |
 | U-20260924-02 | 2026-09-24 | Keep checkout credentials only in the job that pushes | #ci #security | [2026-09](2026-09.md) |
 | U-20260924-01 | 2026-09-24 | Move CI to Node 24 actions pinned by commit | #ci #security #deps | [2026-09](2026-09.md) |
 | U-20260923-35 | 2026-09-23 | JetBrains job: pin downloadSources so the lock holds in CI | #done #ci #editors | [2026-09](2026-09.md) |
@@ -105,4 +142,5 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
-| [2026-09.md](2026-09.md) | 2026-09 | 42 |
+| [2026-10.md](2026-10.md) | 2026-10 | 34 |
+| [2026-09.md](2026-09.md) | 2026-09 | 45 |

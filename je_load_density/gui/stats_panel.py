@@ -2,23 +2,17 @@ import statistics
 from typing import List
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QGroupBox, QLabel, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QGroupBox, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from je_load_density.gui.language_wrapper.multi_language_wrapper import language_wrapper
 from je_load_density.utils.test_record.test_record_class import test_record_instance
+from je_load_density.utils.test_record.window_statistics import percentile
 
 
 def _percentile(values: List[float], pct: float) -> float:
     if not values:
         return 0.0
-    sorted_values = sorted(values)
-    if len(sorted_values) == 1:
-        return float(sorted_values[0])
-    rank = (pct / 100.0) * (len(sorted_values) - 1)
-    lower = int(rank)
-    upper = min(lower + 1, len(sorted_values) - 1)
-    fraction = rank - lower
-    return float(sorted_values[lower] + (sorted_values[upper] - sorted_values[lower]) * fraction)
+    return percentile(values, pct) or 0.0
 
 
 class StatsPanel(QWidget):
@@ -28,18 +22,24 @@ class StatsPanel(QWidget):
     totals plus latency percentiles.
     """
 
-    def __init__(self, parent=None):
+    def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         layout = QVBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
 
         words = language_wrapper.language_word_dict
         self.totals_label = QLabel()
         self.latency_label = QLabel()
         self.failures_label = QLabel()
+        self.capacity_label = QLabel()
 
         group = QGroupBox(words.get("stats_panel", "Live Stats"))
         group_layout = QVBoxLayout()
-        group_layout.addWidget(self.totals_label)
+        header = QHBoxLayout()
+        header.addWidget(self.totals_label)
+        header.addStretch()
+        header.addWidget(self.capacity_label)
+        group_layout.addLayout(header)
         group_layout.addWidget(self.latency_label)
         group_layout.addWidget(self.failures_label)
         group.setLayout(group_layout)
@@ -53,6 +53,18 @@ class StatsPanel(QWidget):
         self._timer.timeout.connect(self.refresh)
         self._timer.start()
         self.refresh()
+
+    def set_snapshot(self, summary: dict) -> None:
+        """Render cumulative child totals independently of the bounded request table."""
+        self._timer.stop()
+        words = language_wrapper.language_word_dict
+        self.totals_label.setText(f"{words['stats_total']}: {summary.get('requests', 0)}    "
+                                  f"{words['stats_rate']}: {summary.get('rps', 0):.1f}/s")
+        percentiles = "    ".join(f"p{pct}: {summary.get(f'p{pct}_ms') or 0:.1f} ms" for pct in (50, 95, 99))
+        self.latency_label.setText(percentiles)
+        self.failures_label.setText(f"{words['stats_failures']}: {summary.get('failures', 0)}    "
+                                    f"{words['failure_rate']}: {summary.get('failure_rate', 0):.1%}")
+        self.capacity_label.setText(f"{words['user_count']}: {summary.get('users', 0)}")
 
     def refresh(self) -> None:
         success_records = test_record_instance.test_record_list

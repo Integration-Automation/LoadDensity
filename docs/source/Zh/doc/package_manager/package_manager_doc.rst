@@ -73,3 +73,20 @@ PackageManager API
         ["LD_add_package_to_executor", ["my_utils"]],
         ["compute", [42]]
     ]
+
+套件閘門
+--------
+
+``LD_add_package_to_executor`` 能載入 ``os`` 或 ``subprocess``，所以哪些套件可以載入，由宿主程式決定：
+
+.. code-block:: python
+
+    from je_load_density import executor
+
+    executor.allow_packages("my_utils")            # 這些套件與其子模組
+    executor.set_allow_arbitrary_packages(False)   # 其他套件在匯入前就拒絕
+
+這兩個開關都不是 action 命令，所以 action 檔（或 socket 用戶端）不能自己打開閘門。被拒絕的套件不會被匯入，
+該動作的結果是 ``LoadDensityTestExecuteException``。``set_allow_arbitrary_packages(True)`` 則載入任何套件、
+不發警告。宿主程式呼叫任一個開關之前，任何套件仍會載入，但會發出 ``DeprecationWarning``；之後的版本會預設
+拒絕允許清單以外的套件。

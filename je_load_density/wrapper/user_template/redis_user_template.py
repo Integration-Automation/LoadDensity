@@ -22,6 +22,7 @@ from je_load_density.utils.parameterization import (
     register_variables,
 )
 from je_load_density.wrapper.proxy.proxy_user import locust_wrapper_proxy
+from je_load_density.wrapper.user_template._common import request_start_epoch
 
 
 def set_wrapper_redis_user(user_detail_dict: Dict[str, Any], **kwargs) -> type:
@@ -67,7 +68,7 @@ class RedisUserWrapper(User):
             context={},
             url=name,
             response=None,
-            start_time=start,
+            start_time=request_start_epoch(start),
         )
 
     def _coerce(self, value: Any) -> int:

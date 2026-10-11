@@ -1,14 +1,14 @@
 import sys
 from typing import Optional
 
-from PySide6.QtWidgets import QMainWindow, QApplication, QWidget
-from qt_material import QtStyleTools
+from PySide6.QtWidgets import QApplication, QMainWindow, QWidget
 
+from je_load_density.gui.dark_style import apply_dark_style
 from je_load_density.gui.language_wrapper.multi_language_wrapper import language_wrapper
 from je_load_density.gui.main_widget import LoadDensityWidget
 
 
-class LoadDensityUI(QMainWindow, QtStyleTools):
+class LoadDensityUI(QMainWindow):
     """
     負載測試主視窗
     Load Test Main Window
@@ -29,18 +29,20 @@ class LoadDensityUI(QMainWindow, QtStyleTools):
             from ctypes import windll
             windll.shell32.SetCurrentProcessExplicitAppUserModelID(self.id)
 
-        # 設定字體樣式 (Set font style)
-        self.setStyleSheet(
-            "font-size: 12pt;"
-            "font-family: 'Lato';"
-        )
-
-        # 套用 qt-material 樣式 (Apply qt-material theme)
-        self.apply_stylesheet(self, "dark_amber.xml")
+        apply_dark_style(self)
 
         # 建立並設定主要控制元件 (Create and set main widget)
         self.load_density_widget = LoadDensityWidget()
         self.setCentralWidget(self.load_density_widget)
+        self.setWindowTitle(self.id)
+        self.resize(1200, 850)
+
+    def closeEvent(self, event) -> None:
+        """Cancel and join the child supervisor before destroying the main window."""
+        if self.load_density_widget.shutdown():
+            event.accept()
+        else:
+            event.ignore()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

@@ -1,5 +1,5 @@
 """
-etcd user template (etcd3, lazy import).
+etcd user template (etcd3gw, with legacy etcd3 compatibility; lazy import).
 
 Each task entry::
 
@@ -20,16 +20,21 @@ from je_load_density.wrapper.user_template._protocol_base import (
 
 def _import_etcd3():
     try:
+        import etcd3gw
+        return etcd3gw
+    except ImportError:
+        pass
+    try:
         import etcd3
     except ImportError as error:
         raise RuntimeError(
-            "etcd3 is required for EtcdUser; install with: pip install etcd3"
+            "etcd3gw is required for EtcdUser; install with: pip install etcd3gw"
         ) from error
     return etcd3
 
 
 class EtcdUserWrapper(ProtocolUserBase):
-    """Locust user driving etcd3 KV calls."""
+    """Locust user driving etcd v3 KV calls."""
 
     _proxy_key = "etcd_user"
     _request_type = "ETCD"
@@ -38,9 +43,11 @@ class EtcdUserWrapper(ProtocolUserBase):
     def __init__(self, environment):
         super().__init__(environment)
         self._client = None
+        self._gateway_client = False
 
     def _connect(self, step: Dict[str, Any]) -> int:
         etcd3 = _import_etcd3()
+        self._gateway_client = etcd3.__name__ == "etcd3gw"
         self._client = etcd3.client(
             host=step.get("host", self.host),
             port=int(step.get("port", 2379)),
@@ -59,7 +66,11 @@ class EtcdUserWrapper(ProtocolUserBase):
     def _get(self, step: Dict[str, Any]) -> int:
         if self._client is None:
             raise RuntimeError("etcd not connected")
-        value, _ = self._client.get(step["key"])
+        result = self._client.get(step["key"])
+        if self._gateway_client:
+            value = result[0] if result else None
+        else:
+            value = result[0]
         return len(value or b"")
 
     def _delete(self, step: Dict[str, Any]) -> int:
@@ -70,7 +81,10 @@ class EtcdUserWrapper(ProtocolUserBase):
 
     def _close(self, _: Dict[str, Any]) -> int:
         if self._client is not None:
-            self._client.close()
+            if self._gateway_client:
+                self._client.session.close()
+            else:
+                self._client.close()
             self._client = None
         return 0
 

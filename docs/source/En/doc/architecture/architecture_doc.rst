@@ -237,12 +237,14 @@ Action lifecycle, step by step
 #. ``Executor.execute_action`` dispatches each step against
    ``event_dict`` (``LD_*`` commands plus safe builtins).
 #. When the step is ``LD_start_test``, the dispatcher selects a user
-   template (one of 12), seeds the parameter resolver from any
+   engine (Locust by default, native asyncio HTTP by explicit selection),
+   selects a Locust user template when applicable, seeds per-user resolver forks from
    ``variables`` / ``csv_sources`` / ``db_sources``, optionally
    constructs a ``LoadTestShape`` from ``load_shape`` /
    ``shape_config``, then calls ``prepare_env``.
-#. ``prepare_env`` builds a Locust ``Environment`` in local, master,
-   or worker mode and starts the run.
+#. Locust ``prepare_env`` builds an ``Environment`` in local, master or
+   worker mode. Native ``AsyncRunHandle`` owns local HTTP users, clients, tasks
+   and cooperative cancellation without importing Locust.
 #. Each user runs ``run_scenario`` (or the protocol equivalent) per
    tick. Before each ``execute_task``: throttle bucket → network
    conditioner → ``${...}`` expansion → retry policy → request.

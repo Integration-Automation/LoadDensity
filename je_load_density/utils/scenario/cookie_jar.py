@@ -1,29 +1,32 @@
 """
 Stateful per-virtual-user cookie jar.
 
-Provides a thread-local store so concurrent Locust users keep their own
-cookie state without sharing across users. Built on top of stdlib
+Provides a context-local store so concurrent threads, tasks and Locust users
+keep their own cookie state. Built on top of stdlib
 ``http.cookiejar``.
 """
 
+import asyncio
 import threading
+from contextvars import ContextVar
 from http.cookiejar import CookieJar
-from typing import Dict, Optional
+from typing import Dict, Optional, Tuple
 
-
-_local = threading.local()
+_CookieOwner = Tuple[int, Optional[int]]
+_local: ContextVar[Optional[Tuple[_CookieOwner, CookieJar]]] = ContextVar("load_density_cookie_jar", default=None)
 _global_jars: Dict[int, CookieJar] = {}
 _lock = threading.Lock()
 
 
 def jar_for_user(user_id: Optional[int] = None) -> CookieJar:
-    """Return a CookieJar scoped to ``user_id`` (or current thread)."""
+    """Return a CookieJar scoped to ``user_id`` or the current execution context."""
     if user_id is None:
-        jar = getattr(_local, "jar", None)
-        if jar is None:
-            jar = CookieJar()
-            _local.jar = jar
-        return jar
+        owner = _current_owner()
+        selected = _local.get()
+        if selected is None or selected[0] != owner:
+            selected = (owner, CookieJar())
+            _local.set(selected)
+        return selected[1]
 
     with _lock:
         existing = _global_jars.get(user_id)
@@ -33,11 +36,25 @@ def jar_for_user(user_id: Optional[int] = None) -> CookieJar:
         return existing
 
 
+def _current_owner() -> _CookieOwner:
+    """Detach inherited task contexts while keeping thread and greenlet isolation."""
+    try:
+        current_task = asyncio.current_task()
+    except RuntimeError:
+        current_task = None
+    return threading.get_ident(), None if current_task is None else id(current_task)
+
+
+def _clear_current_jar() -> None:
+    selected = _local.get()
+    if selected is not None and selected[0] == _current_owner():
+        selected[1].clear()
+
+
 def reset_user_jar(user_id: Optional[int] = None) -> None:
-    """Clear cookies for the given user (or current thread)."""
+    """Clear cookies for the given user or the current execution context."""
     if user_id is None:
-        if hasattr(_local, "jar"):
-            _local.jar.clear()
+        _clear_current_jar()
         return
     with _lock:
         jar = _global_jars.get(user_id)
@@ -51,5 +68,4 @@ def reset_all_jars() -> None:
         for jar in _global_jars.values():
             jar.clear()
         _global_jars.clear()
-    if hasattr(_local, "jar"):
-        _local.jar.clear()
+    _clear_current_jar()

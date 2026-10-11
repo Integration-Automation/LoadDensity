@@ -1,4 +1,23 @@
 korean_word_dict = {
+    # Desktop lifecycle and settings
+    "settings": "테스트 설정",
+    "browse": "찾아보기…",
+    "action_file": "작업 파일",
+    "engine": "엔진",
+    "stop_button": "중지",
+    "idle": "대기",
+    "running": "실행 중",
+    "stopping": "중지 중",
+    "completed": "완료",
+    "failed": "실패",
+    "cancelled": "취소됨",
+    "success": "성공",
+    "results": "최근 요청",
+    "request": "요청",
+    "latency": "지연 (ms)",
+    "result": "결과",
+    "failure_rate": "실패율",
+    "invalid_input": "HTTP 대상과 양수 부하 설정을 입력하세요.",
     # Main
     "application_name": "LoadDensity",
     # Widget

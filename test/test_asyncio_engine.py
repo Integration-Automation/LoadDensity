@@ -1,12 +1,13 @@
-"""The asyncio engine against a local HTTP server (progress.md #1).
+"""The asyncio engine against a local HTTP server.
 
-The server runs in its own interpreter: importing LoadDensity imports locust, whose gevent
-patching turns a server thread in this process into a greenlet that never gets scheduled while
-asyncio holds the main thread -- an in-process stub would only ever time out. No external network.
+The server and native client run in fresh interpreters because other tests select Locust,
+whose gevent patching changes this process's socket and thread scheduling. No external network.
 """
-import asyncio
+import json
+import socket
 import subprocess  # nosec B404 - the test server is a child process
 import sys
+import tempfile
 import time
 import urllib.request
 
@@ -14,7 +15,6 @@ import pytest
 
 pytest.importorskip("httpx")
 
-from je_load_density.engine.asyncio_engine import run_async_load  # noqa: E402
 from je_load_density.utils.test_record.test_record_class import test_record_instance  # noqa: E402
 
 _SERVER = """
@@ -61,7 +61,53 @@ def _clean_records():
 
 
 def _run(tasks, **kwargs):
-    return asyncio.run(run_async_load(tasks=tasks, users=2, duration_seconds=1.0, **kwargs))
+    # The suite also selects Locust. Exercise actual native I/O in an unpatched
+    # interpreter, just like bench and the isolated desktop worker.
+    source = """
+import asyncio, faulthandler, json, sys
+faulthandler.dump_traceback_later(8, repeat=True)
+from je_load_density.engine.asyncio_engine import run_async_load
+from je_load_density.utils.test_record.test_record_class import test_record_instance
+options = json.loads(sys.argv[1])
+result = asyncio.run(run_async_load(**options))
+print(json.dumps({'result': result, 'success': test_record_instance.test_record_list,
+                  'failure': test_record_instance.error_record_list}))
+"""
+    options = {"tasks": tasks, "users": 2, "duration_seconds": 1.0, **kwargs}
+    arguments = [sys.executable, "-c", source, json.dumps(options)]
+    # Locust patches subprocess communication in this parent; regular files avoid
+    # gevent pipe-reader joins while keeping the same native child and timeout.
+    with (
+        tempfile.TemporaryFile(mode="w+", encoding="utf-8") as output,
+        tempfile.TemporaryFile(mode="w+", encoding="utf-8") as errors,
+    ):
+        # Security audit: Fixed interpreter/-c program; task options are JSON in sys.argv[1], not interpolated Python or
+        # shell.
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
+        child = subprocess.Popen(arguments, stdout=output, stderr=errors, text=True)
+        try:
+            deadline = time.monotonic() + 20
+            while child.poll() is None and time.monotonic() < deadline:
+                time.sleep(0.02)
+            if child.poll() is None:
+                output.seek(0)
+                errors.seek(0)
+                # Security audit: Constructing TimeoutExpired only describes a timed-out process; it does not execute
+                # arguments.
+                # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
+                raise subprocess.TimeoutExpired(arguments, 20, output.read(), errors.read())
+        finally:
+            if child.poll() is None:
+                child.kill()
+            child.wait(timeout=5)
+        output.seek(0)
+        errors.seek(0)
+        stdout, stderr = output.read(), errors.read()
+    assert child.returncode == 0, stdout + stderr
+    measured = json.loads(stdout.splitlines()[-1])
+    test_record_instance.test_record_list[:] = measured["success"]
+    test_record_instance.error_record_list[:] = measured["failure"]
+    return measured["result"]
 
 
 def test_successful_requests_are_recorded(base_url):
@@ -84,8 +130,11 @@ def test_server_errors_count_as_failures_like_locust(base_url):
 
 
 def test_connection_failures_are_recorded_with_status_zero():
-    # Port 9 (discard) on loopback refuses the connection.
-    _run([{"method": "get", "request_url": "http://127.0.0.1:9/nothing", "timeout": 0.5}])
+    # Reserve a random port without listening, avoiding host-specific discard services/firewalls.
+    with socket.socket() as unused:
+        unused.bind(("127.0.0.1", 0))
+        url = f"http://127.0.0.1:{unused.getsockname()[1]}/nothing"
+        _run([{"method": "get", "request_url": url, "timeout": 0.2}], users=1, duration_seconds=2.0)
     assert test_record_instance.error_record_list
     assert test_record_instance.error_record_list[0]["status_code"] == "0"
 

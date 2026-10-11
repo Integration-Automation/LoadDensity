@@ -1,5 +1,6 @@
-# Rename to dev version
-# This is dev version
+# The dev channel, je_load_density_dev. The publish-dev job of .github/workflows/ci-dev.yml builds it by
+# writing this file to pyproject.toml (scripts/dev_release.py). The version below is a floor: CI publishes
+# one patch above the newest release on PyPI and commits nothing back.
 [build-system]
 requires = ["setuptools>=82.0.1"]
 build-backend = "setuptools.build_meta"
@@ -15,11 +16,17 @@ requires-python = ">=3.10"
 license-files = ["LICENSE"]
 dependencies = [
     "locust",
+    "httpx>=0.27",
     "defusedxml>=0.7.1",
+    "je_action_core>=0.0.2",
     "tomli>=2.0; python_version < '3.11'",
 ]
 classifiers = [
     "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Development Status :: 2 - Pre-Alpha",
     "Environment :: Win32 (MS Windows)",
     "Environment :: MacOS X",
@@ -36,8 +43,10 @@ Code = "https://github.com/Integration-Automation/LoadDensity"
 file = "README.md"
 content-type = "text/markdown"
 
+# Only the package goes into the wheel. Without "include", setuptools takes every directory with an
+# __init__.py, which installs test/ as a top-level "test" package (test/test_wheel_packages.py).
 [tool.setuptools.packages]
-find = { namespaces = false }
+find = { namespaces = false, include = ["je_load_density", "je_load_density.*"] }
 
 [project.optional-dependencies]
 gui = ["PySide6==6.11.2", "qt-material"]
@@ -81,14 +90,14 @@ pdf = ["reportlab>=4.0"]
 k8s = ["kopf>=1.37", "kubernetes>=29"]
 ldap = ["ldap3>=2.9"]
 snmp = ["pysnmp>=4.4"]
-modbus = ["pymodbus>=3.5"]
+modbus = ["pymodbus[serial]>=3.5"]
 opcua = ["asyncua>=1.0"]
 zmq = ["pyzmq>=25.1"]
 thrift = ["thriftpy2>=0.4"]
 memcached = ["pymemcache>=4.0"]
 neo4j = ["neo4j>=5.15"]
 couchbase = ["couchbase>=4.1"]
-etcd = ["etcd3>=0.12"]
+etcd = ["etcd3gw>=2.4.2"]
 webpush = ["pywebpush>=1.14"]
 aws = ["boto3>=1.34"]
 gcp = ["google-auth>=2.27"]
@@ -132,14 +141,14 @@ all = [
     "kubernetes>=29",
     "ldap3>=2.9",
     "pysnmp>=4.4",
-    "pymodbus>=3.5",
+    "pymodbus[serial]>=3.5",
     "asyncua>=1.0",
     "pyzmq>=25.1",
     "thriftpy2>=0.4",
     "pymemcache>=4.0",
     "neo4j>=5.15",
     "couchbase>=4.1",
-    "etcd3>=0.12",
+    "etcd3gw>=2.4.2",
     "pywebpush>=1.14",
     "boto3>=1.34",
     "google-auth>=2.27",

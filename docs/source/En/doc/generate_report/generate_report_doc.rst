@@ -75,6 +75,22 @@ The summary contains totals, per-name counts, min / max / mean /
 percentile (p50 / p90 / p95 / p99) latencies, and an overall block.
 Useful for charting and regression checks across runs.
 
+Percentile band charts
+----------------------
+
+Install the ``charts`` extra, then call ``generate_chart_report(report_name,
+bucket_size_seconds=1.0, max_buckets=10000)``. Existing ``-latency.png`` /
+``-rps.png`` filenames and ``latency`` / ``rps`` return keys are preserved.
+Request-start buckets merge success/failure samples, plot a p50 line and
+p50–p95 / p95–p99 bands, and calculate RPS using actual bucket duration.
+Missing/invalid latency leaves a gap without discarding timed request counts.
+The default history limit retains the newest 10,000 buckets.
+
+Window percentiles select index ``round(p / 100 * (n - 1))`` with Python
+ties-to-even rounding. Overall summary percentiles retain linear interpolation.
+Latency statistics exclude negative/nonfinite/invalid measurements; totals retain
+all requests. Qt and browser live charts use the same helper and retain 120 buckets.
+
 Action JSON
 -----------
 

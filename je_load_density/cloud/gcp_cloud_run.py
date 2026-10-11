@@ -11,6 +11,8 @@ import urllib.parse
 import urllib.request
 from typing import Any, Dict, List, Optional
 
+from ._validation import CloudLaunchError, positive_integer, positive_number, required_string
+
 
 def _import_google_auth():
     try:
@@ -28,7 +30,73 @@ def _bearer_token(scopes: List[str]) -> str:
     google_auth, gauth_requests = _import_google_auth()
     credentials, _project = google_auth.default(scopes=scopes)
     credentials.refresh(gauth_requests.Request())
+    if not isinstance(credentials.token, str) or not credentials.token.strip():
+        raise RuntimeError("Cloud Run credential refresh returned an empty token")
     return credentials.token
+
+
+def _validate_overrides(container_overrides: Optional[List[Dict[str, Any]]]) -> None:
+    if container_overrides is None:
+        return
+    if not isinstance(container_overrides, list):
+        raise ValueError("container_overrides must be a list")
+    for override in container_overrides:
+        if not isinstance(override, dict) or not override:
+            raise ValueError("each container override must be a nonempty object")
+        if set(override) - {"name", "args", "env", "clearArgs"}:
+            raise ValueError("unsupported container override field")
+        _validate_container_override(override)
+
+
+def _validate_container_override(override: Dict[str, Any]) -> None:
+    if "name" in override:
+        required_string(override["name"], "container name")
+    if "clearArgs" in override and not isinstance(override["clearArgs"], bool):
+        raise ValueError("clearArgs must be a boolean")
+    if "args" in override:
+        args = override["args"]
+        if not isinstance(args, list) or any(not isinstance(arg, str) for arg in args):
+            raise ValueError("container args must be a list of strings")
+    if "env" in override:
+        _validate_env(override["env"])
+
+
+def _validate_env(environment: List[Dict[str, str]]) -> None:
+    if not isinstance(environment, list):
+        raise ValueError("container env must be a list")
+    for variable in environment:
+        if not isinstance(variable, dict) or set(variable) - {"name", "value", "valueSource"}:
+            raise ValueError("invalid container environment variable")
+        required_string(variable.get("name"), "environment name")
+        if "value" in variable and not isinstance(variable["value"], str):
+            raise ValueError("environment value must be a string")
+        if "valueSource" in variable:
+            if "value" in variable:
+                raise ValueError("environment value and valueSource are mutually exclusive")
+            _validate_value_source(variable["valueSource"])
+
+
+def _validate_value_source(source: Dict[str, Any]) -> None:
+    if not isinstance(source, dict) or set(source) != {"secretKeyRef"}:
+        raise ValueError("valueSource must contain secretKeyRef")
+    secret = source["secretKeyRef"]
+    if not isinstance(secret, dict) or set(secret) - {"secret", "version"}:
+        raise ValueError("secretKeyRef must be an object with secret and optional version")
+    required_string(secret.get("secret"), "secret name")
+    if "version" in secret:
+        required_string(secret["version"], "secret version")
+
+
+def _judge_operation(body: bytes) -> Dict[str, Any]:
+    try:
+        response = json.loads(body.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise CloudLaunchError("cloud_run", [0], [], "malformed operation JSON") from error
+    if not isinstance(response, dict) or not isinstance(response.get("name"), str):
+        raise CloudLaunchError("cloud_run", [0], [], "malformed operation")
+    if not response["name"].strip() or "error" in response:
+        raise CloudLaunchError("cloud_run", [0], [], "operation failed or malformed", response)
+    return response
 
 
 def run_cloud_run_job(
@@ -40,7 +108,21 @@ def run_cloud_run_job(
     container_overrides: Optional[List[Dict[str, Any]]] = None,
     timeout: float = 30.0,
 ) -> Dict[str, Any]:
-    """Trigger a Cloud Run Job execution. Returns the API response JSON."""
+    """Trigger a Job and return its Operation; submission does not imply completion.
+
+    jobs.run supports task_count and container overrides. Set parallelism on the
+    deployed Job; specifying it here raises ValueError before authentication.
+    Credentials refresh each call. HTTP/authentication errors propagate and no
+    potentially accepted POST is retried.
+    """
+    for value, name in [(project, "project"), (region, "region"), (job_name, "job_name")]:
+        required_string(value, name)
+    if parallelism is not None:
+        raise ValueError("parallelism is not a jobs.run override; configure it on the deployed Job")
+    if task_count is not None:
+        positive_integer(task_count, "task_count")
+    positive_number(timeout, "timeout")
+    _validate_overrides(container_overrides)
     token = _bearer_token(["https://www.googleapis.com/auth/cloud-platform"])
     # Each name is one path segment; quoting keeps a stray "/" or "?" from addressing another resource.
     project, region, job_name = (urllib.parse.quote(str(part), safe="") for part in (project, region, job_name))
@@ -49,8 +131,6 @@ def run_cloud_run_job(
         f"{region}/jobs/{job_name}:run"
     )
     body: Dict[str, Any] = {"overrides": {}}
-    if parallelism is not None:
-        body["overrides"]["parallelism"] = parallelism
     if task_count is not None:
         body["overrides"]["taskCount"] = task_count
     if container_overrides:
@@ -62,4 +142,4 @@ def run_cloud_run_job(
         method="POST",
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310  # nosec B310
-        return json.loads(response.read().decode("utf-8"))
+        return _judge_operation(response.read())

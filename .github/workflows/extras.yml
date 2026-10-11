@@ -1,0 +1,87 @@
+name: Installed wheel extras
+
+on:
+  workflow_call:
+    inputs:
+      event-name:
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      matrix: ${{ steps.matrix.outputs.matrix }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - id: matrix
+        env:
+          MATRIX_EVENT: ${{ inputs.event-name }}
+        run: python scripts/extras_matrix.py --event "$MATRIX_EVENT"
+
+  install:
+    needs: [matrix]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      max-parallel: 8
+      matrix: ${{ fromJSON(needs.matrix.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build checkout wheel with locked tooling
+        run: |
+          python -m pip install --require-hashes --only-binary :all: -r .github/requirements/publish.txt
+          python -m build --wheel --no-isolation
+      - name: Install isolated extra
+        env:
+          CELL_PYTHON: ${{ matrix.python }}
+          CELL_EXTRA: ${{ matrix.extra }}
+        run: >-
+          docker build -f docker/extras.Dockerfile
+          --build-arg PYTHON_VERSION="$CELL_PYTHON" --build-arg EXTRA="$CELL_EXTRA"
+          -t loaddensity-extras:cell .
+      - name: Run capability and installed-wheel smoke checks
+        run: timeout 360s docker run --rm loaddensity-extras:cell
+
+  services:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      COMPOSE_PROJECT_NAME: ld-ci-${{ github.run_id }}-${{ github.run_attempt }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97  # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Build checkout wheel
+        run: |
+          python -m pip install --require-hashes --only-binary :all: -r .github/requirements/publish.txt
+          python -m build --wheel --no-isolation
+          docker compose -f docker/ci-services.yml build probe
+      - name: Wait for healthy protocol services
+        run: docker compose -f docker/ci-services.yml up -d --wait --wait-timeout 60 redis mosquitto
+      - name: Verify adapter requests and measurements
+        run: timeout 60s docker compose -f docker/ci-services.yml run --rm probe
+      - name: Show service logs after failures
+        if: failure()
+        run: docker compose -f docker/ci-services.yml logs --no-color
+      - name: Stop isolated services
+        if: always()
+        run: docker compose -f docker/ci-services.yml down --volumes --remove-orphans

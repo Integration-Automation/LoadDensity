@@ -66,6 +66,20 @@ Summary（百分位）
 
 包含 totals、per-name 計數、min / max / mean / 百分位（p50 / p90 / p95 / p99）延遲與整體區塊。便於繪圖與跨次回歸檢查。
 
+百分位數帶狀圖
+--------------
+
+安裝 ``charts`` extra 後呼叫 ``generate_chart_report(report_name,
+bucket_size_seconds=1.0, max_buckets=10000)``。
+原有 ``-latency.png``／``-rps.png`` 檔名與 ``latency``／``rps`` 回傳鍵保持相容。
+依請求開始時間分桶，合併成功／失敗樣本，繪製 p50 線與 p50–p95／p95–p99 帶狀區，
+依實際桶長計算 RPS。沒有或無效的延遲顯示斷點，有時間戳的請求仍計數。
+預設保留最新 10,000 個桶。
+
+時間窗百分位數選取 ``round(p / 100 * (n - 1))`` 索引（Python ties-to-even）；
+整體 summary 百分位數保留線性插值。延遲統計排除負值、非有限或無效量測，
+請求總數仍包含所有請求。Qt 與瀏覽器即時圖共用統計 helper，保留 120 桶。
+
 動作 JSON
 ---------
 

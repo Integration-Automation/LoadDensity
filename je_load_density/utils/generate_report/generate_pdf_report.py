@@ -4,6 +4,7 @@ PDF summary report (reportlab, lazy import).
 Renders the build_summary output as a one-page printable PDF.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import os
 from html import escape
 from typing import Any, Dict, Optional
@@ -77,7 +78,7 @@ def generate_pdf_report(
         )
         summary = build_summary()
 
-    file_path = f"{report_name}.pdf"
+    file_path = report_path(f"{report_name}.pdf")
     document = rl["SimpleDocTemplate"](file_path, pagesize=rl["letter"])
     styles = rl["styles"]()
     flow = [
