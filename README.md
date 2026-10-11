@@ -633,6 +633,8 @@ generate_summary_report("report-sum")    # totals + per-name p50/p90/p95/p99
 | JUnit | `<base>-junit.xml` (CI-native) | single |
 | Summary | `<base>.json` (per-name p50/p90/p95/p99) | single |
 
+Under [TestPioneer](https://github.com/Integration-Automation/TestPioneer), which sets `TEST_PIONEER_ARTIFACT_DIR` for the runners it starts, a report asked for under a relative name is written below that directory, and the path each generator returns is the one it wrote. An absolute name is used as given, and without the variable nothing changes.
+
 ## Observability
 
 ```python

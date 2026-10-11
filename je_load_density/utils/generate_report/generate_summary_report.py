@@ -1,3 +1,4 @@
+from je_load_density.utils.generate_report.report_path import report_path
 import json
 import sys
 from typing import Any, Dict, Iterable, List, Optional
@@ -80,7 +81,7 @@ def build_summary(success=None, failures=None) -> Dict[str, Any]:
 
 def generate_summary_report(report_name: str = "loaddensity-summary") -> Optional[str]:
     summary = build_summary()
-    path = f"{report_name}.json"
+    path = report_path(f"{report_name}.json")
     try:
         with open(path, "w", encoding="utf-8") as fh:
             json.dump(summary, fh, indent=2)

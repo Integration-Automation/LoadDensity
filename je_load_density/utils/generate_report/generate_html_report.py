@@ -1,3 +1,4 @@
+from je_load_density.utils.generate_report.report_path import report_path
 import sys
 from html import escape
 from typing import List, Tuple
@@ -119,7 +120,7 @@ def generate_html_report(html_name: str = "default_name") -> str:
     success_list, failure_list = generate_html()
 
     try:
-        html_path = f"{html_name}.html"
+        html_path = report_path(f"{html_name}.html")
         with open(html_path, "w+", encoding="utf-8") as file_to_write:
             file_to_write.write(_HTML_STRING_HEAD)
             file_to_write.writelines(success_list)

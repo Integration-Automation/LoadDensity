@@ -4,6 +4,7 @@ Latency histogram report (matplotlib lazy import).
 Renders a histogram + log-scale CDF of latency in milliseconds.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import os
 from typing import Dict, List
 
@@ -74,7 +75,7 @@ def generate_histogram_report(
     if not latencies:
         raise HistogramDependencyError("no records to render histogram")
     histogram_path = _render_histogram(
-        plt, f"{report_name}-histogram.png", latencies, bins,
+        plt, report_path(f"{report_name}-histogram.png"), latencies, bins,
     )
-    cdf_path = _render_cdf(plt, f"{report_name}-cdf.png", latencies)
+    cdf_path = _render_cdf(plt, report_path(f"{report_name}-cdf.png"), latencies)
     return {"histogram": histogram_path, "cdf": cdf_path}

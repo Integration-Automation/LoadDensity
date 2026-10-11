@@ -7,6 +7,7 @@ and stringing together consecutive requests (heuristic — works when
 Mermaid, or Cytoscape.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import json
 import os
 from collections import defaultdict
@@ -51,7 +52,7 @@ def generate_service_map(
 ) -> str:
     """Write the service map JSON. Returns its path."""
     graph = build_service_map(min_weight=min_weight)
-    file_path = f"{report_name}.json"
+    file_path = report_path(f"{report_name}.json")
     with open(file_path, "w", encoding="utf-8") as handle:
         json.dump(graph, handle, ensure_ascii=False, indent=2)
     return os.path.abspath(file_path)

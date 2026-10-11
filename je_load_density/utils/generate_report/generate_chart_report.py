@@ -10,6 +10,7 @@ matplotlib is imported lazily. Install with ``pip install matplotlib``
 or via the ``[charts]`` extra.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import os
 from itertools import chain
 from typing import Dict
@@ -83,9 +84,9 @@ def generate_chart_report(
     if not any(item["p50_ms"] is not None for item in windows):
         raise ChartDependencyError("no records to render charts")
 
-    latency_path = _render_latency_chart(plt, f"{report_name}-latency.png",
+    latency_path = _render_latency_chart(plt, report_path(f"{report_name}-latency.png"),
                                           windows)
     rps_xs = [item["start_time"] for item in windows]
     rps_counts = [item["rps"] for item in windows]
-    rps_path = _render_rps_chart(plt, f"{report_name}-rps.png", rps_xs, rps_counts)
+    rps_path = _render_rps_chart(plt, report_path(f"{report_name}-rps.png"), rps_xs, rps_counts)
     return {"latency": latency_path, "rps": rps_path}

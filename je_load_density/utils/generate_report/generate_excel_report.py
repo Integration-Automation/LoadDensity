@@ -6,6 +6,7 @@ so the report does NOT require openpyxl. Writes a single "Records"
 sheet containing every test record.
 """
 
+from je_load_density.utils.generate_report.report_path import report_path
 import math
 import os
 import zipfile
@@ -122,7 +123,7 @@ def generate_excel_report(
     failure_rows = _build_rows(test_record_instance.error_record_list, "failure")
     sheet_bytes = _sheet_xml(header_row + success_rows + failure_rows)
 
-    file_path = f"{report_name}.xlsx"
+    file_path = report_path(f"{report_name}.xlsx")
     with zipfile.ZipFile(file_path, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.writestr("[Content_Types].xml", _CONTENT_TYPES_XML)
         archive.writestr("_rels/.rels", _ROOT_RELS_XML)

@@ -1,3 +1,4 @@
+from je_load_density.utils.generate_report.report_path import report_path
 import csv
 import sys
 from typing import Iterable, List, Optional
@@ -33,7 +34,7 @@ def generate_csv_report(csv_name: str = "default_name") -> Optional[str]:
     Generate a CSV report containing both success and failure records.
     Returns the path written, or None on failure.
     """
-    csv_path = f"{csv_name}.csv"
+    csv_path = report_path(f"{csv_name}.csv")
     try:
         with open(csv_path, "w", newline="", encoding="utf-8") as fh:
             writer = csv.DictWriter(fh, fieldnames=_FIELDS)
