@@ -76,8 +76,10 @@ persistence all read from that record.
   version; `test/test_dev_toml_parity.py` keeps the scripts, extras, dependencies and tool settings in step.
 - **Release channels**, both published to PyPI by CI:
   - stable, `je_load_density`: `publish-pypi.yml` runs after `CI Stable` passes on a push to `main`. It bumps
-    the patch version in `pyproject.toml`, uploads, pushes the bump to `main`, tags it and creates the GitHub
-    release;
+    the patch version above both `pyproject.toml` and the existing PyPI releases using the shared
+    `scripts/dev_release.py` helpers. Stable publishes are serialized and stale tested commits do not upload,
+    commit, tag or create a release. A current tested commit uploads, pushes the bump to `main`, tags it
+    and creates the GitHub release;
   - dev, `je_load_density_dev`: the `publish-dev` job of `ci-dev.yml` runs after `test` on a push to `dev`. It
     builds from `dev.toml` and uploads when the commit is still the tip of `dev` and the wheel differs from
     the newest published one. `scripts/dev_release.py` takes the version from PyPI (newest release plus one

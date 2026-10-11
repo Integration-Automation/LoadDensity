@@ -40,6 +40,7 @@ def _wheel(version: str, source: str = "VALUE = 1\n", requires: str = "defusedxm
 
 
 @pytest.mark.parametrize("floor, released, expected", [
+    ((0, 0, 77), {(0, 0, 78): None}, "0.0.79"),
     ((0, 0, 79), {(0, 0, 79): None, (0, 0, 78): None}, "0.0.80"),
     ((0, 0, 79), {(0, 0, 84): None}, "0.0.85"),
     ((0, 1, 0), {(0, 0, 84): None}, "0.1.1"),
