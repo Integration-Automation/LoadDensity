@@ -658,9 +658,9 @@ multidict==6.9.1 \
     # via
     #   aiohttp
     #   yarl
-oauthlib==3.3.1 \
-    --hash=sha256:0f0f8aa759826a193cf66c12ea1af1637f87b9b4622d46e866952bb022e538c9 \
-    --hash=sha256:88119c938d2b8fb88561af5f6ee0eec8cc8d552b7bb1f712743136eb7523b7a1
+oauthlib==4.0.0 \
+    --hash=sha256:624c28c13a0a59cabf9747dfa52af63be3e512a7f2714df16e91b5b3a145e6cd \
+    --hash=sha256:efb274799819440f95b4ab3b818869f1ce9ae26c5beacba0201d1a1b76b54f86
     # via requests-oauthlib
 propcache==0.5.4 \
     --hash=sha256:004e685b315646c410771836e72a44f143bbe624f29653a42687815069a303d5 \
@@ -905,12 +905,6 @@ six==1.17.0 \
     # via
     #   kubernetes
     #   python-dateutil
-typing-extensions==4.16.0 \
-    --hash=sha256:481caa481374e813c1b176ada14e97f1f67a4539ce9cfeb3f350d78d6370c2e8 \
-    --hash=sha256:dc983d19a509c94dba722ee6abd33940f7c05a89e243c47e907eb4db6f1a43e5
-    # via
-    #   aiohttp
-    #   aiosignal
 urllib3==2.8.0 \
     --hash=sha256:0cf3cae568d36aa9576b28dfb35f11328f1cb974ca7647d9475ebb86c75ac6e3 \
     --hash=sha256:63bf2ead4c879426ebf22ef2a781eeb4aa3b4ae798a0435506f8687fd5bb9b63
