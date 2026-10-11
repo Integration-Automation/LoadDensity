@@ -26,7 +26,7 @@ from je_action_core import (
 
 from je_load_density.utils.executor.action_executor import execute_action
 
-TOKEN_ENVIRONMENT_VARIABLE = "LOAD_DENSITY_SOCKET_TOKEN"  # noqa: S105 - a variable name, not a value
+TOKEN_ENVIRONMENT_VARIABLE = "LOAD_DENSITY_SOCKET_TOKEN"  # nosec B105 - environment variable name, not a secret
 _MESSAGES = ReplyMessages(
     record="{value}",
     error="Error: {error}",

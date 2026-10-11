@@ -57,6 +57,8 @@ def test_child_process_serves_and_stops(tmp_path):
     repository = Path(__file__).resolve().parents[1]
     output = tmp_path / "server.out"
     with output.open("w", encoding="utf-8") as sink:
+        # Fixed test program, current interpreter and a locally allocated port; no shell or external command.
+        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
         child = subprocess.Popen([sys.executable, "-c", _CHILD, str(port)], cwd=repository,  # noqa: S603
                                  stdout=sink, stderr=subprocess.STDOUT)
         try:
