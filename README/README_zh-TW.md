@@ -72,6 +72,7 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步成長為完整的�
 - [日誌](#日誌)
 - [支援平台](#支援平台)
 - [更多模組](#更多模組)
+- [安全性](#安全性)
 - [授權](#授權)
 
 ## 亮點
@@ -1121,6 +1122,10 @@ diagnostics。以 `npm install && npm run package` 建置,再安裝
 - **Stub server**:`utils.stub_server.start_stub_server` / `stop_stub_server` 供應罐頭回應，讓情境能對假後端執行。它使用執行緒；若測試行程已選擇 Locust，原生 asyncio client 與 server 請使用新行程，避免 gevent 排程影響。
 - **更多報告格式**,在上述七種之外:Allure、cost、CycloneDX、Excel、latency histogram、PDF(`pdf` extra)、SARIF 與一張 service map,各自對應 `utils/generate_report/` 下一個 `generate_*_report.py` 模組。
 - **部署範本** 位於 `deploy/`:一份 Helm chart、一個 Kubernetes operator(`k8s` extra)、Terraform、一張 Grafana dashboard 與 CI 範本。
+
+## 安全性
+
+漏洞請私下回報。政策、支援版本與操作者注意事項見 [SECURITY.md](../SECURITY.md)。
 
 ## 授權
 
