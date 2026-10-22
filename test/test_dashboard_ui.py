@@ -2,6 +2,8 @@ import json
 import re
 import shutil
 import time
+import os
+import subprocess
 
 from gevent.monkey import get_original
 
@@ -56,11 +58,12 @@ def _run_node(node, harness, payload, tmp_path):
     source = tmp_path / "input.json"
     source.write_text(json.dumps(payload), encoding="utf-8")
     stdout, stderr = tmp_path / "stdout.json", tmp_path / "stderr.txt"
-    native_popen = get_original("subprocess", "Popen")
+    # gevent replaces POSIX fork internals, so its process creator must remain active there.
+    popen = get_original("subprocess", "Popen") if os.name == "nt" else subprocess.Popen
     with source.open("rb") as incoming, stdout.open("wb") as outgoing, stderr.open("wb") as errors:
         # PATH-resolved Node executes fixed fixture code. Report data is read from
         # an owned input file, never interpolated into command or shell text.
-        with native_popen([node, "-e", harness], stdin=incoming, stdout=outgoing, stderr=errors) as child:
+        with popen([node, "-e", harness], stdin=incoming, stdout=outgoing, stderr=errors) as child:
             deadline = time.monotonic() + 10
             try:
                 while child.poll() is None:
