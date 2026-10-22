@@ -37,6 +37,14 @@ _MESSAGES = ReplyMessages(
 )
 
 
+class _ShutdownAwareTCPServer(ActionTCPServer):
+    """Bound an accept after a stale readiness event so shutdown can finish."""
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.socket.settimeout(0.5)
+
+
 def _print_info(message: str) -> None:
     print(message, flush=True)
 
@@ -87,7 +95,9 @@ def start_load_density_socket_server(
     if token is None:
         token = os.environ.get(TOKEN_ENVIRONMENT_VARIABLE)
     settings = socket_server_settings(framed=framed, token=token, certfile=certfile, keyfile=keyfile)
-    server = start_action_socket_server(host, port, settings, EnvelopeTokenRequestHandler)
+    server = start_action_socket_server(
+        host, port, settings, EnvelopeTokenRequestHandler, server_class=_ShutdownAwareTCPServer,
+    )
     print(f"Server started on {host}:{port}", flush=True)
     server.close_event.wait()
     server.shutdown()
