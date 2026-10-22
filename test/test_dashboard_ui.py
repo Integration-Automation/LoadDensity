@@ -1,7 +1,9 @@
 import json
 import re
 import shutil
-import subprocess
+import time
+
+from gevent.monkey import get_original
 
 import pytest
 
@@ -45,17 +47,28 @@ console.log(JSON.stringify({name:nodes.tbody.children[0].children[0].textContent
             "latency_windows": [{**window, "start_time": 0},
                                 {**window, "start_time": 1, "p50_ms": None, "p95_ms": None, "p99_ms": None},
                                 {**window, "start_time": 2}]}
-    # Security audit: PATH-resolved Node runs fixed harness code; report/name payloads arrive on stdin, never shell
-    # code.
-    # Locust patches subprocess with gevent. Windows pipe communication can block
-    # after Node exits, so use owned files for input and output instead of pipes.
-    source = tmp_path / "input.json"
-    source.write_text(json.dumps({"script": script, "data": data}), encoding="utf-8")
-    stdout, stderr = tmp_path / "stdout.json", tmp_path / "stderr.txt"
-    with source.open("rb") as incoming, stdout.open("wb") as outgoing, stderr.open("wb") as errors:
-        # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
-        completed = subprocess.run([node, "-e", harness], stdin=incoming, stdout=outgoing,
-                                   stderr=errors, timeout=10, check=False)
-    assert completed.returncode == 0, stderr.read_text(encoding="utf-8")
-    output = json.loads(stdout.read_text(encoding="utf-8"))
+    output = _run_node(node, harness, {"script": script, "data": data}, tmp_path)
     assert output == {"name": name, "bands": 4, "status": "Connected", "failure": "1"}
+
+
+def _run_node(node, harness, payload, tmp_path):
+    """Use native process polling; gevent's Windows wait can miss process exit."""
+    source = tmp_path / "input.json"
+    source.write_text(json.dumps(payload), encoding="utf-8")
+    stdout, stderr = tmp_path / "stdout.json", tmp_path / "stderr.txt"
+    native_popen = get_original("subprocess", "Popen")
+    with source.open("rb") as incoming, stdout.open("wb") as outgoing, stderr.open("wb") as errors:
+        # PATH-resolved Node executes fixed fixture code. Report data is read from
+        # an owned input file, never interpolated into command or shell text.
+        with native_popen([node, "-e", harness], stdin=incoming, stdout=outgoing, stderr=errors) as child:
+            deadline = time.monotonic() + 10
+            try:
+                while child.poll() is None:
+                    if time.monotonic() >= deadline:
+                        pytest.fail("Node DOM fixture did not exit within 10 seconds")
+                    time.sleep(0.01)
+            finally:
+                if child.poll() is None:
+                    child.kill()
+            assert child.returncode == 0, stderr.read_text(encoding="utf-8")
+    return json.loads(stdout.read_text(encoding="utf-8"))
