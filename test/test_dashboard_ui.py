@@ -8,7 +8,7 @@ import pytest
 from je_load_density.utils.dashboard.live_dashboard import _HTML
 
 
-def test_dashboard_renders_bands_and_untrusted_names_as_text():
+def test_dashboard_renders_bands_and_untrusted_names_as_text(tmp_path):
     node = shutil.which("node")
     if node is None:
         pytest.skip("Node is required for browser-script DOM contract checks")
@@ -48,8 +48,14 @@ console.log(JSON.stringify({name:nodes.tbody.children[0].children[0].textContent
     # Security audit: PATH-resolved Node runs fixed harness code; report/name payloads arrive on stdin, never shell
     # code.
     # nosemgrep: python.lang.security.audit.dangerous-subprocess-use-audit.dangerous-subprocess-use-audit
-    completed = subprocess.run([node, "-e", harness], input=json.dumps({"script": script, "data": data}),
-                               text=True, encoding="utf-8", capture_output=True, timeout=10, check=False)
-    assert completed.returncode == 0, completed.stderr
-    output = json.loads(completed.stdout)
+    # Locust patches subprocess with gevent. Windows pipe communication can block
+    # after Node exits, so use owned files for input and output instead of pipes.
+    source = tmp_path / "input.json"
+    source.write_text(json.dumps({"script": script, "data": data}), encoding="utf-8")
+    stdout, stderr = tmp_path / "stdout.json", tmp_path / "stderr.txt"
+    with source.open("rb") as incoming, stdout.open("wb") as outgoing, stderr.open("wb") as errors:
+        completed = subprocess.run([node, "-e", harness], stdin=incoming, stdout=outgoing,
+                                   stderr=errors, timeout=10, check=False)
+    assert completed.returncode == 0, stderr.read_text(encoding="utf-8")
+    output = json.loads(stdout.read_text(encoding="utf-8"))
     assert output == {"name": name, "bands": 4, "status": "Connected", "failure": "1"}
