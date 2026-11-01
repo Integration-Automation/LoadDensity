@@ -72,6 +72,7 @@ LoadDensity (`je_load_density`) started as a Locust wrapper and grew into a full
 - [Logging](#logging)
 - [Supported Platforms](#supported-platforms)
 - [More Modules](#more-modules)
+- [Security](#security)
 - [License](#license)
 
 ## Highlights
@@ -1165,6 +1166,10 @@ Cloud launchers validate counts/resources before contacting providers. `cloud.Cl
 - **Stub server**: `utils.stub_server.start_stub_server` / `stop_stub_server` serve canned responses from a thread. If the test process has selected Locust, run the native asyncio client and server in fresh interpreters to avoid gevent scheduling changes.
 - **More report formats** next to the seven above: Allure, cost, CycloneDX, Excel, latency histogram, PDF (`pdf` extra), SARIF and a service map, one `generate_*_report.py` module each under `utils/generate_report/`.
 - **Deployment templates** in `deploy/`: a Helm chart, a Kubernetes operator (`k8s` extra), Terraform, a Grafana dashboard and CI templates.
+
+## Security
+
+Report vulnerabilities privately. The policy, supported versions, and operator notes are in [SECURITY.md](SECURITY.md).
 
 ## License
 

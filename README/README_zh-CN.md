@@ -72,6 +72,7 @@ LoadDensity(`je_load_density`)从 Locust 封装起步,逐步成长为完整的�
 - [日志](#日志)
 - [支持平台](#支持平台)
 - [更多模块](#更多模块)
+- [安全](#安全)
 - [许可证](#许可证)
 
 ## 亮点
@@ -1121,6 +1122,10 @@ diagnostics。以 `npm install && npm run package` 构建,再安装
 - **Stub server**:`utils.stub_server.start_stub_server` / `stop_stub_server` 供应罐头响应，让场景能对假后端执行。它使用线程；若测试进程已选择 Locust，原生 asyncio client 与 server 请使用新进程，避免 gevent 调度影响。
 - **更多报告格式**,在上述七种之外:Allure、cost、CycloneDX、Excel、latency histogram、PDF(`pdf` extra)、SARIF 与一张 service map,各自对应 `utils/generate_report/` 下一个 `generate_*_report.py` 模块。
 - **部署模板** 位于 `deploy/`:一份 Helm chart、一个 Kubernetes operator(`k8s` extra)、Terraform、一张 Grafana dashboard 与 CI 模板。
+
+## 安全
+
+请私下报告漏洞。政策、支持版本与操作者注意事项见 [SECURITY.md](../SECURITY.md)。
 
 ## 许可证
 
