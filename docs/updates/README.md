@@ -62,6 +62,8 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 | U-20261022-03 | 2026-10-22 | Bound Windows socket shutdown and avoid subprocess pipe hangs | #bugfix #deps #ci | [2026-10](2026-10.md) |
 | U-20261022-01 | 2026-10-22 | Keep dependency metadata aligned | #bugfix #deps #ci | [2026-10](2026-10.md) |
 | U-20261022-05 | 2026-10-22 | Bound Windows socket shutdown and avoid subprocess pipe hangs | #bugfix #deps #ci | [2026-10](2026-10.md) |
+| U-20261022-04 | 2026-10-22 | Bound Windows socket shutdown and avoid subprocess pipe hangs | #bugfix #deps #ci | [2026-10](2026-10.md) |
+| U-20261022-02 | 2026-10-22 | Preserve complete dependency locks | #bugfix #deps #ci | [2026-10](2026-10.md) |
 | U-20261011-03 | 2026-10-11 | Include PyModbus serial import dependency | #done #ci | [2026-10](2026-10.md) |
 | U-20261011-02 | 2026-10-11 | Avoid duplicate stable PyPI versions | #done #ci | [2026-10](2026-10.md) |
 | U-20261011-01 | 2026-10-11 | Clarify reviewed socket server analysis findings | #done #ci | [2026-10](2026-10.md) |
@@ -147,5 +149,5 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 | File | Period | Entries |
 |---|---|---:|
 | [2026-11.md](2026-11.md) | 2026-11 | 1 |
-| [2026-10.md](2026-10.md) | 2026-10 | 34 |
+| [2026-10.md](2026-10.md) | 2026-10 | 39 |
 | [2026-09.md](2026-09.md) | 2026-09 | 45 |
