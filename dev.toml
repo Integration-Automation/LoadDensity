@@ -161,6 +161,15 @@ loaddensity = "je_load_density.__main__:main"
 loaddensity-mcp = "je_load_density.mcp_server.__main__:main"
 loaddensity-lsp = "je_load_density.action_lsp.__main__:main"
 
+[tool.uv]
+# Lock-only security floors for transitive dependencies (uv.lock; the wheel metadata is
+# unchanged). Pillow 13.0.0 and dnspython 2.9.0 fix the advisories in the versions before
+# them but need Python >=3.11, so 3.10 keeps Pillow 12.3.0 and dnspython 2.8.0.
+constraint-dependencies = [
+    "pillow>=13.0.0; python_version >= '3.11'",
+    "dnspython>=2.9.0; python_version >= '3.11'",
+]
+
 [tool.bandit]
 exclude_dirs = ["test", "tests", ".venv", "build", "dist"]
 

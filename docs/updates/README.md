@@ -58,6 +58,7 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | ID | Date | Title | Tags | Batch |
 |---|---|---|---|---|
+| U-20261101-01 | 2026-11-01 | Patch the dependencies named in Dependabot security alerts | #bugfix #deps #security #ci | [2026-11](2026-11.md) |
 | U-20261022-03 | 2026-10-22 | Bound Windows socket shutdown and avoid subprocess pipe hangs | #bugfix #deps #ci | [2026-10](2026-10.md) |
 | U-20261022-01 | 2026-10-22 | Keep dependency metadata aligned | #bugfix #deps #ci | [2026-10](2026-10.md) |
 | U-20261022-05 | 2026-10-22 | Bound Windows socket shutdown and avoid subprocess pipe hangs | #bugfix #deps #ci | [2026-10](2026-10.md) |
@@ -145,5 +146,6 @@ In the same commit: delete the item from `progress.md`, add a `#done` entry here
 
 | File | Period | Entries |
 |---|---|---:|
+| [2026-11.md](2026-11.md) | 2026-11 | 1 |
 | [2026-10.md](2026-10.md) | 2026-10 | 34 |
 | [2026-09.md](2026-09.md) | 2026-09 | 45 |
