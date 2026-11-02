@@ -99,7 +99,7 @@ LoadDensity (`je_load_density`) started as a Locust wrapper and grew into a full
 - **Safe executor.** An action JSON file can call the `LD_*` commands and nothing else except a 22-name builtin allowlist (`print`, `len`, `sorted`, `sum`, …). Everything outside it — `eval`, `exec`, `compile`, `__import__`, `open`, `input`, and the attribute and scope builtins `getattr` / `setattr` / `vars` / `globals` — is simply not registered, so it cannot be dispatched.
 - **Live GUI.** Optional PySide6 front-end with a live stats panel (RPS / avg / p95 / failures), translated to English, Traditional Chinese, Japanese, and Korean.
 - **CLI subcommands.** `run` / `run-dir` / `run-str` / `init` / `bench` / `shell` / `serve`. Legacy `-e/-d/-c/--execute_str` single-flag form is preserved for downstream tools.
-- **Cross-platform.** Windows 10/11, macOS, Ubuntu/Linux, Raspberry Pi (3B+ and later) on Python 3.10+.
+- **Cross-platform.** Windows 10/11, macOS, Ubuntu/Linux, Raspberry Pi (3B+ and later) on Python 3.11+.
 
 ## Installation
 
@@ -152,7 +152,7 @@ pip install -e ".[all]"
 pip install -r requirements.txt
 ```
 
-Hard requirements: Python **3.10+**, `locust`, `defusedxml`, `je_action_core`.
+Hard requirements: Python **3.11+**, `locust`, `defusedxml`, `je_action_core`.
 
 ## Architecture
 
@@ -849,7 +849,7 @@ Legacy single-flag form (`-e/-d/-c/--execute_str`) is still accepted for backwar
 
 Run `python -m unittest discover -s test/smoke -p "test_*.py"` from a checkout. The stdlib harness starts a separate local HTTP server and subprocesses to verify real Locust/async requests, summary/JSON/JUnit files, SQLite, SLA failures, dashboard JSON/SSE and MCP initialization. Docker runs the same harness outside the source tree against an installed wheel.
 
-Dev and Stable CI build the checkout wheel and test base, each declared extra and all in separate Docker containers. Pull requests cover every extra on Python 3.12 plus base on 3.10/3.14; scheduled runs cover all supported Python minors. Each cell runs `pip check`, a non-skipping capability probe and the six smoke tests. A separate Compose job waits for healthy Redis/MQTT services and checks real adapter requests; SQLite is checked locally. The `etcd` extra uses `etcd3gw` (etcd v3 HTTP gateway), preserving existing steps and supporting legacy manually installed etcd3. See [Docker checks](docker/README.md).
+Dev and Stable CI build the checkout wheel and test base, each declared extra and all in separate Docker containers. Pull requests cover every extra on Python 3.12 plus base on 3.11/3.14; scheduled runs cover all supported Python minors. Each cell runs `pip check`, a non-skipping capability probe and the six smoke tests. A separate Compose job waits for healthy Redis/MQTT services and checks real adapter requests; SQLite is checked locally. The `etcd` extra uses `etcd3gw` (etcd v3 HTTP gateway), preserving existing steps and supporting legacy manually installed etcd3. See [Docker checks](docker/README.md).
 
 ## Test Record
 
@@ -899,7 +899,7 @@ It writes WARNING+ to stderr and INFO+ to `~/.je_load_density/logs/LoadDensity.l
 | Ubuntu / Linux | Fully supported |
 | Raspberry Pi | Tested on 3B+ and later |
 
-Python 3.10+ required.
+Python 3.11+ required.
 
 ## SLA Gates & Regression Diff
 
