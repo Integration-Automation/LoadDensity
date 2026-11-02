@@ -62,4 +62,4 @@ docker compose -p ld-check -f docker/ci-services.yml down --volumes --remove-orp
 
 CI always cleans up this project, including on failure. Publishing depends on the
 reusable extras workflow. Pull requests test every extra on Python 3.12 and base on
-3.10/3.14; scheduled runs test every cell on 3.10–3.14.
+3.11/3.14; scheduled runs test every cell on 3.11–3.14.

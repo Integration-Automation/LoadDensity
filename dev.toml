@@ -12,17 +12,15 @@ authors = [
     { name = "JE-Chen", email = "jechenmailman@gmail.com" },
 ]
 description = "Load & Stress Automation Freamework"
-requires-python = ">=3.10"
+requires-python = ">=3.11"
 license-files = ["LICENSE"]
 dependencies = [
     "locust",
     "httpx>=0.27",
     "defusedxml>=0.7.1",
     "je_action_core>=0.0.2",
-    "tomli>=2.0; python_version < '3.11'",
 ]
 classifiers = [
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -163,11 +161,10 @@ loaddensity-lsp = "je_load_density.action_lsp.__main__:main"
 
 [tool.uv]
 # Lock-only security floors for transitive dependencies (uv.lock; the wheel metadata is
-# unchanged). Pillow 13.0.0 and dnspython 2.9.0 fix the advisories in the versions before
-# them but need Python >=3.11, so 3.10 keeps Pillow 12.3.0 and dnspython 2.8.0.
+# unchanged). Pillow 13.0.0 and dnspython 2.9.0 fix the advisories in the versions before them.
 constraint-dependencies = [
-    "pillow>=13.0.0; python_version >= '3.11'",
-    "dnspython>=2.9.0; python_version >= '3.11'",
+    "pillow>=13.0.0",
+    "dnspython>=2.9.0",
 ]
 
 [tool.bandit]

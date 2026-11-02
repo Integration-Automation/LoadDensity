@@ -4,7 +4,7 @@ Load & Stress Automation Framework built on top of Locust.
 
 ## Tech Stack
 
-- Python 3.10+
+- Python 3.11+
 - Locust (load testing engine)
 - PySide6 + qt-material (optional GUI)
 - setuptools (build system)
