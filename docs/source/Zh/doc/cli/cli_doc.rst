@@ -88,4 +88,4 @@ Inline JSON（CI script 友善）::
 在 checkout 執行 ``python -m unittest discover -s test/smoke -p "test_*.py"``。標準函式庫 harness 啟動獨立本機 HTTP 服務與子行程，驗證實際 Locust／async 請求、summary／JSON／JUnit、SQLite、SLA 失敗、dashboard JSON／SSE 與 MCP 初始化。Docker 在原始碼樹外使用同一 harness 驗證已安裝 wheel。
 
 
-共用 extras workflow 在 Docker 驗證已安裝的 checkout wheel：PR 在 Python 3.12 覆蓋全部宣告的 extras，另驗證 3.10／3.14 的 base；排程涵蓋所有支援的 Python 次版本。缺少能力會失敗，不會略過。獨立 Compose 健康檢查驗證 Redis／MQTT adapter 與本機 SQLite 查詢。etcd extra 使用 etcd3gw，不降級 protobuf；保留既有步驟格式與手動安裝舊 etcd3 的相容性。
+共用 extras workflow 在 Docker 驗證已安裝的 checkout wheel：PR 在 Python 3.12 覆蓋全部宣告的 extras，另驗證 3.11／3.14 的 base；排程涵蓋所有支援的 Python 次版本。缺少能力會失敗，不會略過。獨立 Compose 健康檢查驗證 Redis／MQTT adapter 與本機 SQLite 查詢。etcd extra 使用 etcd3gw，不降級 protobuf；保留既有步驟格式與手動安裝舊 etcd3 的相容性。

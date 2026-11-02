@@ -27,15 +27,15 @@ def metadata(tmp_path):
 def test_pr_matrix_covers_each_extra_and_boundary_base_versions(metadata):
     cells = load_matrix_module().build_matrix(metadata)["include"]
     assert {(row["python"], row["extra"]) for row in cells} == {
-        ("3.10", "base"), ("3.12", "base"), ("3.14", "base"),
+        ("3.11", "base"), ("3.12", "base"), ("3.14", "base"),
         ("3.12", "redis"), ("3.12", "gui"), ("3.12", "all"),
     }
 
 
 def test_schedule_matrix_covers_all_supported_versions(metadata):
     cells = load_matrix_module().build_matrix(metadata, scheduled=True)["include"]
-    assert len(cells) == 20
-    assert {row["python"] for row in cells} == {"3.10", "3.11", "3.12", "3.13", "3.14"}
+    assert len(cells) == 16  # 4 supported versions x 4 cells
+    assert {row["python"] for row in cells} == {"3.11", "3.12", "3.13", "3.14"}
     assert {row["extra"] for row in cells} == {"base", "redis", "gui", "all"}
 
 

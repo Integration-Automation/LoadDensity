@@ -99,7 +99,7 @@ LoadDensity(`je_load_density`)從 Locust 封裝起家,逐步成長為完整的�
 - **安全 executor。** 動作 JSON 檔只能呼叫 `LD_*` 指令,以及一份 22 個名稱的內建白名單(`print`、`len`、`sorted`、`sum` 等),此外別無其他。名單外的一切 — `eval`、`exec`、`compile`、`__import__`、`open`、`input`,以及 `getattr` / `setattr` / `vars` / `globals` 這些屬性與作用域內建 — 根本沒有註冊,因此無法被派發。
 - **即時 GUI。** 選用的 PySide6 前端,附帶即時統計面板(RPS / avg / p95 / failures),已翻譯為英文、繁體中文、日文與韓文。
 - **CLI 子指令。** `run` / `run-dir` / `run-str` / `init` / `bench` / `shell` / `serve`。舊式單旗標形式(`-e/-d/-c/--execute_str`)仍為下游工具保留。
-- **跨平台。** Windows 10/11、macOS、Ubuntu/Linux、Raspberry Pi(3B+ 以上),Python 3.10+。
+- **跨平台。** Windows 10/11、macOS、Ubuntu/Linux、Raspberry Pi(3B+ 以上),Python 3.11+。
 
 ## 安裝
 
@@ -152,7 +152,7 @@ pip install -e ".[all]"
 pip install -r requirements.txt
 ```
 
-硬性需求:Python **3.10+**、`locust`、`defusedxml`、`je_action_core`。
+硬性需求:Python **3.11+**、`locust`、`defusedxml`、`je_action_core`。
 
 ## 架構
 
@@ -821,7 +821,7 @@ python -m je_load_density serve [--host ...]    # start the control socket
 
 在 checkout 執行 `python -m unittest discover -s test/smoke -p "test_*.py"`。標準函式庫 harness 啟動獨立本機 HTTP 服務與子行程，驗證實際 Locust／async 請求、summary／JSON／JUnit、SQLite、SLA 失敗、dashboard JSON／SSE 與 MCP 初始化。Docker 在原始碼樹外使用同一 harness 驗證已安裝 wheel。
 
-Dev／Stable CI 建置 checkout wheel，在獨立 Docker 容器驗證 base、每個宣告的 extra 與 all。PR 在 Python 3.12 覆蓋所有 extras，另驗證 3.10／3.14 的 base；排程涵蓋所有支援的 Python 次版本。每個 cell 執行 `pip check`、不會略過失敗的能力探測與六項煙霧測試。獨立 Compose job 等待 Redis／MQTT 健康後驗證實際 adapter 請求，SQLite 在本機驗證。`etcd` extra 使用 `etcd3gw`（etcd v3 HTTP gateway），保留既有步驟並支援手動安裝的舊 etcd3。參見 [Docker 檢查](../docker/README.md)。
+Dev／Stable CI 建置 checkout wheel，在獨立 Docker 容器驗證 base、每個宣告的 extra 與 all。PR 在 Python 3.12 覆蓋所有 extras，另驗證 3.11／3.14 的 base；排程涵蓋所有支援的 Python 次版本。每個 cell 執行 `pip check`、不會略過失敗的能力探測與六項煙霧測試。獨立 Compose job 等待 Redis／MQTT 健康後驗證實際 adapter 請求，SQLite 在本機驗證。`etcd` extra 使用 `etcd3gw`（etcd v3 HTTP gateway），保留既有步驟並支援手動安裝的舊 etcd3。參見 [Docker 檢查](../docker/README.md)。
 
 ## 測試紀錄
 
@@ -869,7 +869,7 @@ LoadDensity 對外提供單一已設定的 logger(`load_density_logger`),位於 
 | Ubuntu / Linux | 完整支援 |
 | Raspberry Pi | 已在 3B+ 以上測試 |
 
-需要 Python 3.10+。
+需要 Python 3.11+。
 
 ## SLA Gate 與跨次回歸 Diff
 
